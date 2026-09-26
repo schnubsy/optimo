@@ -1,0 +1,22 @@
+# secrets
+.env
+.env.*
+!.env.production
+!.env.example
+*.pem
+# deps / build
+node_modules/
+dist/
+dev-dist/
+.vite/
+# test output
+test-results/
+playwright-report/
+docs/evidence/playwright-report/
+.lighthouseci/
+# os / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log

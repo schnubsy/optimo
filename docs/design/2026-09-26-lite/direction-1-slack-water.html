@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>optimo — Direction 1: Slack Water (Calm, Organic / Calm-tech)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- document chrome (neutral, not part of the direction) ---------- */
+html,body{margin:0;background:#f4f4f2;color:#1d1d1b;font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.doc{max-width:1720px;margin:0 auto;padding:32px 40px 80px}
+.doc h1{font-size:26px;margin:0 0 4px;font-weight:600}
+.doc .sub{color:#66665f;margin:0 0 16px}
+.doc p.rationale{max-width:78ch;margin:0 0 20px}
+.doc .toolbar{display:flex;gap:10px;align-items:center;margin:0 0 20px}
+.doc button.tb{font:13px/1 system-ui;padding:10px 14px;border:1px solid #c9c9c3;background:#fff;border-radius:6px;cursor:pointer}
+.mocks{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.frame-label{font-size:12px;color:#66665f;margin:0 0 8px}
+.desk-wrap{position:relative;overflow:hidden;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.14)}
+.desk-wrap>.app{transform-origin:top left}
+.phone-wrap{width:390px;height:844px;border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.14);position:relative;border:10px solid #111;box-sizing:content-box}
+.callout{position:absolute;z-index:50;background:#fff;border:1px dashed #7a7a72;color:#1d1d1b;font:11px/1.3 system-ui;padding:4px 7px;border-radius:4px;pointer-events:none;max-width:180px}
+.notes{margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.notes h2{font-size:16px;margin:0 0 10px}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin:0 0 6px}
+pre{background:#1f2321;color:#e8ece9;padding:18px 20px;border-radius:8px;overflow:auto;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* ---------- Direction 1: Slack Water — scoped under .sw ---------- */
+.sw{
+  --sw-bg:#EEF1EF; --sw-surface:#F7F8F7; --sw-surface-2:#E3E8E6; --sw-line:#D3DAD7;
+  --sw-ink:#24302D; --sw-ink-2:#5C6B67; --sw-ink-3:#8A9793;
+  --sw-accent:#4E8C82; --sw-accent-deep:#356F66; --sw-accent-soft:#D6E7E2;
+  --sw-now:#356F66;
+  --sw-cat-work:#4F7A6E; --sw-cat-meet:#6D7C93; --sw-cat-health:#7E9B5A; --sw-cat-personal:#B89A6A;
+  --sw-cat-family:#A86E7C; --sw-cat-errand:#8A8F8C; --sw-cat-learn:#7F7BA6; --sw-cat-home:#6F9A8E;
+  --sw-shadow:0 6px 20px rgba(36,48,45,.08); --sw-shadow-lift:0 14px 36px rgba(36,48,45,.18);
+  --sw-r-sm:10px; --sw-r-md:14px; --sw-r-lg:20px;
+  --sw-t-quick:120ms; --sw-t-base:240ms; --sw-t-settle:320ms; --sw-ease:cubic-bezier(.2,.8,.2,1);
+  font-family:"Spline Sans",system-ui,sans-serif;color:var(--sw-ink);background:var(--sw-bg);
+  position:relative;overflow:hidden;box-sizing:border-box
+}
+.sw[data-theme="dark"]{
+  --sw-bg:#161C1B; --sw-surface:#1E2624; --sw-surface-2:#27302E; --sw-line:#2F3A37;
+  --sw-ink:#E6ECEA; --sw-ink-2:#9AAAA5; --sw-ink-3:#6F7D79;
+  --sw-accent:#7DB8AD; --sw-accent-deep:#9ACDC3; --sw-accent-soft:#24403B; --sw-now:#9ACDC3;
+  --sw-shadow:0 6px 20px rgba(0,0,0,.28); --sw-shadow-lift:0 14px 36px rgba(0,0,0,.5);
+}
+.sw *{box-sizing:border-box}
+.sw .serif{font-family:"Newsreader",Georgia,serif}
+.sw .cat-work{--c:var(--sw-cat-work)} .sw .cat-meet{--c:var(--sw-cat-meet)} .sw .cat-health{--c:var(--sw-cat-health)}
+.sw .cat-personal{--c:var(--sw-cat-personal)} .sw .cat-family{--c:var(--sw-cat-family)} .sw .cat-errand{--c:var(--sw-cat-errand)}
+.sw .cat-learn{--c:var(--sw-cat-learn)} .sw .cat-home{--c:var(--sw-cat-home)}
+.sw svg.ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* desktop */
+.sw.desktop{width:1280px;height:820px;display:grid;grid-template-rows:84px 1fr}
+.sw .top{display:flex;align-items:center;padding:0 28px;gap:28px;border-bottom:1px solid var(--sw-line)}
+.sw .top .date{display:flex;align-items:baseline;gap:12px}
+.sw .top .day{font-family:"Newsreader",serif;font-size:32px;font-weight:500;letter-spacing:-.01em}
+.sw .top .dstr{color:var(--sw-ink-2);font-size:14px}
+.sw .arc{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--sw-ink-2);font-size:13px}
+.sw .arc svg{width:220px;height:44px;display:block}
+.sw .seg{display:flex;background:var(--sw-surface-2);border-radius:999px;padding:3px}
+.sw .seg span{padding:8px 16px;border-radius:999px;font-size:13px;font-weight:500;color:var(--sw-ink-2);min-height:36px;display:flex;align-items:center}
+.sw .seg span.on{background:var(--sw-surface);color:var(--sw-ink);box-shadow:var(--sw-shadow)}
+.sw .btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--sw-line);background:var(--sw-surface);font-size:13px;font-weight:500;color:var(--sw-ink)}
+.sw .btn.primary{background:var(--sw-accent);border-color:var(--sw-accent);color:#fff}
+.sw .body{display:grid;grid-template-columns:316px 1fr;min-height:0}
+.sw .rail{border-right:1px solid var(--sw-line);padding:22px 20px;display:flex;flex-direction:column;gap:12px;background:var(--sw-surface)}
+.sw .rail h3{margin:0 0 4px;font-family:"Newsreader",serif;font-weight:500;font-size:22px}
+.sw .rail .hint{color:var(--sw-ink-2);font-size:13px;margin:0 0 6px}
+.sw .item{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;padding:10px 10px 10px 8px;border-radius:var(--sw-r-md);background:var(--sw-bg);min-height:56px;color:var(--sw-ink)}
+.sw .item .icw{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab,var(--c) 16%,var(--sw-surface));color:var(--c)}
+.sw .item .t{font-size:14px;font-weight:500;line-height:1.25}
+.sw .item .m{font-size:12px;color:var(--sw-ink-2);margin-top:2px}
+.sw .item .place{font-size:12px;font-weight:600;color:var(--sw-accent-deep);padding:0 12px;min-height:36px;display:flex;align-items:center;border-radius:999px;background:var(--sw-accent-soft);visibility:hidden}
+.sw .item.hover{background:var(--sw-surface-2)} .sw .item.hover .place{visibility:visible}
+.sw .rail .foot{margin-top:auto;font-size:12px;color:var(--sw-ink-3);line-height:1.45}
+.sw .pane{display:grid;grid-template-rows:auto 1fr;min-height:0}
+.sw .quick{display:flex;align-items:center;gap:10px;margin:18px 28px 10px;padding:6px 8px 6px 16px;border-radius:var(--sw-r-lg);background:var(--sw-surface);border:1px solid var(--sw-line);box-shadow:var(--sw-shadow);min-height:52px}
+.sw .quick .txt{flex:1;font-size:15px;color:var(--sw-ink)}
+.sw .quick .txt .ph{color:var(--sw-ink-3)}
+.sw .chip{font-size:12px;font-weight:500;padding:6px 10px;border-radius:999px;background:var(--sw-accent-soft);color:var(--sw-accent-deep)}
+.sw .tl{position:relative;overflow:auto;padding:8px 28px 40px 0}
+.sw .tl .inner{position:relative;height:960px;margin-left:80px}
+.sw .hour{position:absolute;left:-80px;right:0;height:1px;background:var(--sw-line)}
+.sw .hour b{position:absolute;left:0;top:-9px;width:64px;text-align:right;font-weight:400;font-size:12px;color:var(--sw-ink-2)}
+.sw .blk{position:absolute;left:14px;right:8px;border-radius:var(--sw-r-md);background:color-mix(in oklab,var(--c) 13%,var(--sw-surface));display:flex;gap:10px;padding:8px 12px 8px 8px;color:var(--sw-ink);overflow:hidden;transition:transform var(--sw-t-base) var(--sw-ease),box-shadow var(--sw-t-base) var(--sw-ease)}
+.sw .blk .chk{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--c);flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff}
+.sw .blk .chk svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;display:none}
+.sw .blk.done .chk{background:var(--c);border-color:var(--c)} .sw .blk.done .chk svg{display:block}
+.sw .blk.done{opacity:.55} .sw .blk.done .t{text-decoration:line-through;text-decoration-thickness:1px}
+.sw .blk .icw{color:var(--c);display:flex;align-items:center;height:24px}
+.sw .blk .t{font-size:15px;font-weight:500;line-height:1.3}
+.sw .blk .m{font-size:12.5px;color:var(--sw-ink-2);margin-top:2px;display:flex;gap:8px;align-items:center}
+.sw .blk .pri{font-size:11px;font-weight:600;color:var(--c);background:color-mix(in oklab,var(--c) 18%,transparent);padding:1px 7px;border-radius:999px}
+.sw .blk.tiny{padding:3px 12px 3px 8px;align-items:center} .sw .blk.tiny .t{font-size:13px} .sw .blk.tiny .chk{width:20px;height:20px;margin:0}
+.sw .blk.lift{transform:translate(6px,-4px) scale(1.015);box-shadow:var(--sw-shadow-lift);z-index:5;cursor:grabbing}
+.sw .ghost{position:absolute;left:14px;right:8px;border:1.5px dashed var(--sw-accent);border-radius:var(--sw-r-md);background:color-mix(in oklab,var(--sw-accent) 8%,transparent)}
+.sw .ghost i{position:absolute;left:-74px;top:-9px;font-style:normal;font-size:12px;font-weight:600;color:var(--sw-accent-deep);width:58px;text-align:right}
+.sw .handle{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);width:36px;height:5px;border-radius:999px;background:var(--c);opacity:.9}
+.sw .handle::after{content:"2 h";position:absolute;left:44px;top:-9px;font-size:11px;font-weight:600;color:var(--sw-ink);background:var(--sw-surface);padding:2px 8px;border-radius:999px;box-shadow:var(--sw-shadow);white-space:nowrap}
+.sw .now{position:absolute;left:-80px;right:0;height:1.5px;background:var(--sw-now);z-index:4}
+.sw .now::before{content:"";position:absolute;left:72px;top:-4.5px;width:10px;height:10px;border-radius:50%;background:var(--sw-now);box-shadow:0 0 0 5px color-mix(in oklab,var(--sw-now) 22%,transparent)}
+.sw .now b{position:absolute;left:0;top:-9px;width:64px;text-align:right;font-size:12px;font-weight:600;color:var(--sw-now)}
+.sw .gap{position:absolute;left:14px;right:8px;display:flex;align-items:center;justify-content:center;font-family:"Newsreader",serif;font-style:italic;font-size:13px;color:var(--sw-ink-3)}
+
+/* phone */
+.sw.phone{width:390px;height:844px;display:grid;grid-template-rows:54px auto 1fr auto}
+.sw .status{display:flex;align-items:center;justify-content:space-between;padding:16px 28px 0;font-size:14px;font-weight:600}
+.sw .status .pill{width:120px;height:34px;background:#111;border-radius:999px;margin:0 auto;position:absolute;left:50%;transform:translateX(-50%);top:10px}
+.sw .phead{padding:10px 20px 8px;display:flex;align-items:flex-end;justify-content:space-between}
+.sw .phead .day{font-family:"Newsreader",serif;font-size:28px;font-weight:500;line-height:1}
+.sw .phead .dstr{color:var(--sw-ink-2);font-size:13px;margin-top:4px}
+.sw .phead svg{width:120px;height:36px}
+.sw .ptl{position:relative;overflow:auto;padding:6px 16px 20px 0}
+.sw .ptl .inner{position:relative;height:850px;margin-left:58px}
+.sw .ptl .hour{left:-58px} .sw .ptl .hour b{width:46px;font-size:11px}
+.sw .ptl .now{left:-58px} .sw .ptl .now b{width:46px;font-size:11px} .sw .ptl .now::before{left:52px}
+.sw .ptl .blk{left:8px;right:4px;padding:6px 10px 6px 6px} .sw .ptl .blk .t{font-size:14px} .sw .ptl .blk .m{font-size:12px}
+.sw .ptl .ghost{left:8px;right:4px} .sw .ptl .ghost i{left:-56px;width:44px;font-size:11px}
+.sw .ptl .gap{left:8px;right:4px}
+.sw .pbottom{background:var(--sw-surface);border-top:1px solid var(--sw-line);border-radius:var(--sw-r-lg) var(--sw-r-lg) 0 0;box-shadow:0 -10px 30px rgba(36,48,45,.10);padding:8px 16px 26px}
+.sw .pbottom .grab{width:40px;height:5px;border-radius:999px;background:var(--sw-line);margin:0 auto 10px}
+.sw .pquick{display:flex;align-items:center;gap:8px;min-height:48px;padding:4px 6px 4px 14px;border-radius:999px;background:var(--sw-bg);border:1px solid var(--sw-line);margin-bottom:12px}
+.sw .pquick .txt{flex:1;font-size:15px;color:var(--sw-ink-3)}
+.sw .pquick .add{width:40px;height:40px;border-radius:50%;background:var(--sw-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}
+.sw .sheet-h{display:flex;align-items:center;justify-content:space-between;margin:0 2px 8px}
+.sw .sheet-h h4{margin:0;font-family:"Newsreader",serif;font-weight:500;font-size:18px}
+.sw .sheet-h span{font-size:12px;color:var(--sw-ink-2)}
+.sw .pitem{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;min-height:52px;padding:6px 6px 6px 4px;border-radius:var(--sw-r-md)}
+.sw .pitem .icw{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab,var(--c) 16%,var(--sw-surface));color:var(--c)}
+.sw .pitem .t{font-size:14px;font-weight:500} .sw .pitem .m{font-size:12px;color:var(--sw-ink-2)}
+.sw .pitem .place{min-height:44px;min-width:64px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--sw-accent-deep);background:var(--sw-accent-soft);border-radius:999px;padding:0 12px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-health" viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-6 1 1h6"/></symbol>
+  <symbol id="i-work" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-meet" viewBox="0 0 24 24"><circle cx="9" cy="10" r="4"/><circle cx="16" cy="12" r="3.5"/><path d="M3 20c1-3.5 3.5-5 6-5s5 1.5 6 5"/></symbol>
+  <symbol id="i-meal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></symbol>
+  <symbol id="i-errand" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></symbol>
+  <symbol id="i-learn" viewBox="0 0 24 24"><path d="M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M12 21c-5 0-8-3-8-8 0-5 4-9 9-9 4 0 6 2 7 4-1 8-4 13-8 13z"/><path d="M12 21c0-6 2-10 5-13"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4L19 7"/></symbol>
+</svg>
+
+<div class="doc">
+  <h1>Direction 1 — Slack Water</h1>
+  <p class="sub">Seat: Calm (Anaya Shrestha) · Movement: Organic / Calm-tech · Default mode: light · Type: Newsreader + Spline Sans</p>
+  <p class="rationale">Slack water is the still point between tides — the moment the day stops pulling. The timeline is a soft channel, not a grid: blocks sit in it like river stones, hours are whispered in the gutter, and the one drawn thing on the screen is the daylight arc, which answers the only anxious question a planner gets asked ("how much day is left?") without a number. The palette is sampled from wet slate, sea glass and lichen — cool, low-chroma naturals, deliberately not cream, with a single sea-glass accent that carries every action. Spline Sans does the work; Newsreader speaks only when the app addresses you (the day, the section heads, the italic "1 h free"). Motion is slow-settle (240–320 ms, ease-out) and never decorative: a block lifts when grabbed and eases into its slot; nothing else moves on its own.</p>
+  <div class="toolbar">
+    <button class="tb" id="theme">Toggle light / dark</button>
+    <span style="color:#66665f;font-size:12px">Desktop 1280 × 820 (scaled to fit) · iPhone 390 × 844 (1:1). Timelines scroll.</span>
+  </div>
+
+  <div class="mocks">
+    <div>
+      <p class="frame-label">Desktop — two-pane: inbox rail + day timeline</p>
+      <div class="desk-wrap">
+        <div class="sw desktop app" data-theme="light">
+          <div class="top">
+            <div class="date"><span class="day">Friday</span><span class="dstr">26 September 2026</span></div>
+            <div class="arc">
+              <svg viewBox="0 0 220 44" aria-label="Daylight: sunrise 7:08, sunset 19:12, now 10:42">
+                <path d="M6 40 Q110 -22 214 40" fill="none" stroke="var(--sw-line)" stroke-width="1.5"/>
+                <path d="M6 40 Q110 -22 214 40" fill="none" stroke="var(--sw-accent)" stroke-width="2" stroke-dasharray="86 400"/>
+                <circle cx="70" cy="15.5" r="5" fill="var(--sw-accent)"/>
+                <text x="6" y="43" font-size="9" fill="var(--sw-ink-3)" font-family="Spline Sans">7:08</text>
+                <text x="196" y="43" font-size="9" fill="var(--sw-ink-3)" font-family="Spline Sans">19:12</text>
+              </svg>
+              <span>8 h 30 m of daylight left</span>
+            </div>
+            <div class="seg"><span class="on">Day</span><span>Week</span></div>
+            <span class="btn">Focus</span>
+          </div>
+          <div class="body">
+            <aside class="rail">
+              <h3>Not yet placed</h3>
+              <p class="hint">Five things waiting for a time.</p>
+              <div class="item cat-personal hover"><span class="icw"><svg class="ic"><use href="#i-meal"/></svg></span><div><div class="t">Book flights for October</div><div class="m">Personal, 30 min, high priority</div></div><span class="place">Place</span></div>
+              <div class="item cat-errand"><span class="icw"><svg class="ic"><use href="#i-errand"/></svg></span><div><div class="t">Renew car registration</div><div class="m">Errands, 20 min, due Tuesday</div></div><span class="place">Place</span></div>
+              <div class="item cat-work"><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Reply to Ellen about the budget</div><div class="m">Work, 15 min</div></div><span class="place">Place</span></div>
+              <div class="item cat-learn"><span class="icw"><svg class="ic"><use href="#i-learn"/></svg></span><div><div class="t">Read chapter 4</div><div class="m">Learning, 45 min</div></div><span class="place">Place</span></div>
+              <div class="item cat-home"><span class="icw"><svg class="ic"><use href="#i-home"/></svg></span><div><div class="t">Water the plants</div><div class="m">Home, 10 min, every Friday</div></div><span class="place">Place</span></div>
+              <p class="foot">Drag anything onto the day, or press Place to drop it into the next free slot that fits.</p>
+            </aside>
+            <section class="pane">
+              <div class="quick">
+                <div class="txt">Coffee with Reza tomorrow 9am</div>
+                <span class="chip">Tomorrow, 9:00 AM</span><span class="chip">30 min</span><span class="chip">Personal</span>
+                <span class="btn primary" style="min-height:40px">Add</span>
+              </div>
+              <div class="tl">
+                <div class="inner">
+                  <div class="hour" style="top:0"><b>7 AM</b></div>
+                  <div class="hour" style="top:72px"><b>8 AM</b></div>
+                  <div class="hour" style="top:144px"><b>9 AM</b></div>
+                  <div class="hour" style="top:216px"><b>10 AM</b></div>
+                  <div class="hour" style="top:288px"><b>11 AM</b></div>
+                  <div class="hour" style="top:360px"><b>12 PM</b></div>
+                  <div class="hour" style="top:432px"><b>1 PM</b></div>
+                  <div class="hour" style="top:504px"><b>2 PM</b></div>
+                  <div class="hour" style="top:576px"><b>3 PM</b></div>
+                  <div class="hour" style="top:648px"><b>4 PM</b></div>
+                  <div class="hour" style="top:720px"><b>5 PM</b></div>
+                  <div class="hour" style="top:792px"><b>6 PM</b></div>
+                  <div class="hour" style="top:864px"><b>7 PM</b></div>
+                  <div class="hour" style="top:936px"><b>8 PM</b></div>
+
+                  <div class="blk done cat-health" style="top:2px;height:52px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-health"/></svg></span><div><div class="t">Morning run</div><div class="m">7:00–7:45, 45 min</div></div></div>
+                  <div class="blk done cat-personal" style="top:74px;height:34px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meal"/></svg></span><div><div class="t">Breakfast and the news</div></div></div>
+                  <div class="blk cat-work" style="top:146px;height:142px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Deep work: quarterly forecast draft</div><div class="m">9:00–11:00, 2 h <span class="pri">High</span></div></div><span class="handle"></span></div>
+                  <div class="now" style="top:266px"><b>10:42</b></div>
+                  <div class="blk cat-meet" style="top:290px;height:34px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meet"/></svg></span><div><div class="t">Standup with the platform team</div></div></div>
+                  <div class="ghost" style="top:362px;height:34px"><i>12:00</i></div>
+                  <div class="blk lift cat-work" style="top:372px;height:34px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Review Priya's pull request</div></div></div>
+                  <div class="gap" style="top:326px;height:34px">35 min free</div>
+                  <div class="blk cat-personal" style="top:434px;height:70px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meal"/></svg></span><div><div class="t">Lunch with Sam</div><div class="m">1:00–2:00, 1 h</div></div></div>
+                  <div class="blk cat-work" style="top:506px;height:106px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Write the migration plan</div><div class="m">2:00–3:30, 1 h 30 min <span class="pri">High</span></div></div></div>
+                  <div class="blk tiny cat-errand" style="top:614px;height:26px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-errand"/></svg></span><div><div class="t">Call the dentist, 15 min</div></div></div>
+                  <div class="blk cat-meet" style="top:650px;height:34px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meet"/></svg></span><div><div class="t">1:1 with Dana</div></div></div>
+                  <div class="gap" style="top:686px;height:104px">1 h 30 min free</div>
+                  <div class="blk cat-family" style="top:794px;height:34px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-family"/></svg></span><div><div class="t">Pick up Noah from practice</div></div></div>
+                  <div class="blk cat-learn" style="top:902px;height:34px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-learn"/></svg></span><div><div class="t">Guitar practice</div></div></div>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="callout" style="left:340px;top:100px">Quick-add: typed text parses live into chips before you commit</div>
+          <div class="callout" style="left:1000px;top:322px">Resize: pill handle on hover/focus, live duration</div>
+          <div class="callout" style="left:1000px;top:520px">Drag: block lifts, dashed ghost snaps to 5 min, time label in the gutter</div>
+          <div class="callout" style="left:36px;top:212px">Hover reveals Place: next free slot that fits</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="frame-label">iPhone — single pane, inbox as a bottom sheet</p>
+      <div class="phone-wrap">
+        <div class="sw phone app" data-theme="light">
+          <div class="status"><span>10:42</span><span class="pill"></span><span style="font-weight:500;font-size:12px">●●● ▲ ▮</span></div>
+          <div class="phead">
+            <div><div class="day">Friday</div><div class="dstr">26 September</div></div>
+            <svg viewBox="0 0 120 36" aria-hidden="true"><path d="M4 32 Q60 -14 116 32" fill="none" stroke="var(--sw-line)" stroke-width="1.5"/><path d="M4 32 Q60 -14 116 32" fill="none" stroke="var(--sw-accent)" stroke-width="2" stroke-dasharray="46 300"/><circle cx="40" cy="11.5" r="4" fill="var(--sw-accent)"/></svg>
+          </div>
+          <div class="ptl">
+            <div class="inner">
+              <div class="hour" style="top:0"><b>7 AM</b></div>
+              <div class="hour" style="top:64px"><b>8 AM</b></div>
+              <div class="hour" style="top:128px"><b>9 AM</b></div>
+              <div class="hour" style="top:192px"><b>10 AM</b></div>
+              <div class="hour" style="top:256px"><b>11 AM</b></div>
+              <div class="hour" style="top:320px"><b>12 PM</b></div>
+              <div class="hour" style="top:384px"><b>1 PM</b></div>
+              <div class="hour" style="top:448px"><b>2 PM</b></div>
+              <div class="hour" style="top:512px"><b>3 PM</b></div>
+              <div class="hour" style="top:576px"><b>4 PM</b></div>
+              <div class="hour" style="top:640px"><b>5 PM</b></div>
+              <div class="hour" style="top:704px"><b>6 PM</b></div>
+              <div class="hour" style="top:768px"><b>7 PM</b></div>
+              <div class="hour" style="top:832px"><b>8 PM</b></div>
+              <div class="blk done cat-health" style="top:2px;height:46px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-health"/></svg></span><div><div class="t">Morning run</div><div class="m">45 min</div></div></div>
+              <div class="blk done tiny cat-personal" style="top:66px;height:30px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meal"/></svg></span><div><div class="t">Breakfast and the news</div></div></div>
+              <div class="blk cat-work" style="top:130px;height:126px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Deep work: forecast draft</div><div class="m">9:00–11:00 <span class="pri">High</span></div></div><span class="handle"></span></div>
+              <div class="now" style="top:237px"><b>10:42</b></div>
+              <div class="blk tiny cat-meet" style="top:258px;height:30px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meet"/></svg></span><div><div class="t">Standup, platform team</div></div></div>
+              <div class="blk tiny cat-work" style="top:290px;height:30px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Review Priya's pull request</div></div></div>
+              <div class="gap" style="top:322px;height:60px">1 h free</div>
+              <div class="blk cat-personal" style="top:386px;height:60px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meal"/></svg></span><div><div class="t">Lunch with Sam</div><div class="m">1:00–2:00</div></div></div>
+              <div class="blk cat-work" style="top:450px;height:92px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-work"/></svg></span><div><div class="t">Write the migration plan</div><div class="m">2:00–3:30 <span class="pri">High</span></div></div></div>
+              <div class="blk tiny cat-errand" style="top:546px;height:26px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-errand"/></svg></span><div><div class="t">Call the dentist</div></div></div>
+              <div class="blk tiny cat-meet" style="top:578px;height:30px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-meet"/></svg></span><div><div class="t">1:1 with Dana</div></div></div>
+              <div class="gap" style="top:610px;height:92px">1 h 30 min free</div>
+              <div class="blk tiny cat-family" style="top:706px;height:30px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-family"/></svg></span><div><div class="t">Pick up Noah from practice</div></div></div>
+              <div class="blk tiny cat-learn" style="top:802px;height:30px"><span class="chk"><svg><use href="#i-check"/></svg></span><span class="icw"><svg class="ic"><use href="#i-learn"/></svg></span><div><div class="t">Guitar practice</div></div></div>
+            </div>
+          </div>
+          <div class="pbottom">
+            <div class="grab"></div>
+            <div class="pquick"><span class="txt">Lunch with Sam at 1pm</span><span class="add">+</span></div>
+            <div class="sheet-h"><h4>Not yet placed</h4><span>5 waiting, swipe up for all</span></div>
+            <div class="pitem cat-personal"><span class="icw"><svg class="ic"><use href="#i-meal"/></svg></span><div><div class="t">Book flights for October</div><div class="m">30 min, high priority</div></div><span class="place">Place</span></div>
+            <div class="pitem cat-errand"><span class="icw"><svg class="ic"><use href="#i-errand"/></svg></span><div><div class="t">Renew car registration</div><div class="m">20 min, due Tuesday</div></div><span class="place">Place</span></div>
+          </div>
+          <div class="callout" style="left:20px;top:392px">Tap the circle to complete (44 px hit). Tap a block to select, then drag; handle appears while selected</div>
+          <div class="callout" style="left:230px;top:690px">Place opens a sheet: “Next free: 12:00, 1 h” plus Pick a time. Long-press also drags onto the day</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div>
+      <h2>Flow review (Ingrid Falk) — within the aesthetic</h2>
+      <ul>
+        <li>🟢 Create: persistent quick-add on both layouts; parsed chips preview before commit, Enter creates, chips are tappable to correct a bad parse.</li>
+        <li>🟡 Drag-to-reschedule: soft blocks lacked a drop cue. Addressed: dashed ghost snapping to 5-minute grid plus a live time label in the gutter; the lifted block gets the one strong shadow in the system.</li>
+        <li>🟡 Resize: no visible handle in the first pass. Addressed: bottom pill on hover/focus (desktop) and whenever a block is selected (mobile), 44 px hit area, live duration tag.</li>
+        <li>🟢 Complete: leading circle, 44 px target, block fades to 55% and strikes through; undo via toast for 5 s.</li>
+        <li>🟡 Mobile inbox → timeline: dragging out of a bottom sheet is fragile. Addressed: every unplaced item has a Place button (next free slot that fits, or pick a time); long-press drag is the secondary path, and the sheet collapses to a peek while dragging.</li>
+        <li>🟡 Open trade-off: low-chroma palette. Ink-2 on the mist background is 4.8:1; category tints never carry meaning alone (icon plus label always present). Priority "High" is text, not colour.</li>
+        <li>🟢 Keyboard/focus: every block is a button; arrow keys nudge by 5 min, Shift+arrow by 15; visible 2 px accent focus ring.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Token block</h2>
+<pre>:root{
+  --font-display:"Newsreader",Georgia,serif;
+  --font-ui:"Spline Sans",system-ui,sans-serif;
+  --fs-11:11px; --fs-12:12px; --fs-13:13px; --fs-15:15px; --fs-17:17px;
+  --fs-22:22px; --fs-28:28px; --fs-32:32px;
+  --lh-tight:1.25; --lh-base:1.5;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:28px; --sp-8:40px;
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-pill:999px;
+  --shadow:0 6px 20px rgba(36,48,45,.08);
+  --shadow-lift:0 14px 36px rgba(36,48,45,.18);
+  --t-quick:120ms; --t-base:240ms; --t-settle:320ms;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --hour-h:72px; --hour-h-mobile:64px; --tap-min:44px;
+
+  --bg:#EEF1EF; --surface:#F7F8F7; --surface-2:#E3E8E6; --line:#D3DAD7;
+  --ink:#24302D; --ink-2:#5C6B67; --ink-3:#8A9793;
+  --accent:#4E8C82; --accent-deep:#356F66; --accent-soft:#D6E7E2; --now:#356F66;
+  --cat-work:#4F7A6E; --cat-meet:#6D7C93; --cat-health:#7E9B5A; --cat-personal:#B89A6A;
+  --cat-family:#A86E7C; --cat-errand:#8A8F8C; --cat-learn:#7F7BA6; --cat-home:#6F9A8E;
+}
+[data-theme="dark"]{
+  --bg:#161C1B; --surface:#1E2624; --surface-2:#27302E; --line:#2F3A37;
+  --ink:#E6ECEA; --ink-2:#9AAAA5; --ink-3:#6F7D79;
+  --accent:#7DB8AD; --accent-deep:#9ACDC3; --accent-soft:#24403B; --now:#9ACDC3;
+  --shadow:0 6px 20px rgba(0,0,0,.28); --shadow-lift:0 14px 36px rgba(0,0,0,.5);
+}</pre>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function fit(){var w=document.querySelector('.desk-wrap'),a=w.firstElementChild;var avail=Math.min(1280,window.innerWidth-80-390-20-40-40);if(window.innerWidth<1000)avail=window.innerWidth-80;var s=Math.min(1,avail/1280);a.style.transform='scale('+s+')';w.style.width=(1280*s)+'px';w.style.height=(820*s)+'px';}
+  fit();window.addEventListener('resize',fit);
+  document.getElementById('theme').addEventListener('click',function(){document.querySelectorAll('.app').forEach(function(el){el.dataset.theme=el.dataset.theme==='dark'?'light':'dark';});});
+})();
+</script>
+</body>
+</html>
