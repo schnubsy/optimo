@@ -1,28 +1,30 @@
 // Inbox + quick-add + Place: capture → inbox, drag/Place → timeline, unschedule back.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay } from './support/app'
+import { openApp, row, seedDay, quickAdd } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 async function showInbox(page: Page) {
   if (await isMobile(page)) await page.getByTestId('tab-backlog').click()
 }
 async function showBoard(page: Page) {
-  if (await isMobile(page)) await page.getByRole('button', { name: /Board/ }).click()
+  if (await isMobile(page)) await page.getByTestId('tab-timeline').click()
 }
 const inboxRow = (page: Page, title: string) => page.getByTestId('inbox-row').filter({ hasText: title })
 
 test.describe('inbox & quick-add', () => {
   test('quick-add shows a parse preview, then captures to the inbox', async ({ page, context }) => {
     const { errors } = await openApp(page, context, { seed: seedDay })
-    const qa = page.getByTestId('quickadd')
+    const qa = (await quickAdd(page))
     await qa.fill('Book train tickets for 20m #errands !!')
     await expect(page.getByTestId('parse-row')).toContainText('Book train tickets')
     await expect(page.getByTestId('parse-row')).toContainText('inbox')
     await expect(page.getByTestId('parse-row')).toContainText('Errands')
     await expect(page.getByTestId('parse-row')).toContainText('P2')
     await qa.press('Enter')
-    await expect(qa).toHaveValue('')
+    // desktop clears the pill; on iPhone the FAB's sheet closes on add
+    if (await isMobile(page)) await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
+    else await expect(qa).toHaveValue('')
     await showInbox(page)
     const r = inboxRow(page, 'Book train tickets')
     await expect(r).toBeVisible()
@@ -33,7 +35,7 @@ test.describe('inbox & quick-add', () => {
 
   test('quick-add with a time lands on the timeline ("Lunch with Sam at 1pm")', async ({ page, context }) => {
     await openApp(page, context)
-    const qa = page.getByTestId('quickadd')
+    const qa = (await quickAdd(page))
     await qa.fill('Coffee with Sam at 1pm')
     await expect(page.getByTestId('parse-row')).toContainText('13:00–13:30')
     await qa.press('Enter')
@@ -78,10 +80,10 @@ test.describe('inbox & quick-add', () => {
     let s: ReturnType<typeof seedDay>
     const { errors } = await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
     const tl = page.getByTestId('timeline')
-    await tl.evaluate((el) => (el.scrollTop = 16 * 56))
+    await tl.evaluate((el) => (el.scrollTop = 16 * 72))
     const src = (await inboxRow(page, 'Reply to Ellen').locator('.irow-main').boundingBox())!
     const inner = (await page.locator('.tl-inner').boundingBox())!
-    const targetY = inner.y + 17 * 56 + 10 // 17:00 + a little
+    const targetY = inner.y + 17 * 72 + 10 // 17:00 + a little
     await page.mouse.move(src.x + 40, src.y + 10)
     await page.mouse.down()
     for (let i = 1; i <= 12; i++) await page.mouse.move(src.x + 40 + ((inner.x + 200 - src.x - 40) * i) / 12, src.y + 10 + ((targetY - src.y - 10) * i) / 12)
@@ -111,7 +113,7 @@ test.describe('inbox & quick-add', () => {
     await b.scrollIntoViewIfNeeded()
     await b.click()
     await b.click()
-    await page.getByLabel('On the timeline (off = inbox)').uncheck()
+    await page.getByRole('switch', { name: 'On the timeline (off = inbox)' }).click()
     await page.getByTestId('sheet-save').click()
     await expect.poll(async () => (await row(page, s!.ids.guitar)).start_at).toBeNull()
     await showInbox(page)
@@ -122,8 +124,8 @@ test.describe('inbox & quick-add', () => {
     test.skip(info.project.name !== 'desktop', 'desktop rail')
     await openApp(page, context, { seed: seedDay })
     // two P0 rows: add another, then move it above "Read chapter 4"
-    await page.getByTestId('quickadd').fill('Sort the garage')
-    await page.getByTestId('quickadd').press('Enter')
+    await (await quickAdd(page)).fill('Sort the garage')
+    await (await quickAdd(page)).press('Enter')
     const titles = () => page.getByTestId('inbox-row').locator('.it').allTextContents()
     await expect.poll(titles).toEqual(['Book flights for October', 'Reply to Ellen re budget', 'Renew car registration', 'Read chapter 4', 'Sort the garage'])
     const from = (await inboxRow(page, 'Sort the garage').locator('.irow-main').boundingBox())!
@@ -152,8 +154,8 @@ test.describe('inbox & quick-add', () => {
   test('evidence screenshots', async ({ page, context }, info) => {
     test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1')
     await openApp(page, context, { seed: seedDay })
-    await page.getByTestId('quickadd').fill('Gym every weekday for 1h #health !!')
-    await page.getByTestId('timeline').evaluate((el) => (el.scrollTop = 6.5 * 56))
+    await (await quickAdd(page)).fill('Gym every weekday for 1h #health !!')
+    await page.getByTestId('timeline').evaluate((el) => (el.scrollTop = 6.5 * 72))
     await page.screenshot({ path: `docs/evidence/arc1-slice-4-inbox-${info.project.name}.png` })
     if (await isMobile(page)) {
       await showInbox(page)

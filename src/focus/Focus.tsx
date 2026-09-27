@@ -67,27 +67,27 @@ export function Focus() {
       <p className="fk mono">FOCUS{task.start_at ? ` · ${fmtClock(new Date(task.start_at).getHours() * 60 + new Date(task.start_at).getMinutes(), settings.clock24)}` : ''}</p>
       <h1 id="focus-h">{task.title || 'Untitled'}</h1>
       <div className="timer mono" role="timer" aria-live="off" data-testid="focus-timer">
-        {mmss(elapsed)}
+        {left >= 0 ? mmss(left) : `+${mmss(-left)}`}
       </div>
-      <p className="left mono">{left >= 0 ? `${mmss(left)} left of ${Math.round(length / 60000)} min` : `${mmss(-left)} over`}</p>
+      <p className="left mono" data-testid="focus-sub">{left >= 0 ? `left · ${mmss(elapsed)} of ${Math.round(length / 60000)} min` : `over · ${mmss(elapsed)} of ${Math.round(length / 60000)} min`}</p>
       <div className="bar" aria-hidden="true">
         <span style={{ transform: `scaleX(${Math.min(1, elapsed / length)})` }} />
       </div>
       {task.subtasks.length > 0 && (
         <ul className="fsubs">
           {task.subtasks.map((s, i) => (
-            <li key={s.id}>
-              <label className="chkrow">
-                <input type="checkbox" checked={s.done} onChange={(e) => patchItem(item, { subtasks: task.subtasks.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)) })} />
-                <span>{s.title}</span>
-              </label>
+            <li key={s.id} className={s.done ? 'done' : ''}>
+              <button type="button" className="sub-chip" aria-pressed={s.done} aria-label={`Mark ${s.title} done`} onClick={() => patchItem(item, { subtasks: task.subtasks.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })}>
+                {s.done && <Icon name="ui-check" size={14} />}
+              </button>
+              <span className="sub-t">{s.title}</span>
             </li>
           ))}
         </ul>
       )}
       <div className="factions">
         <button type="button" className="primary" onClick={() => toggleComplete(item).then(stop)} data-testid="focus-complete">
-          <Icon name="check" /> Complete
+          <Icon name="ui-check" /> Complete
         </button>
         <button type="button" className="ghost-btn" onClick={() => patchItem(item, { duration_min: task.duration_min + 5 }, '+5 min')} data-testid="focus-plus5">
           +5 min

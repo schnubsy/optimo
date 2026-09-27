@@ -6,12 +6,17 @@
 
 import type { BrowserContext, Page, Route, WebSocketRoute } from '@playwright/test'
 import { mergeRow } from '../../src/sync/merge'
+import { handleConnect, handleSync, eventKey, type AccountRow, type EventRow, type Ports } from '../../supabase/functions/_shared/handlers.ts'
+import { fakeCalDav } from '../fake/caldav'
+import { TEST_CRON, TEST_KEK } from '../fake/ports'
 
 export const SUPABASE_HOST = 'eepjhpyziczrxvirczio.supabase.co'
 export const TEST_USER = { id: '00000000-0000-4000-8000-00000000cafe', email: 'test@optimo.invalid' }
 
 type Row = Record<string, unknown> & { field_ts?: Record<string, number> }
 const TABLES = ['planner_categories', 'planner_tasks', 'planner_exceptions', 'planner_settings'] as const
+/** server-owned tables written only by the (in-process) Edge Function handlers */
+const SERVER_TABLES = ['planner_calendar_accounts', 'planner_events', 'planner_push_subscriptions'] as const
 
 const DEFAULTS: Record<string, Row> = {
   planner_categories: { color: 'work', icon: 'dot', sort_key: 0 },
@@ -47,7 +52,11 @@ export function fakeSession() {
 }
 
 export class FakeSupabase {
-  rows: Record<string, Map<string, Row>> = Object.fromEntries(TABLES.map((t) => [t, new Map()]))
+  rows: Record<string, Map<string, Row>> = Object.fromEntries([...TABLES, ...SERVER_TABLES].map((t) => [t, new Map()]))
+  /** the iCloud side of the calendar functions — a hermetic CalDAV server */
+  caldav = fakeCalDav({ requests: [], extra: [], removeDentist: false })
+  /** function calls with their status (the password gate also greps the stored rows) */
+  functionCalls: { name: string; status: number }[] = []
   log: { seq: number; user_id: string; table_name: string; row_id: string; op: string; at: string }[] = []
   unexpected: string[] = []
   requests = 0
@@ -114,9 +123,39 @@ export class FakeSupabase {
       if (p === '/auth/v1/logout') return route.fulfill({ status: 204, headers: cors })
       if (p === '/auth/v1/token') return json(200, fakeSession())
     }
+    const fn = p.match(/^\/functions\/v1\/(calendar-connect|calendar-sync)$/)
+    if (fn && method === 'POST') {
+      const request = new Request(url.href, { method, headers: req.headers(), body: req.postData() ?? '' })
+      const res = await (fn[1] === 'calendar-connect' ? handleConnect : handleSync)(request, this.ports())
+      this.functionCalls.push({ name: fn[1], status: res.status })
+      return route.fulfill({ status: res.status, headers: { ...cors, 'content-type': 'application/json' }, body: await res.text() })
+    }
     const m = p.match(/^\/rest\/v1\/(planner_\w+)$/)
     if (m) {
       const table = m[1]
+      if (table === 'planner_push_subscriptions') {
+        const subs = this.rows.planner_push_subscriptions
+        if (method === 'POST') {
+          const body = JSON.parse(req.postData() ?? '[]')
+          for (const r of Array.isArray(body) ? body : [body]) subs.set(r.endpoint, { ...subs.get(r.endpoint), ...r, user_id: TEST_USER.id })
+          return route.fulfill({ status: 201, headers: cors })
+        }
+        if (method === 'DELETE') {
+          subs.delete((url.searchParams.get('endpoint') ?? '').replace(/^eq\./, ''))
+          return route.fulfill({ status: 204, headers: cors })
+        }
+        if (method === 'GET') return json(200, [...subs.values()])
+      }
+      if (table === 'planner_calendar_accounts_public' && method === 'GET')
+        return json(200, [...this.rows.planner_calendar_accounts.values()].map(({ secret_enc: _s, ...rest }) => rest))
+      if (table === 'planner_calendar_accounts' && (method === 'PATCH' || method === 'DELETE')) {
+        const id = (url.searchParams.get('id') ?? '').replace(/^eq\./, '')
+        if (method === 'DELETE') {
+          this.rows.planner_calendar_accounts.delete(id)
+          for (const [k, e] of this.rows.planner_events) if (e.account_id === id) this.rows.planner_events.delete(k) // cascade, no log
+        } else Object.assign(this.rows.planner_calendar_accounts.get(id) ?? {}, JSON.parse(req.postData() ?? '{}'))
+        return route.fulfill({ status: 204, headers: cors })
+      }
       if (method === 'POST' && (TABLES as readonly string[]).includes(table)) {
         const body = JSON.parse(req.postData() ?? '[]')
         for (const r of Array.isArray(body) ? body : [body]) this.upsert(table, r)
@@ -148,6 +187,50 @@ export class FakeSupabase {
     const entry = { seq: this.log.length + 1, user_id: TEST_USER.id, table_name: table, row_id: k, op, at: new Date().toISOString() }
     this.log.push(entry)
     this.broadcast(entry)
+  }
+
+  /** Ports for the real calendar handlers, over this fake's tables (events go through the sync log like press). */
+  private ports(): Ports {
+    const events = this.rows.planner_events
+    const logEvent = (row: Row) => {
+      const entry = { seq: this.log.length + 1, user_id: TEST_USER.id, table_name: 'planner_events', row_id: String(row.id), op: 'update', at: new Date().toISOString() }
+      this.log.push(entry)
+      this.broadcast(entry)
+    }
+    return {
+      kek: TEST_KEK,
+      cronSecret: TEST_CRON,
+      fetch: this.caldav.fetch,
+      newId: () => crypto.randomUUID(),
+      userFromJwt: async (jwt) => {
+        try {
+          return JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString()).sub ?? null
+        } catch {
+          return null
+        }
+      },
+      insertAccount: async (row: AccountRow) => void this.rows.planner_calendar_accounts.set(row.id, { ...row } as Row),
+      accounts: async (userId) => [...this.rows.planner_calendar_accounts.values()].filter((a) => !userId || a.user_id === userId) as unknown as AccountRow[],
+      updateAccount: async (id, patch) => void Object.assign(this.rows.planner_calendar_accounts.get(id) ?? {}, patch),
+      eventKeys: async (accountId) =>
+        new Map([...events.values()].filter((e) => e.account_id === accountId && !e.deleted_at).map((e) => [eventKey(String(e.calendar_href), String(e.uid)), `${e.etag}|${e.start_at}|${e.end_at}|${e.title}`])),
+      upsertEvents: async (rows: EventRow[]) => {
+        for (const r of rows) {
+          const k = `${r.account_id}|${eventKey(r.calendar_href, r.uid)}`
+          const row = { ...r, id: events.get(k)?.id ?? crypto.randomUUID(), updated_at: new Date().toISOString() } as Row
+          events.set(k, row)
+          logEvent(row)
+        }
+      },
+      tombstoneEvents: async (accountId, keys) => {
+        for (const key of keys) {
+          const row = events.get(`${accountId}|${key}`)
+          if (!row) continue
+          row.deleted_at = new Date().toISOString()
+          logEvent(row)
+        }
+      },
+    }
   }
 
   private select(table: string, q: URLSearchParams): Row[] {

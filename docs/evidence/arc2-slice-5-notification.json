@@ -1,0 +1,19 @@
+{
+  "delivered": {
+    "title": "Stand-up",
+    "body": "in 10 min · 09:00",
+    "tag": "task-1",
+    "url": "/optimo/?date=2026-09-28"
+  },
+  "shownByServiceWorker": [
+    {
+      "title": "Stand-up",
+      "body": "in 10 min · 09:00",
+      "tag": "task-1",
+      "icon": "http://localhost:4173/optimo/icons/icon-192.png",
+      "data": {
+        "url": "/optimo/?date=2026-09-28"
+      }
+    }
+  ]
+}

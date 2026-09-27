@@ -9,7 +9,7 @@ written intent into a scheduled day. Single user (Mark). Everything original —
 
 ## Stack & how to run
 
-- **TypeScript · React 18 · Vite · CSS variables** (tokens: `src/styles/tokens.css`, Eye "Switchboard").
+- **TypeScript · React 18 · Vite · CSS variables** (tokens: `src/styles/tokens.css` = Eye FINAL "Meadow" verbatim + `tokens-a11y.css`).
 - **DnD** `@dnd-kit/core` · **local store** `dexie` (IndexedDB) · **PWA** `vite-plugin-pwa` · NLP `chrono-node` + `rrule`.
 - **Backend** Supabase project `press` (`eepjhpyziczrxvirczio`), tables `planner_*`, RLS, Supabase Auth magic link.
   Migrations in `db/*.sql` — applied by **Cowork's Supabase connector**, never from Code.
@@ -26,14 +26,15 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**v0.1 + hotfix-otp (2026-09-27)** — live at https://schnubsy.github.io/optimo/ (public repo schnubsy/optimo).
-Day timeline, inbox + NLP, categories/icons, recurrence, week/month/focus/settings, reminders, export/import,
-Dexie outbox + field-level LWW sync, offline PWA, 5k-task budgets. Sign-in is now a **6-digit emailed code**
-(press's shared template): email → code → `verifyOtp`; link-style sessions still land via onAuthStateChange.
-Gauntlet: 81 unit + 68 Playwright (desktop + iPhone 15, axe) + Lighthouse 100/100 · 98/100. Tests are hermetic
-(`tests/support/fakeSupabase.ts`, incl. `/verify` + 60 s resend window); `tests/sync.real.spec.ts` needs `.env.test.local`.
-Next: Mark signs in on the live URL and gives hands-on feedback → arc-2 checkpoint (calendar provider, web push,
-marquee link card); 🟡 design snags = GitHub issues #1–#12.
+**v0.2 "Meadow" (arc 2, 2026-09-27)** — FINAL pastel design (tokens verbatim + measured a11y layer), chip-as-complete
+pills, floating tab bar + FAB, 76 in-repo glyphs + keyword auto-suggest, snags #1–#12 + resize persistence fixed.
+iCloud CalDAV (read-only) and web push are built and tested but **not live until Mark deploys**: secrets,
+`calendar-connect` / `calendar-sync` / `push-send`, `db/003_cron.sql`, `db/press/optimo_grant.sql` (HANDOFF steps).
+Family Wing launcher `optimo.html` publishes to press at close via `tools/release.js`.
+Gauntlet: 320 unit · 142 Playwright (desktop + iPhone 15, axe) · deno check/test · secret gate · Lighthouse
+100/100 · 98/100. Hermetic fakes: Supabase (`tests/support/fakeSupabase.ts`, runs the real function handlers) +
+CalDAV (`tests/fake/caldav.ts`). Next: Mark's manual steps, on-device check, then arc-3 checkpoint (AI planning,
+reserved Plan tab); 🟡 snags = GitHub issues #15–#27.
 
 ## Project rules
 

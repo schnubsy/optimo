@@ -22,7 +22,9 @@ import { supabase } from './sync/remote'
 import { useSync } from './state/sync'
 import { useUI } from './state/ui'
 import { useDrag } from './state/drag'
-import { SyncBadge } from './components/SyncBadge'
+import { Header, PaneHeader, useScrolled } from './chrome/Header'
+import { TabBar, type TabId } from './chrome/TabBar'
+import { Fab } from './chrome/Fab'
 import { Toast } from './components/Toast'
 import { TaskSheet } from './editor/TaskSheet'
 import { Day } from './views/Day'
@@ -40,10 +42,11 @@ import { applyTheme } from './lib/theme'
 import { keyBefore, inboxOrder } from './inbox/virtual'
 import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
+import { useCalendarSync, useEvents, type EventItem } from './calendar/events'
 import { timelineEls } from './timeline/Timeline'
-import { clampStart, pxToMin, snap } from './timeline/layout'
+import { clampStart, MIN_DURATION, pxToMin, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
-import { addDays, fmtClock, fmtHours, formatDayTitle, fromKey, nowMinutes, todayKey } from './lib/time'
+import { addDays, fromKey, nowMinutes, todayKey } from './lib/time'
 import { useHourPx, useIsMobile } from './lib/useMedia'
 import { deleteItem, moveItem, resizeItem, schedule, toggleComplete, unschedule } from './actions'
 import { seedCategories } from './categories/defaults'
@@ -86,7 +89,9 @@ export function Planner({ userId }: { userId: string }) {
   const settings = useSettings()
   const cats = useCategories()
   const catMap = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats])
-  const { date, view, set, mobileTab: tab } = useUI()
+  const { date, view, set, mobileTab: tab, quickAdd } = useUI()
+  const nearBar = useDrag((s) => s.nearBar)
+  const scrolled = useScrolled()
   const isMobile = useIsMobile()
   const hourPx = useHourPx()
   const now = useNow()
@@ -98,9 +103,23 @@ export function Planner({ userId }: { userId: string }) {
   }, [itemsByDay, date])
   const inboxCount = useInboxCount()
   const isToday = date === todayKey()
-  const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null)
+  const eventsByDay = useEvents(days)
+  const dayEvents = useMemo(() => eventsByDay[date] ?? [], [eventsByDay, date])
+  const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null, dayEvents.filter((e) => !e.event.all_day))
+  useCalendarSync(!!supabase())
   useEffect(() => applyTheme(settings.theme), [settings.theme])
   useEffect(() => startReminders(), [])
+  // a notification click (service worker) or a ?date= deep link opens that day
+  useEffect(() => {
+    const open = (href: string) => {
+      const d = new URL(href, location.href).searchParams.get('date')
+      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) useUI.getState().set({ date: d, view: 'day', mobileTab: 'board' })
+    }
+    open(location.href)
+    const onMsg = (e: MessageEvent) => e.data?.type === 'optimo:open' && open(e.data.url)
+    navigator.serviceWorker?.addEventListener('message', onMsg)
+    return () => navigator.serviceWorker?.removeEventListener('message', onMsg)
+  }, [])
   const itemsRef = useRef(items)
   useEffect(() => {
     itemsRef.current = items
@@ -132,6 +151,10 @@ export function Planner({ userId }: { userId: string }) {
     useUI.getState().set({ selectedId: null })
   }
   const onDragMove = (e: DragMoveEvent) => {
+    const r = e.active.rect.current.translated
+    const bar = document.querySelector('[data-testid="tabbar"]')?.getBoundingClientRect()
+    const near = !!(r && bar && r.bottom > bar.top - 80)
+    if (near !== useDrag.getState().nearBar) useDrag.getState().set({ nearBar: near })
     const o = e.over?.data.current as { type: string; day?: string } | undefined
     const a = e.active.data.current as { item?: Item; task?: Task } | undefined
     if (o?.type === 'timeline' && o.day) {
@@ -146,7 +169,7 @@ export function Planner({ userId }: { userId: string }) {
     if (useDrag.getState().ghost) useDrag.getState().set({ ghost: null })
   }
   const onDragEnd = (e: DragEndEvent) => {
-    useDrag.getState().set({ ghost: null, activeId: null })
+    useDrag.getState().set({ ghost: null, activeId: null, nearBar: false })
     const o = e.over?.data.current as { type: string; day?: string; task?: Task } | undefined
     const a = e.active.data.current as { type: string; item?: Item; task?: Task } | undefined
     if (!o || !a) return
@@ -177,7 +200,8 @@ export function Planner({ userId }: { userId: string }) {
       const cmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
       if (cmdK || (e.key === '/' && !isTyping(e.target))) {
         e.preventDefault()
-        document.getElementById('quickadd')?.focus()
+        if (matchMedia('(max-width: 899px)').matches) useUI.getState().set({ quickAdd: true })
+        else document.getElementById('quickadd')?.focus()
         return
       }
       if (isTyping(e.target) || ui.editingId || ui.draft || e.metaKey || e.ctrlKey || e.altKey) return
@@ -223,7 +247,8 @@ export function Planner({ userId }: { userId: string }) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault()
         const d = e.key === 'ArrowUp' ? -step : step
-        if (e.shiftKey) void resizeItem(sel, Math.max(step, sel.task.duration_min + d))
+        // Shift+↑/↓ resizes by 5 min (never below the minimum); plain arrows nudge by the snap step
+        if (e.shiftKey) void resizeItem(sel, Math.max(MIN_DURATION, sel.task.duration_min + (e.key === 'ArrowUp' ? -5 : 5)))
         else void moveItem(sel, ui.date, clampStart(sel.start + d, sel.task.duration_min))
       } else if (e.key === 'Enter') {
         e.preventDefault()
@@ -239,108 +264,44 @@ export function Planner({ userId }: { userId: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [settings.snap, settings.default_duration])
 
-  const title = formatDayTitle(fromKey(date))
+  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'week' ? 'week' : view === 'settings' ? 'settings' : 'timeline'
+  const onTab = (t: TabId) => {
+    if (t === 'inbox') set({ mobileTab: 'backlog' })
+    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t === 'week' ? 'week' : 'settings' })
+  }
+  const hdr = { date, view, stats, inboxCount, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
   return (
-    <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => useDrag.getState().set({ ghost: null, activeId: null })} autoScroll={{ threshold: { x: 0, y: 0.15 } }}>
+    <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => useDrag.getState().set({ ghost: null, activeId: null, nearBar: false })} autoScroll={{ threshold: { x: 0, y: 0.15 } }}>
       <div className={`app ${isMobile ? 'is-mobile' : 'is-desktop'}`}>
-        <header className="strip">
-          <div className="cell date">
-            <button type="button" className="nav" aria-label="Previous day" onClick={() => set({ date: addDays(date, -1) })}>
-              ‹
-            </button>
-            <h1>{isMobile ? title.replace(/ \d{4}$/, '') : title}</h1>
-            <button type="button" className="nav" aria-label="Next day" onClick={() => set({ date: addDays(date, 1) })}>
-              ›
-            </button>
-            {!isToday && (
-              <button type="button" className="nav today" onClick={() => set({ date: todayKey() })}>
-                Today
-              </button>
-            )}
-          </div>
-          {isToday && !isMobile && (
-            <div className="cell led">
-              <span className="k">Now</span>
-              <span className="v">{fmtClock(now, settings.clock24)}</span>
+        {isMobile ? (
+          <>
+            <Header {...hdr} scrolled={scrolled} />
+            <main className={`pane m-${tab === 'backlog' ? 'inbox' : view}`}>
+              {tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />}
+            </main>
+            <TabBar active={mobileTabId} onChange={onTab} inboxCount={inboxCount} recede={nearBar} />
+            <Fab onClick={() => set({ quickAdd: true })} />
+            {quickAdd && <QuickAdd sheet onDone={() => set({ quickAdd: false })} />}
+          </>
+        ) : (
+          <>
+            <div className="body">
+              <Inbox cats={catMap} />
+              <main className="pane">
+                <PaneHeader {...hdr} />
+                <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />
+              </main>
             </div>
-          )}
-          {!isMobile && (
-            <div className="cell">
-              <span className="k">Planned</span>
-              <span className="v" data-testid="stat-planned">{fmtHours(stats.planned)}</span>
-            </div>
-          )}
-          <div className="cell">
-            <span className="k">Free</span>
-            <span className="v" data-testid="stat-free">{fmtHours(stats.free)}</span>
-          </div>
-          <div className="cell">
-            <span className="k">Done</span>
-            <span className="v" data-testid="stat-done">
-              {stats.done}/{stats.total}
-            </span>
-          </div>
-          {!isMobile && (
-            <div className="cell">
-              <span className="k">Late</span>
-              <span className="v">{stats.late}</span>
-            </div>
-          )}
-          <div className="cell">
-            <span className="k">Unplaced</span>
-            <span className="v" data-testid="stat-unplaced">{inboxCount}</span>
-          </div>
-          <div className="spacer" />
-          {!isMobile && (
-            <nav className="views" aria-label="Views">
-              {(['day', 'week', 'month'] as const).map((v) => (
-                <button key={v} type="button" className={`key ${view === v ? 'on' : ''}`} aria-pressed={view === v} onClick={() => set({ view: v })}>
-                  <kbd>{v[0].toUpperCase()}</kbd> {v[0].toUpperCase() + v.slice(1)}
-                </button>
-              ))}
-              <button type="button" className={`key ${view === 'settings' ? 'on' : ''}`} aria-pressed={view === 'settings'} onClick={() => set({ view: 'settings' })}>
-                Settings
-              </button>
-            </nav>
-          )}
-          <div className="cell sync">
-            <SyncBadge />
-          </div>
-        </header>
-        {isMobile && <QuickAdd compact />}
-        <div className="body">
-          {!isMobile && <Inbox cats={catMap} />}
-          <main className="pane">
-            {!isMobile && (view === 'day' || view === 'week' || view === 'month') && <QuickAdd />}
-            {isMobile && tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} catMap={catMap} settings={settings} />}
-          </main>
-        </div>
-        {isMobile && (
-          <nav className="tabs" aria-label="Sections">
-            <button type="button" aria-pressed={tab === 'board' && view === 'day'} onClick={() => set({ mobileTab: 'board', view: 'day' })}>
-              <b className="mono">D</b>Board
-            </button>
-            <button type="button" aria-pressed={tab === 'backlog'} onClick={() => set({ mobileTab: 'backlog' })} data-testid="tab-backlog">
-              <b className="mono">{inboxCount}</b>Inbox
-            </button>
-            <button type="button" aria-pressed={tab === 'board' && view === 'week'} onClick={() => set({ mobileTab: 'board', view: 'week' })}>
-              <b className="mono">W</b>Week
-            </button>
-            <button type="button" aria-pressed={tab === 'board' && view === 'settings'} onClick={() => set({ mobileTab: 'board', view: 'settings' })}>
-              <b className="mono">≡</b>More
-            </button>
-          </nav>
-        )}
-        {!isMobile && (
-          <footer className="foot" aria-label="Keyboard">
-            <span><kbd>N</kbd> new</span>
-            <span><kbd>X</kbd> done</span>
-            <span><kbd>↑</kbd><kbd>↓</kbd> move {settings.snap} min</span>
-            <span><kbd>⇧</kbd><kbd>↓</kbd> resize</span>
-            <span><kbd>Enter</kbd> edit</span>
-            <span><kbd>/</kbd> command line</span>
-            <span><kbd>←</kbd><kbd>→</kbd> day</span>
-          </footer>
+            <footer className="foot" aria-label="Keyboard">
+              <span><kbd>N</kbd> new</span>
+              <span><kbd>X</kbd> done</span>
+              <span><kbd>↑</kbd><kbd>↓</kbd> move {settings.snap} min</span>
+              <span><kbd>⇧</kbd><kbd>↓</kbd> resize 5 min</span>
+              <span><kbd>Enter</kbd> edit</span>
+              <span><kbd>/</kbd> quick add</span>
+              <span><kbd>←</kbd><kbd>→</kbd> day</span>
+            </footer>
+          </>
         )}
         <TaskSheet />
         <PlacePicker />
@@ -357,13 +318,13 @@ async function reorderInbox(moving: Task, target: Task) {
   await repo.updateTask(moving.id, { sort_key: keyBefore(same, target.id), priority: target.priority })
 }
 
-function ViewSwitch({ view, date, items, catMap, settings }: { view: string; date: string; items: Item[]; catMap: Map<string, Category>; settings: SettingsData }) {
+function ViewSwitch({ view, date, items, events, catMap, settings }: { view: string; date: string; items: Item[]; events: EventItem[]; catMap: Map<string, Category>; settings: SettingsData }) {
   if (view === 'categories') return <Categories />
   if (view === 'icons') return <IconSheet />
   if (view === 'settings') return <Settings />
   if (view === 'week') return <Week date={date} cats={catMap} settings={settings} />
   if (view === 'month') return <Month date={date} cats={catMap} settings={settings} />
-  return <Day day={date} items={items} cats={catMap} settings={settings} />
+  return <Day day={date} items={items} events={events} cats={catMap} settings={settings} />
 }
 
 function useInboxCount(): number {

@@ -3,7 +3,7 @@ import { addDays, dateKey, fromKey, monthTitle, todayKey, weekStart, weekdayName
 import { useUI } from '../state/ui'
 import { useItems } from '../timeline/items'
 
-/** Month: dot density per day (one dot per task, max 6, coloured by category); tap = jump to that day. */
+/** Month: dot density per day (one dot per task in chip colours, max 4 + "+n"); tap = jump to that day. */
 export function Month({ date, cats, settings }: { date: string; cats: Map<string, Category>; settings: SettingsData }) {
   const set = useUI((s) => s.set)
   const d = fromKey(date)
@@ -48,10 +48,10 @@ export function Month({ date, cats, settings }: { date: string; cats: Map<string
                   >
                     <b className="mono">{fromKey(k).getDate()}</b>
                     <span className="dots" aria-hidden="true">
-                      {its.slice(0, 6).map((i) => (
+                      {its.slice(0, 4).map((i) => (
                         <i key={i.key} className={`cat-${cats.get(i.task.category_id ?? '')?.color ?? 'errand'} ${i.task.completed_at ? 'done' : ''}`} />
                       ))}
-                      {n > 6 && <em className="mono">+{n - 6}</em>}
+                      {n > 4 && <em className="tnum">+{n - 4}</em>}
                     </span>
                   </button>
                 </span>

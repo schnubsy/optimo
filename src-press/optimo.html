@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f8f0ee">
+<title>optimo · Day planner</title>
+<link rel="icon" type="image/svg+xml" href="__ICON__">
+<style>
+/* optimo launcher card — Family Wing (press). Built by optimo/build-press.mjs; edit src-press/, never press/optimo.html.
+   Colours are optimo's FINAL tokens (docs/design/2026-09-27-final/tokens.css); no network at boot (system font stack). */
+:root { --canvas: oklch(0.975 0.012 30); --surface: oklch(0.99 0.006 30); --ink: oklch(0.27 0.02 40); --ink-2: oklch(0.50 0.025 40);
+  --accent: oklch(0.55 0.14 30); --accent-hover: oklch(0.50 0.14 30); --on-accent: oklch(1 0 0); --line: oklch(0.91 0.02 30);
+  --chip: oklch(0.55 0.117 30); --focus: 0 0 0 3px oklch(0.55 0.14 30 / 0.45); }
+@media (prefers-color-scheme: dark) { :root { --canvas: oklch(0.21 0.012 40); --surface: oklch(0.27 0.015 40); --ink: oklch(0.94 0.008 40);
+  --ink-2: oklch(0.74 0.02 40); --accent: oklch(0.78 0.11 30); --accent-hover: oklch(0.82 0.11 30); --on-accent: oklch(0.22 0.02 30);
+  --line: oklch(0.32 0.016 40); --chip: oklch(0.74 0.108 30); --focus: 0 0 0 3px oklch(0.78 0.11 30 / 0.55); } }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font: 400 15px/1.5 "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+main { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; }
+.card { width: min(420px, 100%); padding: 28px 24px 24px; background: var(--surface); border-radius: 28px; box-shadow: 0 8px 24px -12px oklch(0.30 0.04 30 / 0.35), inset 0 0 0 1px var(--line); display: grid; gap: 16px; justify-items: start; }
+.mark { width: 56px; height: 56px; border-radius: 16px; overflow: hidden; }
+.mark img { width: 100%; height: 100%; display: block; }
+h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.15; }
+h1 span { color: var(--accent); }
+p { margin: 0; color: var(--ink-2); font-weight: 600; }
+.open { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 24px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; }
+.open:hover { background: var(--accent-hover); }
+.open:focus-visible { outline: none; box-shadow: var(--focus); }
+.foot { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <section class="card" id="optimo-card" aria-labelledby="optimo-h" hidden data-testid="optimo-card">
+    <div class="mark"><img src="__ICON__" alt="" width="56" height="56"></div>
+    <h1 id="optimo-h">optimo <span>—</span> one timeline for the day</h1>
+    <p>Your day, your inbox and your iCloud calendar in one place. Opens in its own app.</p>
+    <a class="open" href="https://schnubsy.github.io/optimo/" rel="noopener">Open optimo</a>
+    <span class="foot">Family Wing · sign-in shared with the other family tools</span>
+  </section>
+</main>
+<script>
+/* src/vendor/family-gate.js — vendored byte-identical from press/src/family-gate.js (tools/publish-checks.mjs) */
+__FAMILY_GATE__
+</script>
+<script>
+(async function () {
+  'use strict';
+  var card = document.getElementById('optimo-card');
+  if (!window.FamilyGate) { document.querySelector('main').textContent = 'Sign-in unavailable — the gate did not load.'; return; }
+  window.FamilyGate.cfg({ spacesUrl: 'spaces.json' });
+  await window.FamilyGate.require('optimo.html'); // resolves only for a granted Family Wing session
+  card.hidden = false;
+})();
+</script>
+</body>
+</html>

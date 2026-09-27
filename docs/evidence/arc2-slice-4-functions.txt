@@ -1,0 +1,21 @@
+running 2 tests from ./_shared/handlers_test.ts
+connect stores ciphertext only; sync expands the recurring fixture; resync is a no-op ... ok (8ms)
+wrong password is a 401 with a plain message ... ok (161µs)
+
+ok | 2 passed | 0 failed (10ms)
+
+ ✓ tests/unit/ics.test.ts > ICS parsing + recurrence expansion > parses a single timed event with location 2ms
+ ✓ tests/unit/ics.test.ts > ICS parsing + recurrence expansion > expands a daily RRULE (COUNT=10) minus its EXDATE, with the moved instance at its new time 2ms
+ ✓ tests/unit/ics.test.ts > ICS parsing + recurrence expansion > keeps all-day events as all-day at local midnight 0ms
+ ✓ tests/unit/ics.test.ts > ICS parsing + recurrence expansion > clips to the window 0ms
+ ✓ tests/unit/ics.test.ts > ICS parsing + recurrence expansion > drops cancelled events 0ms
+ ✓ tests/unit/caldav.test.ts > AES-GCM secret > round-trips and never stores the plaintext 2ms
+ ✓ tests/unit/caldav.test.ts > AES-GCM secret > rejects a short KEK and a tampered ciphertext 1ms
+ ✓ tests/unit/caldav.test.ts > CalDAV XML > reads multistatus responses whatever the namespace prefix, 200 propstats only 1ms
+ ✓ tests/unit/caldav.test.ts > CalDAV XML > discovers principal → home (partition host) → VEVENT calendars only 2ms
+ ✓ tests/unit/caldav.test.ts > calendar-connect / calendar-sync handlers > connect: wrong password → 401 plain message, nothing stored, password never logged 1ms
+ ✓ tests/unit/caldav.test.ts > calendar-connect / calendar-sync handlers > connect: no JWT → 401 0ms
+ ✓ tests/unit/caldav.test.ts > calendar-connect / calendar-sync handlers > connect: discovers calendars, stores only ciphertext, returns the public row 1ms
+ ✓ tests/unit/caldav.test.ts > calendar-connect / calendar-sync handlers > sync: upserts instances, is idempotent, tombstones vanished events, skips disabled calendars 4ms
+ ✓ tests/unit/caldav.test.ts > calendar-connect / calendar-sync handlers > sync via cron: needs the right x-cron-secret; records a readable last_error on auth failure 0ms
+      Tests  14 passed (14)

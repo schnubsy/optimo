@@ -14,4 +14,5 @@ export function useMedia(query: string): boolean {
 
 export const MOBILE_QUERY = '(max-width: 899px)'
 export const useIsMobile = () => useMedia(MOBILE_QUERY)
-export const useHourPx = () => (useIsMobile() ? 52 : 56)
+// --px-per-min-mobile 1.1 → 66px/h · --px-per-min 1.2 → 72px/h (tokens.css)
+export const useHourPx = () => (useIsMobile() ? 66 : 72)

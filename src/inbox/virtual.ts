@@ -1,6 +1,6 @@
 // Inbox list virtualisation: fixed 44 px rows, render only the visible window + overscan (docs/spec.md §2.9).
 
-export const ROW_H = 44
+export const ROW_H = 56 // 48px row + 8px gap
 
 export function rowWindow(scrollTop: number, viewportH: number, count: number, overscan = 8): { from: number; to: number } {
   if (!viewportH) return { from: 0, to: Math.min(count, 60) }

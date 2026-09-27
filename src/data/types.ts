@@ -67,6 +67,10 @@ export interface SettingsData {
   clock24: boolean
   reminder_lead: number
   focus_min: number
+  /** Icon chosen for a title stem (src/quickadd/suggest.ts titleStem) — wins over the keyword map. */
+  iconOverrides?: Record<string, string>
+  /** IANA zone, written when push is enabled — push-send expands series in the user's wall-clock time. */
+  tz?: string
 }
 
 export const DEFAULT_SETTINGS: SettingsData = {
@@ -109,4 +113,33 @@ export interface OutboxRow {
 export interface MetaRow {
   key: string
   value: unknown
+}
+
+/** A calendar event cached from iCloud (planner_events): server-owned, read-only on every client. */
+export interface CalendarEvent {
+  id: string
+  account_id: string
+  calendar_href: string
+  uid: string
+  title: string
+  location: string | null
+  start_at: string
+  end_at: string
+  all_day: boolean
+  status: string | null
+  color: string | null
+  deleted_at: string | null
+  updated_at?: string
+}
+
+/** planner_calendar_accounts_public — the secret-free view of a connected account. */
+export interface CalendarAccount {
+  id: string
+  provider: 'icloud'
+  label: string
+  username: string
+  calendars: { href: string; name: string; color: string | null; enabled: boolean }[]
+  enabled: boolean
+  last_sync_at: string | null
+  last_error: string | null
 }

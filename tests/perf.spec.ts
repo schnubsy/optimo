@@ -11,6 +11,16 @@ async function seedLibrary(page: Page) {
     const o = (window as any).__optimo
     for (const r of rs) r._kind = o.repo.taskKind(r)
     await o.db.tasks.bulkPut(rs)
+    // arc 2: iCloud events share the timeline — 10 a day over the sync window (−7 d … +60 d)
+    const evs = []
+    const d0 = new Date()
+    d0.setHours(0, 0, 0, 0)
+    for (let day = -7; day < 60; day++)
+      for (let k = 0; k < 10; k++) {
+        const s = new Date(d0.getTime() + day * 86_400_000 + (7 * 60 + k * 75) * 60_000)
+        evs.push({ id: `ev-${day}-${k}`, account_id: 'acc', calendar_href: '/home/', uid: `u-${day}-${k}`, title: `Event ${k}`, location: null, start_at: s.toISOString(), end_at: new Date(s.getTime() + 45 * 60_000).toISOString(), all_day: false, status: null, color: null, deleted_at: null })
+      }
+    await o.db.events.bulkPut(evs)
   }, rows)
   return rows.length
 }
@@ -28,6 +38,7 @@ test.describe('performance at 5k tasks', () => {
     await openApp(page, context)
     const n = await seedLibrary(page)
     expect(n).toBe(5200)
+    expect(await page.evaluate(() => (window as any).__optimo.db.events.count())).toBe(670)
     expect(await page.evaluate(() => (window as any).__optimo.db.tasks.count())).toBeGreaterThanOrEqual(5200)
 
     // day switches: measure data → paint for several days (cold queries each time)
@@ -89,10 +100,10 @@ test.describe('performance at 5k tasks', () => {
       `| drag: 60 pointer moves, long tasks > 50 ms | ${long.length} | 0 | ${long.length === 0 ? '🟢' : '🔴'} |`,
       `| drag moves the slab by transform only | ${transformOnly ? 'yes' : 'no'} | yes | ${transformOnly ? '🟢' : '🔴'} |`,
       `| rAF frames delivered during the drag | ${rafFrames} | — | info |`,
-      `| library | ${n} rows (5 000 tasks + 200 series) | 5 200 | 🟢 |`,
+      `| library | ${n} rows (5 000 tasks + 200 series) + 670 calendar events | 5 200 + 670 | 🟢 |`,
     ].join('\n')
     console.log(table)
-    if (process.env.EVIDENCE) writeFileSync(`docs/evidence/arc1-slice-6-perf-${info.project.name}.md`, `# perf.spec.ts — ${new Date().toISOString()}\n\nday switches (ms): ${day.map((d) => d.toFixed(1)).join(', ')}\n\nfilter (ms): ${filt.map((d) => d.toFixed(1)).join(', ')}\n\n${table}\n`)
+    if (process.env.EVIDENCE) writeFileSync(`docs/evidence/arc2-slice-7-perf-${info.project.name}.md`, `# perf.spec.ts — ${new Date().toISOString()}\n\nday switches (ms): ${day.map((d) => d.toFixed(1)).join(', ')}\n\nfilter (ms): ${filt.map((d) => d.toFixed(1)).join(', ')}\n\n${table}\n`)
 
     expect(dayMax).toBeLessThan(200)
     expect(filterMax).toBeLessThan(50)

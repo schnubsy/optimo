@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Category, Exception, MetaRow, OutboxRow, Settings, Task } from './types'
+import type { CalendarEvent, Category, Exception, MetaRow, OutboxRow, Settings, Task } from './types'
 
 export class OptimoDB extends Dexie {
   tasks!: EntityTable<Task, 'id'>
@@ -8,6 +8,7 @@ export class OptimoDB extends Dexie {
   settings!: EntityTable<Settings, 'id'>
   outbox!: EntityTable<OutboxRow, 'seq'>
   meta!: EntityTable<MetaRow, 'key'>
+  events!: EntityTable<CalendarEvent, 'id'>
 
   constructor(name = 'optimo') {
     super(name)
@@ -20,6 +21,8 @@ export class OptimoDB extends Dexie {
       outbox: '++seq, [table+id]',
       meta: 'key',
     })
+    // arc 2: read-only calendar events pulled from planner_events via the sync log
+    this.version(2).stores({ events: 'id, start_at, account_id' })
   }
 }
 

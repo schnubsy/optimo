@@ -1,11 +1,12 @@
-.focus { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); padding: var(--sp-5); text-align: center; }
-.focus .fk { margin: 0; font-size: var(--fs-12); color: var(--ink-2); letter-spacing: 0.1em; }
-.focus h1 { margin: 0; font-size: clamp(24px, 5vw, 44px); font-weight: var(--fw-black); letter-spacing: -0.02em; max-width: 24ch; }
-.focus .timer { font-size: clamp(56px, 16vw, 120px); font-weight: var(--fw-bold); line-height: 1; }
-.focus .left { margin: 0; color: var(--ink-2); font-size: var(--fs-14); }
-.focus .bar { width: min(480px, 90vw); height: 4px; background: var(--panel-2); }
-.focus .bar span { display: block; height: 100%; background: var(--signal); transform-origin: left; }
-.focus .fsubs { list-style: none; margin: 0; padding: 0; text-align: left; min-width: min(360px, 90vw); }
-.focus .fsubs .chkrow { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--tap-min); border-bottom: 1px solid var(--line); }
-.focus .fsubs input { width: 20px; height: 20px; accent-color: var(--signal); }
+.focus { position: fixed; inset: 0; z-index: 50; background: var(--canvas); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); padding: var(--sp-5); text-align: center; }
+.focus .fk { margin: 0; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--accent-ink); letter-spacing: 0.08em; }
+.focus h1 { margin: 0; font-size: clamp(24px, 5vw, 40px); font-weight: var(--fw-black); letter-spacing: var(--ls-display); max-width: 24ch; }
+.focus .timer { font-size: clamp(56px, 16vw, 112px); font-weight: var(--fw-black); line-height: 1; font-variant-numeric: tabular-nums; }
+.focus .left { margin: 0; color: var(--ink-2); font-size: var(--fs-15); font-weight: var(--fw-semibold); }
+.focus .bar { width: min(480px, 90vw); height: 8px; border-radius: var(--r-pill); background: var(--surface); overflow: hidden; }
+.focus .bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; }
+.focus .fsubs { list-style: none; margin: 0; padding: 0; text-align: left; min-width: min(360px, 90vw); display: grid; gap: 2px; }
+.focus .fsubs li { display: flex; align-items: center; gap: var(--sp-3); min-height: var(--tap-min); }
+.focus .fsubs li.done .sub-t { text-decoration: line-through; color: var(--ink-2); }
 .focus .factions { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; margin-top: var(--sp-3); }
+.focus .primary .ic { vertical-align: -2px; }

@@ -7,7 +7,11 @@ export function applyTheme(theme: SettingsData['theme']) {
   } catch {
     /* ignore */
   }
-  const resolved = theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme
+  const resolved = theme === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme
   document.documentElement.dataset.theme = resolved
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'light' ? '#E9EBEC' : '#212427')
+  // an explicit choice overrides the per-scheme theme-color metas (canvas of the chosen theme)
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
+    if (theme === 'system') m.setAttribute('content', m.getAttribute('media')?.includes('dark') ? '#211d1c' : '#f8f0ee')
+    else m.setAttribute('content', resolved === 'light' ? '#f8f0ee' : '#211d1c')
+  }
 }

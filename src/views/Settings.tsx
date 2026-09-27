@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useSettings } from '../data/hooks'
 import { updateSettings } from '../data/repo'
 import type { SettingsData } from '../data/types'
@@ -7,11 +7,27 @@ import { signOut } from '../auth/session'
 import { fmtClock, todayKey } from '../lib/time'
 import { useUI } from '../state/ui'
 import '../categories/categories.css'
+import { CalendarSettings } from '../calendar/CalendarSettings'
+import { PushSettings } from '../push/PushSettings'
+import { supabase } from '../sync/remote'
 
-const hh = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-const toMin = (v: string) => {
-  const [h, m] = v.split(':').map(Number)
-  return h * 60 + m
+// #12: day bounds are chosen from 15-min steps rendered in the user's clock (a native time field ignores it)
+const STEPS = Array.from({ length: 96 }, (_, i) => i * 15)
+
+function TimeSelect({ label, value, clock24, onChange, testid }: { label: string; value: number; clock24: boolean; onChange: (m: number) => void; testid: string }) {
+  const opts = STEPS.includes(value) ? STEPS : [...STEPS, value].sort((a, b) => a - b)
+  return (
+    <label className="set-row">
+      <span>{label}</span>
+      <select className="mono" value={value} onChange={(e) => onChange(Number(e.target.value))} data-testid={testid}>
+        {opts.map((m) => (
+          <option key={m} value={m}>
+            {fmtClock(m, clock24)}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 }
 
 function Seg<T extends string | number | boolean>({ label, value, options, onChange, name }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void; name: string }) {
@@ -34,7 +50,6 @@ export function Settings() {
   const set = useUI((x) => x.set)
   const notify = useUI((x) => x.notify)
   const file = useRef<HTMLInputElement>(null)
-  const [perm, setPerm] = useState(() => (typeof Notification === 'undefined' ? 'unsupported' : Notification.permission))
   const up = (p: Partial<SettingsData>) => void updateSettings(p)
 
   return (
@@ -45,14 +60,8 @@ export function Settings() {
       <Seg name="theme" label="Theme" value={s.theme} options={[['system', 'System'], ['dark', 'Dark'], ['light', 'Light']]} onChange={(v) => up({ theme: v })} />
 
       <div className="set-grid">
-        <label className="set-row">
-          <span>Day starts</span>
-          <input type="time" step={900} value={hh(s.day_start)} onChange={(e) => e.target.value && up({ day_start: toMin(e.target.value) })} />
-        </label>
-        <label className="set-row">
-          <span>Day ends</span>
-          <input type="time" step={900} value={hh(s.day_end)} onChange={(e) => e.target.value && up({ day_end: toMin(e.target.value) })} />
-        </label>
+        <TimeSelect label="Day starts" value={s.day_start} clock24={s.clock24} onChange={(m) => up({ day_start: m })} testid="set-day-start" />
+        <TimeSelect label="Day ends" value={s.day_end} clock24={s.clock24} onChange={(m) => up({ day_end: m })} testid="set-day-end" />
         <label className="set-row">
           <span>Default duration (min)</span>
           <input type="number" min={5} step={5} value={s.default_duration} onChange={(e) => up({ default_duration: Math.max(5, Number(e.target.value)) })} />
@@ -72,15 +81,9 @@ export function Settings() {
       <Seg name="week" label="Week starts on" value={s.week_start} options={[[1, 'Monday'], [0, 'Sunday']]} onChange={(v) => up({ week_start: v })} />
       <Seg name="clock" label="Clock" value={s.clock24} options={[[true, `24 h (${fmtClock(13 * 60)})`], [false, `12 h (${fmtClock(13 * 60, false)})`]]} onChange={(v) => up({ clock24: v })} />
 
-      <fieldset className="set-row">
-        <legend>Reminders</legend>
-        <p className="muted">In-app while optimo is open{perm === 'granted' ? ', with system notifications.' : '.'} Push arrives in a later version.</p>
-        {perm === 'default' && (
-          <button type="button" className="ghost-btn" onClick={() => Notification.requestPermission().then(setPerm)}>
-            Allow notifications
-          </button>
-        )}
-      </fieldset>
+      {supabase() && <CalendarSettings />}
+
+      <PushSettings />
 
       <fieldset className="set-row">
         <legend>Organise</legend>
