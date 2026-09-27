@@ -78,10 +78,10 @@ test.describe('inbox & quick-add', () => {
     let s: ReturnType<typeof seedDay>
     const { errors } = await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
     const tl = page.getByTestId('timeline')
-    await tl.evaluate((el) => (el.scrollTop = 16 * 56))
+    await tl.evaluate((el) => (el.scrollTop = 16 * 72))
     const src = (await inboxRow(page, 'Reply to Ellen').locator('.irow-main').boundingBox())!
     const inner = (await page.locator('.tl-inner').boundingBox())!
-    const targetY = inner.y + 17 * 56 + 10 // 17:00 + a little
+    const targetY = inner.y + 17 * 72 + 10 // 17:00 + a little
     await page.mouse.move(src.x + 40, src.y + 10)
     await page.mouse.down()
     for (let i = 1; i <= 12; i++) await page.mouse.move(src.x + 40 + ((inner.x + 200 - src.x - 40) * i) / 12, src.y + 10 + ((targetY - src.y - 10) * i) / 12)
@@ -111,7 +111,7 @@ test.describe('inbox & quick-add', () => {
     await b.scrollIntoViewIfNeeded()
     await b.click()
     await b.click()
-    await page.getByLabel('On the timeline (off = inbox)').uncheck()
+    await page.getByRole('switch', { name: 'On the timeline (off = inbox)' }).click()
     await page.getByTestId('sheet-save').click()
     await expect.poll(async () => (await row(page, s!.ids.guitar)).start_at).toBeNull()
     await showInbox(page)
@@ -153,7 +153,7 @@ test.describe('inbox & quick-add', () => {
     test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1')
     await openApp(page, context, { seed: seedDay })
     await page.getByTestId('quickadd').fill('Gym every weekday for 1h #health !!')
-    await page.getByTestId('timeline').evaluate((el) => (el.scrollTop = 6.5 * 56))
+    await page.getByTestId('timeline').evaluate((el) => (el.scrollTop = 6.5 * 72))
     await page.screenshot({ path: `docs/evidence/arc1-slice-4-inbox-${info.project.name}.png` })
     if (await isMobile(page)) {
       await showInbox(page)

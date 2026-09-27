@@ -125,3 +125,22 @@ export function pushDown(spans: Span[], movedId: string): Span[] {
   }
   return [...out.values()]
 }
+
+/**
+ * Three or more short pills (< shortMin) starting within 30 min collapse into one "+n" pill (design spec §4).
+ * Returns the clusters (ids in start order); pills not in a cluster render normally.
+ */
+export function clusterShort(spans: Span[], shortMin = 27, window = 30, min = 3): string[][] {
+  const shorts = spans.filter((s) => s.end - s.start < shortMin).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id))
+  const out: string[][] = []
+  let i = 0
+  while (i < shorts.length) {
+    let j = i
+    while (j + 1 < shorts.length && shorts[j + 1].start - shorts[i].start < window) j++
+    if (j - i + 1 >= min) {
+      out.push(shorts.slice(i, j + 1).map((s) => s.id))
+      i = j + 1
+    } else i++
+  }
+  return out
+}

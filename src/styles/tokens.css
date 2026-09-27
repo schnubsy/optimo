@@ -1,21 +1,266 @@
-/* Eye LITE 2026-09-26 — Switchboard tokens, verbatim from docs/design/2026-09-26-lite/directions.md */
-:root{
-  --font-ui:"Chivo",system-ui,sans-serif; --font-mono:"Chivo Mono",ui-monospace,monospace;
-  --fs-10:10px; --fs-11:11px; --fs-12:12px; --fs-13:13px; --fs-14:14px; --fs-16:16px; --fs-20:20px; --fs-28:28px;
-  --fw-regular:400; --fw-bold:700; --fw-black:900; --lh-tight:1.3; --lh-base:1.45;
-  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
-  --r:2px; --border:1px; --border-active:2px; --stripe:4px;
-  --shadow:none; --shadow-grab:0 8px 0 rgba(0,0,0,.35);
-  --t-state:90ms; --t-sheet:160ms; --t-drag:0ms; --ease:linear;
-  --hour-h:56px; --hour-h-mobile:52px; --tap-min:44px;
-  --bg:#212427; --panel:#2A2E32; --panel-2:#33383D; --line:#3F454B; --line-strong:#575E66;
-  --ink:#F1F2F3; --ink-2:#A6ADB4; --ink-3:#737B83;
-  --signal:#4D7CFF; --signal-soft:rgba(77,124,255,.16);
-  --cat-work:#6E8FA8; --cat-meet:#8C7FA8; --cat-health:#7FA083; --cat-personal:#A89478;
-  --cat-family:#A87F86; --cat-errand:#8A9096; --cat-learn:#A6A07F; --cat-home:#7FA09B;
+/* ============================================================================
+   optimo — design tokens · FINAL (Meadow hybrid, pastel edition)
+   Eye FULL review 2026-09-27 · Mark's recipe + amendments 1–4
+   Replaces src/styles/tokens.css. Light = :root, dark = [data-theme="dark"].
+   All colours OKLCH (Safari 15.4+, Chrome 111+, Firefox 113+).
+   Category colour model (per hue H with a per-hue chroma C):
+     light  pill  oklch(0.76  1.0C H)   text on pill oklch(0.28 0.9C H)  ≈ 8–9:1
+            chip  oklch(0.55  1.3C H)   glyph white                       ≥ 4.6:1
+     dark   pill  oklch(0.40  0.8C H)   text on pill oklch(0.93 0.6C H)  ≈ 7.5:1
+            chip  oklch(0.74  1.2C H)   glyph oklch(0.22 0.02 40)         ≈ 7:1
+   Font: Nunito Sans (Google Fonts)
+   https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---- type ---------------------------------------------------------- */
+  --font-ui: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-ui);
+  --font-time: var(--font-ui); /* always with font-variant-numeric: tabular-nums */
+
+  --fs-10: 0.625rem;  /* tab labels */
+  --fs-11: 0.6875rem; /* micro, week block */
+  --fs-12: 0.75rem;   /* pill time, hour numerals, meta */
+  --fs-13: 0.8125rem; /* chips, free-time label, inbox meta */
+  --fs-14: 0.875rem;  /* short-pill title */
+  --fs-15: 0.9375rem; /* pill title, body, inputs */
+  --fs-17: 1.0625rem; /* section titles */
+  --fs-22: 1.375rem;  /* day title mobile */
+  --fs-24: 1.5rem;    /* sheet title */
+  --fs-28: 1.75rem;   /* day title desktop */
+  --fs-40: 2.5rem;    /* focus timer */
+  --fw-regular: 400; --fw-semibold: 600; --fw-bold: 700; --fw-black: 800;
+  --lh-tight: 1.15; --lh-snug: 1.3; --lh-base: 1.5;
+  --ls-display: -0.01em;
+
+  /* ---- spacing (4px) ------------------------------------------------- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* ---- radius -------------------------------------------------------- */
+  --r-sm: 12px;     /* inputs, week blocks */
+  --r-md: 22px;     /* timeline pill: radius = min(22px, height / 2) */
+  --r-lg: 24px;     /* rail panels, popovers */
+  --r-sheet: 28px;  /* editor sheet, place picker */
+  --r-pill: 999px;  /* chips, bars, FAB, labels, inbox rows */
+
+  /* ---- layout -------------------------------------------------------- */
+  --px-per-min: 1.2;          /* desktop 72px / hour */
+  --px-per-min-mobile: 1.1;   /* iPhone 66px / hour */
+  --gutter-w: 64px; --gutter-w-mobile: 46px;
+  --rail-w: 300px;
+  --pill-min-h: 32px;
+  --pill-pad-x: 14px; --pill-pad-y: 6px; --pill-pad-left: 48px; /* room for chip */
+  --pill-gap: 4px;
+  --chip-size: 32px;          /* the complete control; hit area 44px */
+  --chip-size-sm: 22px;       /* short pills (< 27 min) and inbox rows */
+  --chip-glyph: 18px; --chip-glyph-sm: 13px;
+  --tap-min: 44px;
+  --now-line-w: 2px;
+  --free-dot: 2px;
+  --header-h-mobile: 112px;   /* title + stats + date strip, incl. fade */
+  --header-h-desktop: 72px;
+  --tabbar-h: 60px;           /* floating pill bar */
+  --tabbar-inset: 16px;       /* from screen edges */
+  --fab-size: 56px;
+  --scroll-pad-bottom: calc(var(--tabbar-h) + var(--tabbar-inset) + 24px + env(safe-area-inset-bottom, 0px));
+  --bp-desktop: 900px;
+
+  /* ---- neutrals (warm blush, hue 30–40) ------------------------------ */
+  --n-0:   oklch(0.99 0.006 30);
+  --n-50:  oklch(0.975 0.012 30);
+  --n-100: oklch(0.96 0.015 30);
+  --n-200: oklch(0.91 0.02 30);
+  --n-300: oklch(0.85 0.02 35);
+  --n-400: oklch(0.72 0.02 40);
+  --n-500: oklch(0.60 0.02 40);
+  --n-600: oklch(0.50 0.025 40);
+  --n-700: oklch(0.40 0.025 40);
+  --n-800: oklch(0.32 0.02 40);
+  --n-900: oklch(0.27 0.02 40);
+  --n-950: oklch(0.20 0.015 40);
+
+  --canvas: var(--n-50);        /* warm off-white, never pure white */
+  --panel: var(--n-100);        /* inbox rail, sheet */
+  --surface: var(--n-0);        /* inputs, quick-add, inbox rows, "+" buttons */
+  --surface-hover: var(--n-200);
+  --line: var(--n-200);
+  --line-strong: var(--n-400);
+  --ink: var(--n-900);          /* ≈ 12.5:1 on canvas */
+  --ink-2: var(--n-600);        /* ≈ 5.6:1 */
+  --ink-3: var(--n-500);        /* ≈ 4.5:1 hour numerals, captions ≥ 12px/600 */
+  --ink-on-accent: oklch(1 0 0);
+
+  /* ---- accent (dusty coral, H30) ------------------------------------- */
+  --accent: oklch(0.55 0.14 30);        /* white on it 4.8:1 */
+  --accent-hover: oklch(0.50 0.14 30);
+  --accent-active: oklch(0.45 0.13 30);
+  --accent-tint: oklch(0.93 0.035 30);
+  --accent-ink: oklch(0.40 0.12 30);    /* ≈ 7:1 on accent-tint */
+  --focus-ring: 0 0 0 3px oklch(0.55 0.14 30 / 0.45);
+
+  /* ---- semantic ------------------------------------------------------ */
+  --success: oklch(0.52 0.12 145); --success-tint: oklch(0.93 0.035 145); --success-ink: oklch(0.32 0.09 145);
+  --warning: oklch(0.60 0.13 75);  --warning-tint: oklch(0.94 0.05 75);   --warning-ink: oklch(0.36 0.10 75);
+  --danger:  oklch(0.55 0.16 20);  --danger-tint:  oklch(0.93 0.04 20);   --danger-ink:  oklch(0.36 0.12 20);
+  --info:    oklch(0.52 0.12 240); --info-tint:    oklch(0.93 0.035 240); --info-ink:    oklch(0.32 0.09 240);
+
+  /* ---- now / free / done --------------------------------------------- */
+  --now-line: var(--accent);
+  --now-flag-bg: var(--accent);
+  --now-flag-fg: oklch(1 0 0);
+  --free-line: oklch(0.80 0.03 30);       /* dotted rule, 2.6:1 decorative */
+  --free-label-bg: oklch(0.93 0.03 140);  /* sage label pill */
+  --free-label-fg: oklch(0.32 0.08 140);  /* ≈ 8.5:1 */
+  --free-hover-bg: oklch(0.88 0.05 140);
+  --done-fill: oklch(0.93 0.008 40);
+  --done-ink: oklch(0.55 0.02 40);        /* ≈ 4.6:1 on done-fill */
+  --done-chip: oklch(0.72 0.01 40);       /* check glyph white 2.9:1 — decorative; strike + tone are the cues */
+  --elapsed-overlay: oklch(0 0 0 / 0.07);
+
+  /* ---- category model ------------------------------------------------ */
+  --pill-l: 0.76; --pill-cm: 1.0;
+  --pill-ink-l: 0.28; --pill-ink-cm: 0.9;
+  --pill-hover-l: 0.73; --pill-drag-l: 0.70;
+  --chip-l: 0.55; --chip-cm: 1.3;
+  --chip-glyph-color: oklch(1 0 0);
+  --pill-ring: none;
+
+  /* 8 hues — original pastel set: hue + base chroma */
+  --cat-1-h: 250; --cat-1-c: 0.07;  /* slate   — work */
+  --cat-2-h: 30;  --cat-2-c: 0.09;  /* salmon  — meetings */
+  --cat-3-h: 140; --cat-3-c: 0.07;  /* sage    — health / fitness */
+  --cat-4-h: 60;  --cat-4-c: 0.09;  /* peach   — personal */
+  --cat-5-h: 220; --cat-5-c: 0.07;  /* powder  — errands / transport */
+  --cat-6-h: 300; --cat-6-c: 0.07;  /* lilac   — learning */
+  --cat-7-h: 355; --cat-7-c: 0.08;  /* rose    — family */
+  --cat-8-h: 80;  --cat-8-c: 0.05;  /* sand    — home / chores */
+
+  /* resolved pairs (light) — for places that can't compose (charts, badges) */
+  --cat-1-pill: oklch(0.76 0.07 250);  --cat-1-ink: oklch(0.28 0.063 250); --cat-1-chip: oklch(0.55 0.091 250);
+  --cat-2-pill: oklch(0.76 0.09 30);   --cat-2-ink: oklch(0.28 0.081 30);  --cat-2-chip: oklch(0.55 0.117 30);
+  --cat-3-pill: oklch(0.76 0.07 140);  --cat-3-ink: oklch(0.28 0.063 140); --cat-3-chip: oklch(0.55 0.091 140);
+  --cat-4-pill: oklch(0.76 0.09 60);   --cat-4-ink: oklch(0.28 0.081 60);  --cat-4-chip: oklch(0.55 0.117 60);
+  --cat-5-pill: oklch(0.76 0.07 220);  --cat-5-ink: oklch(0.28 0.063 220); --cat-5-chip: oklch(0.55 0.091 220);
+  --cat-6-pill: oklch(0.76 0.07 300);  --cat-6-ink: oklch(0.28 0.063 300); --cat-6-chip: oklch(0.55 0.091 300);
+  --cat-7-pill: oklch(0.76 0.08 355);  --cat-7-ink: oklch(0.28 0.072 355); --cat-7-chip: oklch(0.55 0.104 355);
+  --cat-8-pill: oklch(0.76 0.05 80);   --cat-8-ink: oklch(0.28 0.045 80);  --cat-8-chip: oklch(0.55 0.065 80);
+
+  /* ---- priority: 2px ring on the chip -------------------------------- */
+  --prio-high: oklch(0.55 0.16 20);
+  --prio-med: oklch(0.60 0.13 75);
+  --prio-low: var(--n-400);
+  --prio-ring-w: 2px;
+
+  /* ---- elevation & floating bars ------------------------------------- */
+  --bar-bg: oklch(0.975 0.012 30 / 0.80);
+  --bar-bg-opaque: var(--n-50);           /* reduced-transparency / contrast fallback */
+  --bar-blur: blur(20px) saturate(1.4);
+  --bar-border: 1px solid oklch(1 0 0 / 0.6);
+  --shadow-bar: 0 10px 30px -14px oklch(0.30 0.04 30 / 0.5);
+  --shadow-fab: 0 12px 28px -10px oklch(0.55 0.14 30 / 0.55);
+  --shadow-float: 0 8px 24px -12px oklch(0.30 0.04 30 / 0.35);
+  --shadow-drag: 0 14px 30px -12px oklch(0.30 0.04 30 / 0.45);
+  --shadow-sheet: 0 -12px 40px -20px oklch(0.30 0.04 30 / 0.35);
+  --header-fade: linear-gradient(180deg, var(--canvas) 0%, var(--canvas) 55%, oklch(0.975 0.012 30 / 0) 100%);
+
+  /* ---- motion (slow ease, no bounce) --------------------------------- */
+  --dur-instant: 120ms; --dur-fast: 180ms; --dur-base: 250ms; --dur-reflow: 300ms;
+  --dur-sheet: 400ms; --dur-sheet-close: 260ms; --dur-settle: 350ms; --dur-tab: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decel: cubic-bezier(0, 0, 0, 1);
+  --ease-accel: cubic-bezier(0.3, 0, 1, 1);
+  --ease-emph-decel: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-settle: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --scale-lift: 1.015; --scale-press: 0.98; --lift-y: -1px;
 }
-[data-theme="light"]{
-  --bg:#E9EBEC; --panel:#F5F6F7; --panel-2:#DFE2E5; --line:#C4C9CE; --line-strong:#9AA1A8;
-  --ink:#1A1D20; --ink-2:#4F565D; --ink-3:#7A8189;
-  --signal:#2757E6; --signal-soft:rgba(39,87,230,.14); --shadow-grab:0 8px 0 rgba(0,0,0,.18);
+
+/* ============================ DARK ==================================== */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --n-0:   oklch(0.17 0.010 40);
+  --n-50:  oklch(0.21 0.012 40);   /* canvas: warm charcoal */
+  --n-100: oklch(0.24 0.014 40);
+  --n-200: oklch(0.32 0.016 40);
+  --n-300: oklch(0.38 0.018 40);
+  --n-400: oklch(0.48 0.02 40);
+  --n-500: oklch(0.62 0.02 40);
+  --n-600: oklch(0.74 0.02 40);
+  --n-700: oklch(0.82 0.018 40);
+  --n-800: oklch(0.88 0.012 40);
+  --n-900: oklch(0.94 0.008 40);
+  --n-950: oklch(0.97 0.005 40);
+
+  --canvas: var(--n-50); --panel: var(--n-100); --surface: oklch(0.27 0.015 40); --surface-hover: var(--n-300);
+  --line: var(--n-200); --line-strong: var(--n-400);
+  --ink: var(--n-900); --ink-2: var(--n-600); --ink-3: var(--n-500);
+  --ink-on-accent: oklch(0.22 0.02 30);
+
+  --accent: oklch(0.78 0.11 30); --accent-hover: oklch(0.82 0.11 30); --accent-active: oklch(0.72 0.11 30);
+  --accent-tint: oklch(0.32 0.05 30); --accent-ink: oklch(0.88 0.07 30);
+  --focus-ring: 0 0 0 3px oklch(0.78 0.11 30 / 0.55);
+
+  --success: oklch(0.78 0.11 145); --success-tint: oklch(0.32 0.05 145); --success-ink: oklch(0.88 0.07 145);
+  --warning: oklch(0.82 0.11 75);  --warning-tint: oklch(0.32 0.05 75);  --warning-ink: oklch(0.88 0.07 75);
+  --danger:  oklch(0.76 0.13 20);  --danger-tint:  oklch(0.32 0.05 20);  --danger-ink:  oklch(0.88 0.07 20);
+  --info:    oklch(0.78 0.10 240); --info-tint:    oklch(0.32 0.05 240); --info-ink:    oklch(0.88 0.07 240);
+
+  --now-line: var(--accent); --now-flag-bg: var(--accent); --now-flag-fg: oklch(0.22 0.02 30);
+  --free-line: oklch(0.45 0.02 40); --free-label-bg: oklch(0.32 0.05 140); --free-label-fg: oklch(0.88 0.07 140); --free-hover-bg: oklch(0.38 0.06 140);
+  --done-fill: oklch(0.27 0.008 40); --done-ink: oklch(0.62 0.02 40); --done-chip: oklch(0.42 0.01 40);
+  --elapsed-overlay: oklch(1 0 0 / 0.08);
+
+  --pill-l: 0.40; --pill-cm: 0.8;
+  --pill-ink-l: 0.93; --pill-ink-cm: 0.6;
+  --pill-hover-l: 0.44; --pill-drag-l: 0.48;
+  --chip-l: 0.74; --chip-cm: 1.2;
+  --chip-glyph-color: oklch(0.22 0.02 40);
+  --pill-ring: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+
+  --cat-1-pill: oklch(0.40 0.056 250); --cat-1-ink: oklch(0.93 0.042 250); --cat-1-chip: oklch(0.74 0.084 250);
+  --cat-2-pill: oklch(0.40 0.072 30);  --cat-2-ink: oklch(0.93 0.054 30);  --cat-2-chip: oklch(0.74 0.108 30);
+  --cat-3-pill: oklch(0.40 0.056 140); --cat-3-ink: oklch(0.93 0.042 140); --cat-3-chip: oklch(0.74 0.084 140);
+  --cat-4-pill: oklch(0.40 0.072 60);  --cat-4-ink: oklch(0.93 0.054 60);  --cat-4-chip: oklch(0.74 0.108 60);
+  --cat-5-pill: oklch(0.40 0.056 220); --cat-5-ink: oklch(0.93 0.042 220); --cat-5-chip: oklch(0.74 0.084 220);
+  --cat-6-pill: oklch(0.40 0.056 300); --cat-6-ink: oklch(0.93 0.042 300); --cat-6-chip: oklch(0.74 0.084 300);
+  --cat-7-pill: oklch(0.40 0.064 355); --cat-7-ink: oklch(0.93 0.048 355); --cat-7-chip: oklch(0.74 0.096 355);
+  --cat-8-pill: oklch(0.40 0.040 80);  --cat-8-ink: oklch(0.93 0.030 80);  --cat-8-chip: oklch(0.74 0.060 80);
+
+  --prio-high: oklch(0.76 0.13 20); --prio-med: oklch(0.82 0.11 75); --prio-low: var(--n-400);
+
+  --bar-bg: oklch(0.21 0.012 40 / 0.78);
+  --bar-bg-opaque: var(--n-50);
+  --bar-border: 1px solid oklch(1 0 0 / 0.08);
+  --shadow-bar: 0 10px 30px -14px oklch(0 0 0 / 0.8);
+  --shadow-fab: 0 12px 28px -10px oklch(0.78 0.11 30 / 0.4);
+  --shadow-float: 0 8px 24px -12px oklch(0 0 0 / 0.6);
+  --shadow-drag: 0 14px 30px -12px oklch(0 0 0 / 0.7);
+  --shadow-sheet: 0 -12px 40px -20px oklch(0 0 0 / 0.7);
+  --header-fade: linear-gradient(180deg, var(--canvas) 0%, var(--canvas) 55%, oklch(0.21 0.012 40 / 0) 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) { color-scheme: dark; }
+}
+
+/* ============================ FALLBACKS ================================ */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root, [data-theme="dark"] { --bar-bg: var(--bar-bg-opaque); --bar-blur: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --pill-ink-l: 0.20; --line: var(--n-400); --free-line: var(--n-500); --ink-3: var(--n-600); }
+  [data-theme="dark"] { --pill-ink-l: 0.97; --line: var(--n-400); }
+}
+
+/* ============================ REDUCED MOTION ========================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms; --dur-fast: 120ms; --dur-base: 120ms; --dur-reflow: 0ms;
+    --dur-sheet: 160ms; --dur-sheet-close: 120ms; --dur-settle: 0ms; --dur-tab: 0ms;
+    --ease-settle: linear; --scale-lift: 1; --scale-press: 1; --lift-y: 0px;
+  }
 }

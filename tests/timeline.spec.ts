@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
 import { openApp, row, seedDay } from './support/app'
 
-const hourPx = (page: Page) => page.evaluate(() => (matchMedia('(max-width: 899px)').matches ? 52 : 56))
+const hourPx = (page: Page) => page.evaluate(() => (matchMedia('(max-width: 899px)').matches ? 66 : 72))
 const block = (page: Page, id: string) => page.locator(`[data-testid="block"][data-id="${id}"]`)
 
 async function dragBy(page: Page, from: { x: number; y: number }, dy: number) {
@@ -159,7 +159,7 @@ test.describe('day timeline', () => {
     const { errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     const st = block(page, ids!.standup)
     await st.scrollIntoViewIfNeeded()
-    await st.getByRole('button', { name: /Complete/ }).click()
+    await st.getByRole('button', { name: /^Mark .* done$/ }).click()
     await expect(st).toHaveClass(/done/)
     await expect(page.getByTestId('stat-done')).toHaveText('2/10')
     await page.getByTestId('toast').getByRole('button', { name: 'Undo' }).click()

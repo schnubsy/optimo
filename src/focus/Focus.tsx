@@ -76,11 +76,11 @@ export function Focus() {
       {task.subtasks.length > 0 && (
         <ul className="fsubs">
           {task.subtasks.map((s, i) => (
-            <li key={s.id}>
-              <label className="chkrow">
-                <input type="checkbox" checked={s.done} onChange={(e) => patchItem(item, { subtasks: task.subtasks.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)) })} />
-                <span>{s.title}</span>
-              </label>
+            <li key={s.id} className={s.done ? 'done' : ''}>
+              <button type="button" className="sub-chip" aria-pressed={s.done} aria-label={`Mark ${s.title} done`} onClick={() => patchItem(item, { subtasks: task.subtasks.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })}>
+                {s.done && <Icon name="check" size={14} />}
+              </button>
+              <span className="sub-t">{s.title}</span>
             </li>
           ))}
         </ul>

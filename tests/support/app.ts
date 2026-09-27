@@ -68,6 +68,11 @@ export async function openApp(page: Page, context: BrowserContext, opts: { seed?
     const o = (window as any).__optimo
     return (await o.db.categories.count()) >= 8 && (await o.db.outbox.count()) === 0
   })).toBe(true)
+  if (opts.theme) {
+    // the theme is a synced setting (planner_settings.data.theme); the localStorage copy only prevents a flash
+    await page.evaluate((t) => (window as any).__optimo.repo.updateSettings({ theme: t }), opts.theme)
+    await expect(page.locator('html')).toHaveAttribute('data-theme', opts.theme)
+  }
   await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
   return { server, errors }
 }

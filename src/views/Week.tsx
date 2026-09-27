@@ -27,6 +27,7 @@ const WBlock = memo(function WBlock({ item, col, cols, cat, clock24 }: { item: I
       style={{
         top: (item.start / 60) * WEEK_HOUR_PX,
         height: h,
+        borderRadius: Math.min(22, h / 2), // pill radius = min(22px, height / 2)
         left: `calc(${(100 * col) / cols}% + 2px)`,
         width: `calc(${100 / cols}% - 4px)`,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -36,7 +37,7 @@ const WBlock = memo(function WBlock({ item, col, cols, cat, clock24 }: { item: I
       data-id={item.task.id}
     >
       <span className="wt">
-        {h >= 30 && <Icon name={cat?.icon ?? 'dot'} size={11} />}
+        <span className="wchip" aria-hidden="true"><Icon name={item.task.completed_at ? 'check' : (cat?.icon ?? 'dot')} size={11} /></span>
         <span className="tt">{item.task.title || 'Untitled'}</span>
       </span>
       {h >= 30 && <span className="wm mono">{fmtClock(item.start, clock24)}</span>}
@@ -49,14 +50,14 @@ function DayColumn({ day, items, cats, settings, isToday, now }: { day: string; 
   const timed = items.filter((i) => !i.task.all_day)
   const placed = layoutColumns(timed.map((i) => ({ id: i.key, start: i.start, end: i.end })))
   const by = new Map(timed.map((i) => [i.key, i]))
-  // #4: free time stays visible one view out — compact, unlabelled rows for gaps of 30 min or more
-  const free = freeRows(timed, settings.day_start, settings.day_end, 30)
+  // #4: free time stays visible one view out — a compact dotted rule for gaps of 45 min or more
+  const free = freeRows(timed, settings.day_start, settings.day_end, 45)
   return (
     <div className={`wcol ${isOver ? 'over' : ''} ${isToday ? 'today' : ''}`} ref={setNodeRef} data-testid="week-col" data-day={day}>
       <div className="oob" style={{ top: 0, height: (settings.day_start / 60) * WEEK_HOUR_PX }} />
       <div className="oob" style={{ top: (settings.day_end / 60) * WEEK_HOUR_PX, bottom: 0 }} />
       {free.map((r) => (
-        <div key={r.start} className="wfree" style={{ top: (r.start / 60) * WEEK_HOUR_PX + 1, height: (r.len / 60) * WEEK_HOUR_PX - 2 }} data-testid="week-free" aria-hidden="true" />
+        <div key={r.start} className="wfree" style={{ top: (r.start / 60) * WEEK_HOUR_PX + 6, height: (r.len / 60) * WEEK_HOUR_PX - 12 }} data-testid="week-free" aria-hidden="true" />
       ))}
       {placed.map((p) => (
         <WBlock key={p.id} item={by.get(p.id)!} col={p.col} cols={p.cols} cat={cats.get(by.get(p.id)!.task.category_id ?? '')} clock24={settings.clock24} />

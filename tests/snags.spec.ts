@@ -25,7 +25,7 @@ test.describe('snags #1–#12', () => {
     await expect(b).toHaveAttribute('data-late', 'true')
     await expect(b.locator('.blk-main')).toHaveAccessibleName(/, late/)
     // the cue is text, not colour alone
-    expect(await b.locator('.tm b').evaluate((el) => getComputedStyle(el, '::after').content)).toContain('late')
+    expect(await b.locator('.time b').evaluate((el) => getComputedStyle(el, '::after').content)).toContain('late')
   })
 
   test('#2 priority is a label, not an unlabeled inner rule', async ({ page, context }) => {
@@ -73,26 +73,36 @@ test.describe('snags #1–#12', () => {
     await openApp(page, context, { seed: seedDay })
     await expect(page.getByTestId('stat-unplaced')).toHaveCount(0)
     expect((await page.locator('.strip').boundingBox())!.height).toBeLessThanOrEqual(44 + 60) // one 40px row + safe-area top
-    const rows = await page.locator('.strip .cell').evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size)
+    const rows = await page.locator('.strip .cell').evaluateAll((els) => new Set(els.map((e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.height / 2) / 8) })).size)
     expect(rows).toBe(1)
     await expect(page.getByTestId('parse-row')).toBeHidden()
     await page.getByTestId('quickadd').focus()
     await expect(page.getByTestId('parse-row')).toBeVisible()
   })
 
-  test('#7 hour lines do not run through free rows', async ({ page, context }) => {
+  test('#7 hour lines do not run through the free-time label', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
-    const bg = await page.getByTestId('free-row').first().evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(bg).not.toBe('rgba(0, 0, 0, 0)')
+    // arc 2: free time is a dotted rule with an opaque sage label pill that sits above the dashed hour lines
+    const label = page.getByTestId('free-row').filter({ has: page.locator('.free-label') }).first().locator('.free-label')
+    await label.scrollIntoViewIfNeeded()
+    expect(await label.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)')
   })
 
-  test('#8 checkboxes in the editor are square slabs, not native rounded boxes', async ({ page, context }) => {
+  test('#8 no native checkboxes in the editor or focus — subtasks toggle on their own chip', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
-    const box = page.getByRole('dialog').locator('.subs input').first()
-    await expect(box).toBeVisible()
-    expect(await box.evaluate((el) => getComputedStyle(el).appearance)).toBe('none')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(page.locator('input[type="checkbox"]')).toHaveCount(0)
+    const sub = dialog.getByRole('button', { name: 'Mark Rollback done' })
+    await expect(sub).toHaveAttribute('aria-pressed', 'false')
+    await sub.click()
+    await expect(sub).toHaveAttribute('aria-pressed', 'true')
+    await page.keyboard.press('Escape')
+    await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ view: 'focus', focusId: id }), ids!.plan)
+    await expect(page.getByTestId('focus')).toBeVisible()
+    await expect(page.locator('input[type="checkbox"]')).toHaveCount(0)
   })
 
   test('#9 focus hero shows time left; elapsed is secondary', async ({ page, context }) => {

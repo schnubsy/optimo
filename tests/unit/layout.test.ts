@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest'
-import { clampStart, firstFit, freeRows, isLate, isOutOfBounds, layoutColumns, MIN_DURATION, pushDown, resizeTo, snap } from '../../src/timeline/layout'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { OptimoDB, useDatabase, db } from '../../src/data/db'
+import * as repo from '../../src/data/repo'
+import { resizeItem } from '../../src/actions'
+import { toItem } from '../../src/timeline/items'
+import { clampStart, clusterShort, firstFit, freeRows, isLate, isOutOfBounds, layoutColumns, MIN_DURATION, pushDown, resizeTo, snap } from '../../src/timeline/layout'
 import { dayStats } from '../../src/views/stats'
 import { visibleWindow } from '../../src/timeline/virtual'
 
@@ -111,5 +115,37 @@ describe('isLate (#1)', () => {
     expect(isLate(600, true, 650)).toBe(false)
     expect(isLate(700, false, 650)).toBe(false)
     expect(isLate(600, false, null)).toBe(false)
+  })
+})
+
+describe('resize commit (slice 1 + 2)', () => {
+  beforeEach(async () => {
+    useDatabase(new OptimoDB(`t-${Math.random()}`))
+    await db.open()
+  })
+  it('writes duration_min only — never start_at — through the repo layer', async () => {
+    const t = await repo.createTask({ title: 'Plan', start_at: '2026-09-26T14:00:00.000Z', duration_min: 90 })
+    vi.useFakeTimers({ now: Date.now() + 5000, toFake: ['Date'] })
+    await resizeItem(toItem(t, '2026-09-26'), 120)
+    vi.useRealTimers()
+    const after = (await db.tasks.get(t.id))!
+    expect(after.duration_min).toBe(120)
+    expect(after.start_at).toBe(t.start_at)
+    expect(after.field_ts.duration_min).toBeGreaterThan(t.field_ts.duration_min)
+    expect(after.field_ts.start_at).toBe(t.field_ts.start_at)
+    const out = await db.outbox.toArray()
+    expect(out.at(-1)!.payload.duration_min).toBe(120)
+  })
+})
+
+describe('clusterShort (+n pill)', () => {
+  it('collapses three or more short pills starting within 30 min', () => {
+    const spans = [s('a', 600, 615), s('b', 610, 625), s('c', 625, 640), s('d', 700, 760)]
+    expect(clusterShort(spans)).toEqual([['a', 'b', 'c']])
+  })
+  it('leaves two short pills, long pills and spread-out shorts alone', () => {
+    expect(clusterShort([s('a', 600, 615), s('b', 610, 625)])).toEqual([])
+    expect(clusterShort([s('a', 600, 660), s('b', 605, 665), s('c', 610, 670)])).toEqual([])
+    expect(clusterShort([s('a', 600, 615), s('b', 640, 655), s('c', 680, 695)])).toEqual([])
   })
 })

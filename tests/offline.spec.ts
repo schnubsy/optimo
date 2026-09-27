@@ -29,7 +29,7 @@ test.describe('offline PWA', () => {
     await page.keyboard.press('Escape')
     const standup = page.locator(`[data-testid="block"][data-id="${s!.ids.standup}"]`)
     await standup.scrollIntoViewIfNeeded()
-    await standup.getByRole('button', { name: /Complete/ }).click()
+    await standup.getByRole('button', { name: /^Mark .* done$/ }).click()
     await expect(standup).toHaveClass(/done/)
     await expect.poll(async () => (await row(page, s!.ids.lunch)).start_at).toContain(':05:')
     await expect(page.getByTestId('sync-badge')).toContainText('queued')

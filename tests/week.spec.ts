@@ -68,7 +68,7 @@ test.describe('week, month, focus, settings', () => {
     const blk = page.locator('[data-testid="block"]', { hasText: 'Stand-up' })
     await blk.scrollIntoViewIfNeeded()
     await expect(blk).toHaveAttribute('data-start', String(9 * 60 + 15))
-    await blk.getByRole('button', { name: /Complete/ }).click()
+    await blk.getByRole('button', { name: /^Mark .* done$/ }).click()
     await expect(blk).toHaveClass(/done/)
     await setView(page, 'week')
     await expect(page.locator('.wblk.done', { hasText: 'Stand-up' })).toHaveCount(1)

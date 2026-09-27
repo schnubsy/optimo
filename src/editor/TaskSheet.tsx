@@ -20,6 +20,17 @@ const PRIORITIES: { v: Priority; label: string }[] = [
   { v: 3, label: 'High' },
 ]
 const REMINDER_CHOICES = [0, 5, 10, 15, 30, 60]
+const DURATION_CHOICES = [15, 30, 45, 60, 90, 120]
+
+/** A labelled on/off switch (role="switch") — the design system has no tick boxes anywhere. */
+function Switch({ label, on, onChange, testid }: { label: string; on: boolean; onChange: (v: boolean) => void; testid?: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} className="switch-row" onClick={() => onChange(!on)} data-testid={testid}>
+      <span>{label}</span>
+      <i className="switch" aria-hidden="true" />
+    </button>
+  )
+}
 
 
 interface Form {
@@ -157,46 +168,41 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
   return (
     <div className="sheet-wrap" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <form ref={formRef} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" onSubmit={save}>
+        <i className="grabber" aria-hidden="true" />
         <header className="sheet-hd">
           <h2 id="sheet-h">{task ? (occ ? 'Edit occurrence' : 'Edit task') : 'New task'}</h2>
-          <button type="button" className="ghost-btn" onClick={close} aria-label="Close">
-            Esc
+          <button type="button" className="icon-btn" onClick={close} aria-label="Close">
+            <Icon name="close" size={16} />
           </button>
         </header>
 
-        <label className="fld">
-          <span>Title</span>
+        <label className="fld title-fld">
+          <span className="sr-only">Title</span>
           <input ref={titleRef} value={form.title} onChange={(e) => up({ title: e.target.value })} placeholder="What needs doing" data-testid="sheet-title" />
         </label>
 
-        <div className="row2">
-          <label className="fld">
-            <span>Category</span>
-            <select value={form.category_id ?? ''} onChange={(e) => up({ category_id: e.target.value || null })}>
-              <option value="">None</option>
-              {cats.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <fieldset className="fld seg">
-            <legend>Priority</legend>
-            <div>
-              {PRIORITIES.map((p) => (
-                <button type="button" key={p.v} aria-pressed={form.priority === p.v} onClick={() => up({ priority: p.v })}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </div>
+        <fieldset className="fld">
+          <legend>Category</legend>
+          <div className="cat-chips" data-testid="sheet-category">
+            {cats.map((c) => (
+              <button type="button" key={c.id} className={`cat-chip cat-${c.color}`} aria-pressed={form.category_id === c.id} aria-label={c.name} title={c.name} onClick={() => up({ category_id: form.category_id === c.id ? null : c.id })}>
+                <Icon name={c.icon} size={18} />
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="fld seg">
+          <legend>Priority</legend>
+          <div>
+            {PRIORITIES.map((p) => (
+              <button type="button" key={p.v} aria-pressed={form.priority === p.v} onClick={() => up({ priority: p.v })}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-        <label className="chkrow">
-          <input type="checkbox" checked={form.scheduled} onChange={(e) => up({ scheduled: e.target.checked })} />
-          <span>On the timeline (off = inbox)</span>
-        </label>
+        <Switch label="On the timeline (off = inbox)" on={form.scheduled} onChange={(v) => up({ scheduled: v })} testid="sheet-scheduled" />
         {form.scheduled && (
           <>
             <div className="row3">
@@ -213,11 +219,15 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
                 <input type="number" min={0} step={settings.snap} value={form.duration_min} onChange={(e) => up({ duration_min: Number(e.target.value) })} data-testid="sheet-duration" />
               </label>
             </div>
+            <div className="chips dur-chips" role="group" aria-label="Duration">
+              {DURATION_CHOICES.map((m) => (
+                <button type="button" key={m} aria-pressed={form.duration_min === m} onClick={() => up({ duration_min: m })}>
+                  {fmtDur(m)}
+                </button>
+              ))}
+            </div>
             <div className="row2">
-              <label className="chkrow">
-                <input type="checkbox" checked={form.all_day} onChange={(e) => up({ all_day: e.target.checked })} />
-                <span>All day</span>
-              </label>
+              <Switch label="All day" on={form.all_day} onChange={(v) => up({ all_day: v })} />
               <label className="fld">
                 <span>Repeat</span>
                 <select value={form.repeat} onChange={(e) => up({ repeat: e.target.value })} disabled={!!occ} data-testid="sheet-repeat">
@@ -236,15 +246,17 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
           <legend>Subtasks</legend>
           <ul className="subs">
             {form.subtasks.map((s, i) => (
-              <li key={s.id}>
-                <label className="chkrow">
-                  <input
-                    type="checkbox"
-                    checked={s.done}
-                    onChange={(e) => up({ subtasks: form.subtasks.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)) })}
-                  />
-                  <span>{s.title}</span>
-                </label>
+              <li key={s.id} className={s.done ? 'done' : ''}>
+                <button
+                  type="button"
+                  className="sub-chip"
+                  aria-pressed={s.done}
+                  aria-label={`Mark ${s.title} done`}
+                  onClick={() => up({ subtasks: form.subtasks.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })}
+                >
+                  {s.done && <Icon name="check" size={14} />}
+                </button>
+                <span className="sub-t">{s.title}</span>
                 <button type="button" className="ghost-btn" aria-label={`Remove ${s.title}`} onClick={() => up({ subtasks: form.subtasks.filter((_, j) => j !== i) })}>
                   ×
                 </button>
@@ -305,7 +317,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
         <footer className="sheet-ft">
           {task && (
             <>
-              <button type="button" className="ghost-btn" onClick={() => deleteItem({ task, occurrence: occ ? { seriesId: task.id, date: occ } : undefined }).then(close)}>
+              <button type="button" className="text-danger" onClick={() => deleteItem({ task, occurrence: occ ? { seriesId: task.id, date: occ } : undefined }).then(close)}>
                 Delete
               </button>
               <button

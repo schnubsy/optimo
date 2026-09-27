@@ -5,14 +5,14 @@ import { fmtClock, isoAt, todayKey } from '../lib/time'
 import { useHourPx } from '../lib/useMedia'
 import { useDrag } from '../state/drag'
 import { useUI } from '../state/ui'
-import { resizeItem, toggleComplete } from '../actions'
+import { patchItem, resizeItem, toggleComplete } from '../actions'
 import { AllDayStrip } from './AllDayStrip'
-import { Block } from './Block'
-import { FreeRow } from './FreeRow'
+import { Block, pillHeight } from './Block'
+import { FreeGap } from './FreeGap'
 import { HourRail } from './HourRail'
 import { NowLine, useNow } from './NowLine'
 import type { Item } from './items'
-import { freeRows, isLate, isOutOfBounds, layoutColumns } from './layout'
+import { clusterShort, freeRows, isLate, isOutOfBounds, layoutColumns } from './layout'
 import { visibleWindow } from './virtual'
 
 /** Timeline inner elements by day — drop maths reads their live rect. */
@@ -24,6 +24,33 @@ function DropGhost({ day, hourPx, clock24 }: { day: string; hourPx: number; cloc
   return (
     <div className="ghost" style={{ transform: `translateY(${(ghost.start / 60) * hourPx}px)`, height: (ghost.len / 60) * hourPx }} data-testid="drop-ghost">
       <i className="mono">{fmtClock(ghost.start, clock24)}</i>
+    </div>
+  )
+}
+
+/** "+n" pill standing in for three or more short pills within 30 min; opens a list (design spec §4). */
+function ClusterPill({ items, hourPx, clock24, cats }: { items: Item[]; hourPx: number; clock24: boolean; cats: Map<string, Category> }) {
+  const [open, setOpen] = useState(false)
+  const set = useUI((s) => s.set)
+  const first = items[0]
+  const end = Math.max(...items.map((i) => i.end))
+  return (
+    <div className="cluster" style={{ top: (first.start / 60) * hourPx, height: pillHeight(end - first.start, hourPx) }} data-testid="cluster">
+      <button type="button" className="cluster-btn" aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen(!open) }} aria-label={`${items.length} short tasks from ${fmtClock(first.start, clock24)}`}>
+        <span className="tnum">{fmtClock(first.start, clock24)}</span>
+        <b>+{items.length}</b>
+      </button>
+      {open && (
+        <ul className="cluster-list" onClick={(e) => e.stopPropagation()}>
+          {items.map((i) => (
+            <li key={i.key}>
+              <button type="button" className={`cluster-row cat-${cats.get(i.task.category_id ?? '')?.color ?? 'errand'} ${i.task.completed_at ? 'done' : ''}`} onClick={() => set({ editingId: i.key, selectedId: i.key })}>
+                <span className="tnum">{fmtClock(i.start, clock24)}</span> {i.task.title || 'Untitled'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -51,12 +78,23 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
   const allDay = useMemo(() => items.filter((i) => i.task.all_day).map((i) => i.task), [items])
   const placed = useMemo(() => layoutColumns(timed.map((i) => ({ id: i.key, start: i.start, end: i.end }))), [timed])
   const byKey = useMemo(() => new Map(timed.map((i) => [i.key, i])), [timed])
-  const free = useMemo(() => freeRows(timed, settings.day_start, settings.day_end, 15), [timed, settings.day_start, settings.day_end])
+  // gaps ≥ 10 min, and tall enough to show beside a min-height pill above them (≥ 28px)
+  const free = useMemo(
+    () => freeRows(timed, settings.day_start, settings.day_end, 10).filter((r) => (r.len / 60) * hourPx >= 28),
+    [timed, settings.day_start, settings.day_end, hourPx],
+  )
+  const catList = useMemo(() => [...cats.values()], [cats])
+  // three or more short pills within 30 min collapse into a "+n" pill (the selected one stays out)
+  const clusters = useMemo(
+    () => clusterShort(placed.filter((p) => p.id !== selectedKey)).map((ids) => ids.map((id) => byKey.get(id)!)),
+    [placed, byKey, selectedKey],
+  )
+  const clustered = useMemo(() => new Set(clusters.flat().map((i) => i.key)), [clusters])
 
   // virtualise: only blocks within the viewport ± one screen are mounted (slice 6)
   const [view, setView] = useState({ top: 0, h: 0 })
   const win = visibleWindow(view.top, view.h, hourPx)
-  const visible = placed.filter((p) => p.end >= win.from && p.start <= win.to)
+  const visible = placed.filter((p) => p.end >= win.from && p.start <= win.to && !clustered.has(p.id))
 
   // perf budget probe: data ready → blocks committed and painted (docs/spec.md §2.9)
   useEffect(() => {
@@ -111,9 +149,10 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
   )
   const onToggle = useCallback((item: Item) => void toggleComplete(item), [])
   const onResize = useCallback((item: Item, d: number) => void resizeItem(item, d), [])
+  const onCategory = useCallback((item: Item, category_id: string) => void patchItem(item, { category_id }, 'Category changed'), [])
 
-  function createAt(min: number) {
-    set({ draft: { start_at: isoAt(day, min), duration_min: settings.default_duration }, selectedId: null })
+  function createAt(min: number, len = settings.default_duration) {
+    set({ draft: { start_at: isoAt(day, min), duration_min: len }, selectedId: null })
   }
   function onBackground(e: MouseEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget) return
@@ -137,7 +176,10 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
       >
         <HourRail hourPx={hourPx} dayStart={settings.day_start} dayEnd={settings.day_end} clock24={settings.clock24} />
         {free.map((r) => (
-          <FreeRow key={`${r.start}`} row={r} hourPx={hourPx} clock24={settings.clock24} onAdd={createAt} />
+          <FreeGap key={`${r.start}`} gap={r} day={day} hourPx={hourPx} clock24={settings.clock24} defaultDuration={settings.default_duration} onAdd={createAt} />
+        ))}
+        {clusters.map((c) => (
+          <ClusterPill key={c[0].key} items={c} hourPx={hourPx} clock24={settings.clock24} cats={cats} />
         ))}
         {visible.map((p) => {
           const item = byKey.get(p.id)!
@@ -149,6 +191,7 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
               cols={p.cols}
               hourPx={hourPx}
               cat={cats.get(item.task.category_id ?? '')}
+              cats={catList}
               selected={selectedKey === item.key}
               running={isToday && !item.task.completed_at && now >= item.start && now < item.end}
               late={isLate(item.end, !!item.task.completed_at, isToday ? now : null)}
@@ -159,6 +202,7 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
               onSelect={onSelect}
               onToggle={onToggle}
               onResize={onResize}
+              onCategory={onCategory}
             />
           )
         })}
