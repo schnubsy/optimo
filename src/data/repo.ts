@@ -205,3 +205,15 @@ export async function updateSettings(patch: Partial<SettingsData>) {
   })
   notify()
 }
+
+/** Seed rows carry field_ts = 1 for every field, so any real edit on any device outranks them. */
+export async function seedCategory(row: Omit<Category, 'field_ts' | 'device_id' | 'deleted_at'>) {
+  const full: Category = { ...row, deleted_at: null, device_id: null, field_ts: {} }
+  for (const k of ['name', 'color', 'icon', 'sort_key', 'deleted_at']) full.field_ts[k] = 1
+  await db.transaction('rw', db.categories, db.outbox, async () => {
+    if (await db.categories.get(row.id)) return
+    await db.categories.put(full)
+    await enqueue('categories', full)
+  })
+  notify()
+}
