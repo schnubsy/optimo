@@ -384,3 +384,31 @@
 .glyph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; }
 .glyph-cell { height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--r-sm); background: var(--panel); color: var(--ink); }
 .glyph-cell[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
+
+/* ================= calendar events (read-only, outlined) ================= */
+.evt { position: absolute; left: 0; right: 0; z-index: 2; }
+.evt.open { z-index: 25; }
+.evt-main { width: 100%; height: 100%; min-height: var(--pill-min-h); display: flex; align-items: center; gap: var(--sp-2); padding: 0 var(--pill-pad-x) 0 6px; border: 0; border-radius: var(--r-md);
+  background: var(--canvas); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-strong); text-align: left; cursor: pointer; overflow: hidden; }
+.evt.is-thin .evt-main { border-radius: var(--r-pill); }
+.evt-main:focus-visible { box-shadow: inset 0 0 0 1.5px var(--line-strong), var(--focus-ring); }
+.evt-chip { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--evt-color, var(--line-strong)); }
+.evt-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-14); font-weight: var(--fw-bold); }
+.evt-time { flex: none; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); }
+.evt:not(.is-thin) .evt-main { align-items: flex-start; padding-top: 6px; }
+.evt-pop { position: absolute; right: 0; top: calc(100% + 6px); min-width: 220px; max-width: min(320px, 86vw); display: grid; gap: 2px; padding: var(--sp-3) var(--sp-4); background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-float); font-size: var(--fs-13); }
+.evt-pop b { font-size: var(--fs-15); }
+.allday-evt { display: inline-flex; align-items: center; background: var(--canvas); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+
+/* settings → calendars */
+.cal-acc { display: grid; gap: var(--sp-2); padding: var(--sp-3) 0; }
+.cal-acc + .cal-acc { border-top: 1px solid var(--line); }
+.cal-acc-hd { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
+.cal-acc-hd b { font-size: var(--fs-15); }
+.cal-error { color: var(--danger-ink); font-size: var(--fs-13); font-weight: var(--fw-semibold); }
+.cal-form { display: grid; gap: var(--sp-2); max-width: 420px; }
+.cal-form label { display: grid; gap: 2px; font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--ink-2); }
+.cal-form input { max-width: none !important; }
+.cal-help { font-size: var(--fs-13); color: var(--ink-2); margin: 0; }
+.cal-help a { color: var(--accent-ink); font-weight: var(--fw-bold); }
+.settings .switch-row { background: var(--surface); border-radius: var(--r-sm); padding: 0 var(--sp-3); }

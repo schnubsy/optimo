@@ -42,6 +42,7 @@ import { applyTheme } from './lib/theme'
 import { keyBefore, inboxOrder } from './inbox/virtual'
 import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
+import { useCalendarSync, useEvents, type EventItem } from './calendar/events'
 import { timelineEls } from './timeline/Timeline'
 import { clampStart, MIN_DURATION, pxToMin, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
@@ -102,7 +103,10 @@ export function Planner({ userId }: { userId: string }) {
   }, [itemsByDay, date])
   const inboxCount = useInboxCount()
   const isToday = date === todayKey()
-  const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null)
+  const eventsByDay = useEvents(days)
+  const dayEvents = useMemo(() => eventsByDay[date] ?? [], [eventsByDay, date])
+  const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null, dayEvents.filter((e) => !e.event.all_day))
+  useCalendarSync(!!supabase())
   useEffect(() => applyTheme(settings.theme), [settings.theme])
   useEffect(() => startReminders(), [])
   const itemsRef = useRef(items)
@@ -262,7 +266,7 @@ export function Planner({ userId }: { userId: string }) {
           <>
             <Header {...hdr} scrolled={scrolled} />
             <main className={`pane m-${tab === 'backlog' ? 'inbox' : view}`}>
-              {tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} catMap={catMap} settings={settings} />}
+              {tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />}
             </main>
             <TabBar active={mobileTabId} onChange={onTab} inboxCount={inboxCount} recede={nearBar} />
             <Fab onClick={() => set({ quickAdd: true })} />
@@ -274,7 +278,7 @@ export function Planner({ userId }: { userId: string }) {
               <Inbox cats={catMap} />
               <main className="pane">
                 <PaneHeader {...hdr} />
-                <ViewSwitch view={view} date={date} items={items} catMap={catMap} settings={settings} />
+                <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />
               </main>
             </div>
             <footer className="foot" aria-label="Keyboard">
@@ -303,13 +307,13 @@ async function reorderInbox(moving: Task, target: Task) {
   await repo.updateTask(moving.id, { sort_key: keyBefore(same, target.id), priority: target.priority })
 }
 
-function ViewSwitch({ view, date, items, catMap, settings }: { view: string; date: string; items: Item[]; catMap: Map<string, Category>; settings: SettingsData }) {
+function ViewSwitch({ view, date, items, events, catMap, settings }: { view: string; date: string; items: Item[]; events: EventItem[]; catMap: Map<string, Category>; settings: SettingsData }) {
   if (view === 'categories') return <Categories />
   if (view === 'icons') return <IconSheet />
   if (view === 'settings') return <Settings />
   if (view === 'week') return <Week date={date} cats={catMap} settings={settings} />
   if (view === 'month') return <Month date={date} cats={catMap} settings={settings} />
-  return <Day day={date} items={items} cats={catMap} settings={settings} />
+  return <Day day={date} items={items} events={events} cats={catMap} settings={settings} />
 }
 
 function useInboxCount(): number {

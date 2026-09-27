@@ -15,6 +15,8 @@ import type { Item } from './items'
 import { clusterShort, freeRows, isLate, isOutOfBounds, layoutColumns } from './layout'
 import { visibleWindow } from './virtual'
 import { taskIcon } from '../quickadd/suggest'
+import { EventBlock } from './EventBlock'
+import type { EventItem } from '../calendar/events'
 
 /** Timeline inner elements by day — drop maths reads their live rect. */
 export const timelineEls = new Map<string, HTMLElement>()
@@ -56,7 +58,7 @@ function ClusterPill({ items, hourPx, clock24, cats }: { items: Item[]; hourPx: 
   )
 }
 
-export function Timeline({ day, items, cats, settings }: { day: string; items: Item[]; cats: Map<string, Category>; settings: SettingsData }) {
+export function Timeline({ day, items, events = [], cats, settings }: { day: string; items: Item[]; events?: EventItem[]; cats: Map<string, Category>; settings: SettingsData }) {
   const hourPx = useHourPx()
   const now = useNow()
   const isToday = day === todayKey()
@@ -77,12 +79,21 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
 
   const timed = useMemo(() => items.filter((i) => !i.task.all_day), [items])
   const allDay = useMemo(() => items.filter((i) => i.task.all_day).map((i) => i.task), [items])
-  const placed = useMemo(() => layoutColumns(timed.map((i) => ({ id: i.key, start: i.start, end: i.end }))), [timed])
+  const timedEvents = useMemo(() => events.filter((e) => !e.event.all_day), [events])
+  const allDayEvents = useMemo(() => events.filter((e) => e.event.all_day), [events])
+  // tasks and calendar events share the overlap columns
+  const placedAll = useMemo(
+    () => layoutColumns([...timed.map((i) => ({ id: i.key, start: i.start, end: i.end })), ...timedEvents.map((e) => ({ id: e.key, start: e.start, end: e.end }))]),
+    [timed, timedEvents],
+  )
+  const placed = useMemo(() => placedAll.filter((p) => !p.id.startsWith('ev:')), [placedAll])
+  const placedEvents = useMemo(() => placedAll.filter((p) => p.id.startsWith('ev:')), [placedAll])
+  const eventByKey = useMemo(() => new Map(timedEvents.map((e) => [e.key, e])), [timedEvents])
   const byKey = useMemo(() => new Map(timed.map((i) => [i.key, i])), [timed])
   // gaps ≥ 10 min, and tall enough to show beside a min-height pill above them (≥ 28px)
   const free = useMemo(
-    () => freeRows(timed, settings.day_start, settings.day_end, 10).filter((r) => (r.len / 60) * hourPx >= 28),
-    [timed, settings.day_start, settings.day_end, hourPx],
+    () => freeRows([...timed, ...timedEvents], settings.day_start, settings.day_end, 10).filter((r) => (r.len / 60) * hourPx >= 28),
+    [timed, timedEvents, settings.day_start, settings.day_end, hourPx],
   )
   const catList = useMemo(() => [...cats.values()], [cats])
   // three or more short pills within 30 min collapse into a "+n" pill (the selected one stays out)
@@ -167,7 +178,7 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
 
   return (
     <div className="tl" ref={scrollRef} data-testid="timeline" data-day={day}>
-      <AllDayStrip tasks={allDay} cats={cats} />
+      <AllDayStrip tasks={allDay} events={allDayEvents.map((e) => e.event)} cats={cats} />
       <div
         className="tl-inner"
         ref={setInner}
@@ -179,6 +190,11 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
         {free.map((r) => (
           <FreeGap key={`${r.start}`} gap={r} day={day} hourPx={hourPx} clock24={settings.clock24} defaultDuration={settings.default_duration} onAdd={createAt} />
         ))}
+        {placedEvents
+          .filter((p) => p.end >= win.from && p.start <= win.to)
+          .map((p) => (
+            <EventBlock key={p.id} item={eventByKey.get(p.id)!} col={p.col} cols={p.cols} hourPx={hourPx} clock24={settings.clock24} />
+          ))}
         {clusters.map((c) => (
           <ClusterPill key={c[0].key} items={c} hourPx={hourPx} clock24={settings.clock24} cats={cats} />
         ))}

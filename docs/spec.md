@@ -76,9 +76,15 @@ task converge without data loss (§5). Visible sync state (synced / pending n / 
 a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtualised.
 
 ## 3. Later arcs (not in v0.1; design for them)
-- **Arc 2 — Calendars.** Google Calendar (OAuth; token refresh in an Edge Function) and/or iCloud
-  (CalDAV via Edge Function proxy). Events render on the timeline as fixed blocks (read-only first);
-  two-way later. Decision on Google vs iCloud is an arc-2 checkpoint item.
+- **Arc 2 — Calendars (shipped: iCloud CalDAV, read-only; Google deferred).** Settings → Calendars posts the
+  Apple ID + app-specific password once to the `calendar-connect` Edge Function, which discovers calendars
+  (PROPFIND principal → calendar-home-set → VEVENT calendars) and stores only the AES-GCM ciphertext
+  (`PLANNER_KEK`) in `planner_calendar_accounts` (the client reads the secret-free `…_public` view).
+  `calendar-sync` (user JWT, or `x-cron-secret` from pg_cron every 15 min) REPORTs [now−7d, now+60d], expands
+  RRULEs with ical.js (instance uid = `UID#start`), upserts changed rows into `planner_events` and tombstones the
+  rest; clients pull them through `planner_sync_log` like any row (server-owned: replace, no merge). The app
+  refreshes on open and every 15 min while visible. Events render as outlined, fixed pills (tap = details),
+  share overlap columns with tasks, and count against free time. Two-way is later.
 - **Arc 3 — AI planning.** Intent paragraphs → structured plan proposal (Claude via Edge Function,
   same key as the marquee agents); learns tone/structure from accepted plans (`planner_ai_profile`);
   challenge-style prompting (Ear register), never just agreeing. Optional web research.

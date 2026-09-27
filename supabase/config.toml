@@ -1,0 +1,11 @@
+# Edge Functions for optimo on press (project eepjhpyziczrxvirczio). Deployed by Mark/Cowork only (HANDOFF).
+project_id = "eepjhpyziczrxvirczio"
+
+[functions.calendar-connect]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+# cron calls with x-cron-secret (no JWT); the handler checks either the user's JWT or the secret itself
+[functions.calendar-sync]
+verify_jwt = false
+import_map = "./functions/deno.json"

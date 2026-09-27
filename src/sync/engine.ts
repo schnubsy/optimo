@@ -4,7 +4,7 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { db, getMeta, setMeta } from '../data/db'
 import { onLocalWrite, taskKind } from '../data/repo'
-import { REMOTE_TABLE, type Category, type Exception, type Settings, type TableName, type Task } from '../data/types'
+import { REMOTE_TABLE, type CalendarEvent, type Category, type Exception, type Settings, type TableName, type Task } from '../data/types'
 import { mergeRow } from './merge'
 import { useSync } from '../state/sync'
 
@@ -55,6 +55,9 @@ const CONFLICT: Record<TableName, string> = {
   settings: 'user_id',
 }
 
+/** The running engine (one per signed-in session) — calendar sync asks it to pull after the server refresh. */
+export let activeEngine: SyncEngine | null = null
+
 export class SyncEngine {
   private sb: SupabaseClient
   private userId: string
@@ -74,6 +77,8 @@ export class SyncEngine {
   }
 
   async start() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- the module-level handle IS the point
+    activeEngine = this
     // A different account on this device starts from a clean cursor.
     const owner = await getMeta<string | null>('owner', null)
     if (owner && owner !== this.userId) await setMeta('cursor', 0)
@@ -101,6 +106,7 @@ export class SyncEngine {
 
   stop() {
     this.stopped = true
+    if (activeEngine === this) activeEngine = null
     this.unsub?.()
     window.removeEventListener('online', this.onOnline)
     window.removeEventListener('offline', this.onOffline)
@@ -202,7 +208,12 @@ export class SyncEngine {
       if (error) throw new Error(`pull log: ${error.message}`)
       if (!log?.length) return
       const byTable = new Map<TableName, Set<string>>()
+      const events = new Set<string>()
       for (const l of log) {
+        if (l.table_name === 'planner_events') {
+          events.add(String(l.row_id))
+          continue
+        }
         const t = TABLE_OF[l.table_name as string]
         if (!t) continue
         if (!byTable.has(t)) byTable.set(t, new Set())
@@ -212,9 +223,19 @@ export class SyncEngine {
         const ids = byTable.get(table)
         if (ids?.size) await this.fetchAndMerge(table, [...ids])
       }
+      if (events.size) await this.fetchEvents([...events])
       cursor = Number(log[log.length - 1].seq)
       await setMeta('cursor', cursor)
       if (log.length < PAGE) return
+    }
+  }
+
+  /** Calendar events are server-owned: the server row simply replaces the local one (no field-level merge). */
+  private async fetchEvents(ids: string[]) {
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const { data, error } = await this.sb.from('planner_events').select('*').in('id', ids.slice(i, i + CHUNK))
+      if (error) throw new Error(`pull events: ${error.message}`)
+      await applyEvents(data ?? [])
     }
   }
 
@@ -241,6 +262,17 @@ export class SyncEngine {
     }
     await applyRemote(table, remote)
   }
+}
+
+export async function applyEvents(rows: Record<string, unknown>[]) {
+  await db.transaction('rw', db.events, async () => {
+    for (const r of rows) {
+      const e = { ...r, start_at: iso(r.start_at), end_at: iso(r.end_at), deleted_at: iso(r.deleted_at) } as CalendarEvent
+      delete (e as { user_id?: string }).user_id
+      if (e.deleted_at) await db.events.delete(e.id)
+      else await db.events.put(e)
+    }
+  })
 }
 
 /** Merge fetched server rows into the local store with the same field-level LWW as the server. */

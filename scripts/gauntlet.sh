@@ -21,6 +21,9 @@ run() { # name, cmd...
 
 run "unit (vitest)"      npx vitest run --reporter=dot
 run "build (vite)"       npm run build --silent
+run "edge functions (deno check + test)" bash -c 'cd supabase/functions && deno check calendar-connect/index.ts calendar-sync/index.ts $(ls -d push-send/index.ts 2>/dev/null) && deno test _shared/'
+# secret gate: the fixture app-specific password never lands in evidence or the build
+run "secret gate (no test password in docs/evidence, dist)" bash -c '! grep -rIlE "qvtz-?hmwk-?rpxa-?ndjc" docs/evidence dist --exclude-dir=playwright-report'
 
 # preview server for Playwright + Lighthouse
 npx vite preview --port "$PORT" --strictPort >>"$LOG" 2>&1 &

@@ -7,7 +7,7 @@ import { CAT, at, openApp, quickAdd, row, seedDay, seedTask } from './support/ap
 const serious = async (page: Page) => (await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
 
 test.describe('iPhone chrome', () => {
-  test.beforeEach(({}, info) => test.skip(info.project.name !== 'iphone-15', 'iPhone chrome'))
+  test.beforeEach(({ browserName: _b }, info) => test.skip(info.project.name !== 'iphone-15', 'iPhone chrome'))
 
   test('tab bar and FAB float (fixed), do not overlap, keep ≥ 44px targets; header has no border', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
@@ -118,7 +118,7 @@ test.describe('iPhone chrome', () => {
 })
 
 test.describe('desktop chrome', () => {
-  test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop', 'desktop chrome'))
+  test.beforeEach(({ browserName: _b }, info) => test.skip(info.project.name !== 'desktop', 'desktop chrome'))
 
   test('the segmented pill switches views, with ← → cycling', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })

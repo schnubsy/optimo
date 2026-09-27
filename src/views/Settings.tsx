@@ -7,6 +7,8 @@ import { signOut } from '../auth/session'
 import { fmtClock, todayKey } from '../lib/time'
 import { useUI } from '../state/ui'
 import '../categories/categories.css'
+import { CalendarSettings } from '../calendar/CalendarSettings'
+import { supabase } from '../sync/remote'
 
 // #12: day bounds are chosen from 15-min steps rendered in the user's clock (a native time field ignores it)
 const STEPS = Array.from({ length: 96 }, (_, i) => i * 15)
@@ -78,6 +80,8 @@ export function Settings() {
       <Seg name="push" label="Dropping onto a busy slot" value={s.push_down} options={[[false, 'Overlap side by side'], [true, 'Push later blocks down']]} onChange={(v) => up({ push_down: v })} />
       <Seg name="week" label="Week starts on" value={s.week_start} options={[[1, 'Monday'], [0, 'Sunday']]} onChange={(v) => up({ week_start: v })} />
       <Seg name="clock" label="Clock" value={s.clock24} options={[[true, `24 h (${fmtClock(13 * 60)})`], [false, `12 h (${fmtClock(13 * 60, false)})`]]} onChange={(v) => up({ clock24: v })} />
+
+      {supabase() && <CalendarSettings />}
 
       <fieldset className="set-row">
         <legend>Reminders</legend>
