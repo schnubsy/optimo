@@ -152,6 +152,7 @@ Done-criteria: chrome.spec.ts on iPhone: last hour of the day is reachable under
   icon sheet render + iPhone screenshots light/dark.
 
 === SLICE 4 — iCloud calendar (CalDAV, read-only) ===
+Status: done 7ce7f62
 Scope: connect an iCloud account with an app-specific password; show its events on the timeline as fixed
   "event" blocks; refresh on open and every 15 min.
 Files in play: supabase/functions/_shared/{crypto.ts,caldav.ts,ics.ts}, supabase/functions/calendar-connect/
