@@ -1,0 +1,12 @@
+.signin { min-height: 100%; display: grid; place-items: center; padding: var(--sp-5); }
+.signin-card { width: min(420px, 100%); border: 1px solid var(--line); background: var(--panel); padding: var(--sp-6) var(--sp-5); border-radius: var(--r); }
+.signin h1 { margin: 0 0 var(--sp-2); font-weight: var(--fw-black); font-size: var(--fs-28); letter-spacing: -0.02em; }
+.signin h1 span { color: var(--signal); }
+.signin-lede { margin: 0 0 var(--sp-5); color: var(--ink-2); }
+.signin form { display: grid; gap: var(--sp-2); }
+.signin label { font-size: var(--fs-12); color: var(--ink-2); }
+.signin input { height: var(--tap-min); padding: 0 var(--sp-3); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: var(--fs-16); }
+.signin button { height: var(--tap-min); margin-top: var(--sp-2); background: var(--signal); color: var(--on-signal); border: 0; border-radius: var(--r); font-weight: var(--fw-bold); }
+.signin button:disabled { opacity: 0.6; }
+.signin-msg { min-height: 1.5em; margin: var(--sp-3) 0 0; font-size: var(--fs-13); color: var(--ink-2); }
+.signin-msg.error { color: var(--ink); }
