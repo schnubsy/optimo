@@ -117,6 +117,7 @@ Done-criteria: 13 new/extended tests green · reload-after-resize shows the new 
   server carries it · gauntlet GREEN · evidence: test log + before/after screenshot.
 
 === SLICE 2 — design system: tokens, type, pills, chip-as-complete, free-time pill, sweep ===
+Status: done e65753c
 Scope: implement docs/design/2026-09-27-final/design-system-prompt.md sections 1–3 (tokens/base, timeline
   block, free-time connector, now line, inbox row, editor sheet, week compact block, settings) — data and sync
   code untouched.
