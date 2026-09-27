@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="build" content="%BUILD%" />
+    <meta name="description" content="optimo — a day planner: one timeline, an inbox, blocks you drag into place." />
+    <meta name="theme-color" content="#212427" />
+    <link rel="icon" type="image/svg+xml" href="/optimo/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Chivo+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'" />
+    <title>optimo</title>
+    <script>
+      // Apply the saved theme before first paint (no flash). Settings own the value from slice 5.
+      try {
+        var t = localStorage.getItem('optimo.theme') || 'system'
+        if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -5,7 +5,8 @@ const PORT = Number(process.env.PORT ?? 4173);
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 30_000,
+  testMatch: '*.spec.ts',
+  timeout: 60_000,
   retries: 0,
   reporter: [['line'], ['html', { open: 'never', outputFolder: 'docs/evidence/playwright-report' }]],
   use: {

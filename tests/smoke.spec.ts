@@ -1,7 +1,7 @@
 // optimo smoke spec — runs on desktop AND iPhone 15 (see playwright.config.ts).
 // Slice 1 makes this pass against the empty shell; later slices extend it (never replace it).
 import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { AxeBuilder } from '@axe-core/playwright';
 
 test.describe('optimo smoke', () => {
   test('loads the shell with no console errors', async ({ page }) => {

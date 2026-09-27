@@ -20,3 +20,6 @@ docs/evidence/playwright-report/
 .vscode/*
 !.vscode/extensions.json
 *.log
+# gauntlet raw output (summaries are committed as docs/evidence/*.md)
+docs/evidence/*-lighthouse-*.json
+.env.test.local
