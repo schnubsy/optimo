@@ -119,6 +119,7 @@ Done-criteria: `scripts/gauntlet.sh arc1` GREEN on the shell (unit ≥1 test, sm
   -o 'name="build" content="[0-9a-f]*"'` equals the pushed SHA prefix (SHIP PROOF; evidence file records both).
 
 === SLICE 2 — data layer, auth, sync engine ===
+Status: done 63e9f46
 Scope: local store, Supabase Auth, outbox/pull sync implementing docs/spec.md §5 exactly.
 Files in play: src/data/db.ts (Dexie schema), src/data/types.ts, src/data/repo.ts (CRUD that stamps field_ts +
   writes outbox), src/sync/engine.ts (push/pull/cursor/realtime/poll), src/sync/merge.ts (pure field-level LWW,
