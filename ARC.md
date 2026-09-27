@@ -134,6 +134,7 @@ Done-criteria: contrast.test.ts green for all 8 hues × 2 modes · no checkbox i
   and undoes · axe clean · gauntlet GREEN · evidence: iPhone + desktop, light + dark screenshots of Day/Inbox/Week.
 
 === SLICE 3 — chrome + icons: floating tab bar, FAB, header fade, glyph set, auto-suggest ===
+Status: done 48b9eda
 Scope: design-system-prompt.md sections 4–5.
 Files in play: src/chrome/{TabBar,Fab,HeaderFade,Segmented}.tsx, src/App.tsx (layout: timeline scrolls to the
   screen bottom under the bar; safe-area padding), src/icons/* (redraw 64 activity + 12 chrome glyphs per spec.md
