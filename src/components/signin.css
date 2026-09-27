@@ -9,4 +9,9 @@
 .signin button { height: var(--tap-min); margin-top: var(--sp-2); background: var(--signal); color: var(--on-signal); border: 0; border-radius: var(--r); font-weight: var(--fw-bold); }
 .signin button:disabled { opacity: 0.6; }
 .signin-msg { min-height: 1.5em; margin: var(--sp-3) 0 0; font-size: var(--fs-13); color: var(--ink-2); }
-.signin-msg.error { color: var(--ink); }
+.signin-msg.error { color: var(--ink); font-weight: var(--fw-bold); }
+.signin-sent { margin: 0 0 var(--sp-3); font-size: var(--fs-13); color: var(--ink-2); overflow-wrap: anywhere; }
+.signin-sent strong { color: var(--ink); font-weight: var(--fw-bold); }
+.signin .signin-link { height: auto; min-height: var(--tap-min); margin: 0; padding: 0 var(--sp-1); background: none; color: var(--signal); font-weight: var(--fw-regular); font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.signin .signin-code { font-size: var(--fs-20); letter-spacing: 0.4em; text-align: center; }
+.signin .signin-secondary { margin-top: 0; background: none; color: var(--ink); border: 1px solid var(--line-strong); font-weight: var(--fw-regular); }

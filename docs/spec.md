@@ -94,7 +94,7 @@ a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtu
 | State | Dexie live queries + small zustand store for UI | no global re-render on drag |
 | PWA | `vite-plugin-pwa` (Workbox), offline-first shell | installable on iPhone |
 | Backend | Supabase project `press` (`eepjhpyziczrxvirczio`), tables prefixed `planner_`, RLS | already paid for, shared with marquee apps |
-| Auth | Supabase Auth, email magic link, single allowed email | holds calendar tokens later; iOS clients reuse |
+| Auth | Supabase Auth, email one-time code (shared press template), single user | holds calendar tokens later; iOS clients reuse |
 | Hosting | GitHub Pages `https://schnubsy.github.io/optimo/` via Actions on `main` (`base: '/optimo/'`) | own origin ⇒ own service worker + manifest |
 | Tests | vitest · Playwright (desktop + iPhone 15) · @axe-core/playwright · Lighthouse | per `testing.md` |
 | NLP | `chrono-node` + `rrule` | on-device |

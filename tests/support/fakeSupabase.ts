@@ -51,6 +51,10 @@ export class FakeSupabase {
   log: { seq: number; user_id: string; table_name: string; row_id: string; op: string; at: string }[] = []
   unexpected: string[] = []
   requests = 0
+  /** The code the fake "emails"; /verify accepts only this. */
+  otpCode = '424242'
+  otpSends: string[] = []
+  lastOtpAt = 0
   private sockets = new Set<{ ws: WebSocketRoute; topic: string; id: number }>()
   private nextBindingId = 1000
 
@@ -93,7 +97,20 @@ export class FakeSupabase {
     const p = url.pathname
     if (p.startsWith('/auth/v1/')) {
       if (p === '/auth/v1/user') return json(200, fakeSession().user)
-      if (p === '/auth/v1/otp') return json(200, {})
+      if (p === '/auth/v1/otp') {
+        // press enforces a 60 s per-address resend window; mirror its 429 + message
+        const wait = 60 - Math.floor((Date.now() - this.lastOtpAt) / 1000)
+        if (this.lastOtpAt && wait > 0)
+          return json(429, { code: 429, error_code: 'over_email_send_rate_limit', msg: `For security purposes, you can only request this after ${wait} seconds.` })
+        this.lastOtpAt = Date.now()
+        this.otpSends.push(JSON.parse(req.postData() ?? '{}').email)
+        return json(200, {})
+      }
+      if (p === '/auth/v1/verify') {
+        const body = JSON.parse(req.postData() ?? '{}')
+        if (body.type === 'email' && body.token === this.otpCode) return json(200, fakeSession())
+        return json(403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' })
+      }
       if (p === '/auth/v1/logout') return route.fulfill({ status: 204, headers: cors })
       if (p === '/auth/v1/token') return json(200, fakeSession())
     }

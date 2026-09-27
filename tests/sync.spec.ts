@@ -84,14 +84,14 @@ test.describe('sync convergence', () => {
     await ctxB.close()
   })
 
-  test('signed-out users see only the sign-in screen, and the magic link request is sent', async ({ context, page }) => {
+  test('signed-out users see only the sign-in screen, and the sign-in code request is sent', async ({ context, page }) => {
     const server = new FakeSupabase()
     await server.attach(context, { signedIn: false })
     await page.goto('./')
     await expect(page.getByRole('heading', { name: /optimo/ })).toBeVisible()
     await page.getByLabel('Email').fill('someone@example.com')
-    await page.getByRole('button', { name: 'Send sign-in link' }).click()
-    await expect(page.getByRole('status')).toContainText('Link sent')
+    await page.getByRole('button', { name: 'Send code' }).click()
+    await expect(page.getByRole('status')).toContainText('Code sent')
     expect(server.unexpected).toEqual([])
   })
 })
