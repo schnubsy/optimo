@@ -298,9 +298,6 @@ export function Planner({ userId }: { userId: string }) {
                   <kbd>{v[0].toUpperCase()}</kbd> {v[0].toUpperCase() + v.slice(1)}
                 </button>
               ))}
-              <button type="button" className={`key ${view === 'categories' ? 'on' : ''}`} aria-pressed={view === 'categories'} onClick={() => set({ view: 'categories' })}>
-                Categories
-              </button>
               <button type="button" className={`key ${view === 'settings' ? 'on' : ''}`} aria-pressed={view === 'settings'} onClick={() => set({ view: 'settings' })}>
                 Settings
               </button>

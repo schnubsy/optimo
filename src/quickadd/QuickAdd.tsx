@@ -103,7 +103,7 @@ export function QuickAdd({ compact }: { compact?: boolean }) {
             <span>parsed:</span>
             <b>{parsed.title || '(no title)'}</b>
             <span className="f mono">{when}</span>
-            {parsed.start && !parsed.dateOnly && <span className="f mono">{fmtDur(parsed.duration ?? settings.default_duration)}</span>}
+            {(parsed.duration !== null || (parsed.start && !parsed.dateOnly)) && <span className="f mono" data-testid="parse-duration">{fmtDur(parsed.duration ?? settings.default_duration)}</span>}
             {cat && <span>{cat.name}</span>}
             {unknownCat && <span>#{parsed.category}? (no such category)</span>}
             {parsed.priority > 0 && <span className="f mono">{['', 'P3', 'P2', 'P1'][parsed.priority]}</span>}

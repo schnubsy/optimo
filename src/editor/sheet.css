@@ -21,7 +21,7 @@
 .sheet .seg > div, .sheet .chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .sheet .seg button, .sheet .chips button { min-height: 36px; min-width: 44px; padding: 0 var(--sp-2); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-size: var(--fs-12); font-weight: var(--fw-bold); position: relative; }
 .sheet .seg button::before, .sheet .chips button::before { content: ''; position: absolute; inset: -4px 0; }
-.sheet [aria-pressed='true'] { border-color: var(--signal); background: var(--signal-soft); color: var(--ink); }
+.sheet .seg button[aria-pressed='true'], .sheet .chips button[aria-pressed='true'] { border-color: var(--signal); background: var(--signal-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--signal); }
 .sheet .subs { list-style: none; margin: 0; padding: 0; }
 .sheet .subs li { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .sheet-ft { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; margin-top: auto; padding-top: var(--sp-3); border-top: 1px solid var(--line); }

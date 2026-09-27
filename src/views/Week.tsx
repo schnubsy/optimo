@@ -37,7 +37,7 @@ const WBlock = memo(function WBlock({ item, col, cols, cat, clock24 }: { item: I
     >
       <span className="wt">
         {h >= 30 && <Icon name={cat?.icon ?? 'dot'} size={11} />}
-        {item.task.title || 'Untitled'}
+        <span className="tt">{item.task.title || 'Untitled'}</span>
       </span>
       {h >= 30 && <span className="wm mono">{fmtClock(item.start, clock24)}</span>}
     </button>
@@ -74,6 +74,29 @@ export function Week({ date, cats, settings }: { date: string; cats: Map<string,
     if (scroller.current) scroller.current.scrollTop = (settings.day_start / 60) * WEEK_HOUR_PX
   }, [start, settings.day_start])
 
+  const headers = days.map((d) => {
+    const its = items?.[d] ?? []
+    const timed = its.filter((i) => !i.task.all_day)
+    const planned = timed.reduce((a, i) => a + Math.max(0, Math.min(i.end, settings.day_end) - Math.max(i.start, settings.day_start)), 0)
+    const free = freeRows(timed, settings.day_start, settings.day_end, 1).reduce((a, r) => a + r.len, 0)
+    return (
+      <button type="button" key={d} className={`wday ${d === today ? 'today' : ''} ${d === date ? 'sel' : ''}`} onClick={() => set({ date: d, view: 'day', mobileTab: 'board' })} data-testid="week-day">
+        <b>{shortDay(fromKey(d))}</b>
+        <span className="mono" data-testid="week-hours">
+          {fmtHours(planned)} planned · {fmtHours(free)} free
+        </span>
+      </button>
+    )
+  })
+  useLayoutEffect(() => {
+    // mobile shows three days at a time: open on yesterday so today sits in the middle
+    const el = scroller.current
+    if (!el || !mobile) return
+    const i = Math.max(0, days.indexOf(today) - 1)
+    const col = el.querySelector<HTMLElement>(`[data-testid="week-col"][data-day="${days[i]}"]`)
+    if (col) el.scrollTo({ left: col.getBoundingClientRect().left - el.getBoundingClientRect().left + el.scrollLeft - 32, behavior: 'instant' as ScrollBehavior })
+  }, [mobile, days, today])
+
   return (
     <section className={`week ${mobile ? 'm' : ''}`} aria-label="Week">
       <div className="whead">
@@ -81,23 +104,23 @@ export function Week({ date, cats, settings }: { date: string; cats: Map<string,
           <button type="button" className="nav" aria-label="Previous week" onClick={() => set({ date: addDays(date, -7) })}>‹</button>
           <button type="button" className="nav" aria-label="Next week" onClick={() => set({ date: addDays(date, 7) })}>›</button>
         </div>
-        {days.map((d) => {
-          const its = items?.[d] ?? []
-          const timed = its.filter((i) => !i.task.all_day)
-          const planned = timed.reduce((a, i) => a + Math.max(0, Math.min(i.end, settings.day_end) - Math.max(i.start, settings.day_start)), 0)
-          const free = freeRows(timed, settings.day_start, settings.day_end, 1).reduce((a, r) => a + r.len, 0)
-          return (
-            <button type="button" key={d} className={`wday ${d === today ? 'today' : ''} ${d === date ? 'sel' : ''}`} onClick={() => set({ date: d, view: 'day', mobileTab: 'board' })} data-testid="week-day">
-              <b>{shortDay(fromKey(d))}</b>
-              <span className="mono" data-testid="week-hours">
-                {fmtHours(planned)} / {fmtHours(free)} free
-              </span>
-            </button>
-          )
-        })}
+        {headers}
       </div>
+      {mobile && (
+        <div className="wbar">
+          <button type="button" className="nav" aria-label="Previous week" onClick={() => set({ date: addDays(date, -7) })}>‹</button>
+          <b>Week of {shortDay(fromKey(start))}</b>
+          <button type="button" className="nav" aria-label="Next week" onClick={() => set({ date: addDays(date, 7) })}>›</button>
+        </div>
+      )}
       <div className="wbody" ref={scroller}>
-        <div className="wgrid" style={{ height: 24 * WEEK_HOUR_PX }}>
+        <div className="wgrid" style={mobile ? undefined : { height: 24 * WEEK_HOUR_PX }}>
+          {mobile && (
+            <div className="whead-m">
+              <div className="corner" />
+              {headers}
+            </div>
+          )}
           <div className="wrail" aria-hidden="true">
             {Array.from({ length: 24 }, (_, h) => (
               <div key={h} className="hour" style={{ top: h * WEEK_HOUR_PX }}>
