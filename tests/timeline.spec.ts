@@ -17,14 +17,16 @@ async function dragBy(page: Page, from: { x: number; y: number }, dy: number) {
 test.describe('day timeline', () => {
   test('renders the day with free rows, overlap columns and the now line', async ({ page, context }) => {
     const { errors } = await openApp(page, context, { seed: seedDay })
-    await expect(page.getByTestId('block')).toHaveCount(10)
+    // virtualised: only blocks near the viewport are mounted; the strip counts the whole day
+    await expect(page.getByTestId('stat-done')).toHaveText('1/10')
+    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 15 * (await hourPx(page)))
+    expect(await page.getByTestId('block').count()).toBeGreaterThanOrEqual(4)
     await expect(page.getByTestId('free-row').first()).toBeVisible()
     await expect(page.getByTestId('now-line')).toHaveCount(1)
     // 1:1 (16:00) and the PR review (16:15) overlap → side by side
     const a = await page.locator('[data-testid="block"]', { hasText: '1:1 with Dana' }).boundingBox()
     const b = await page.locator('[data-testid="block"]', { hasText: 'Review pull request' }).boundingBox()
     expect(a && b && Math.abs(a.x - b.x) > 20).toBeTruthy()
-    await expect(page.getByTestId('stat-done')).toHaveText('1/10')
     expect(errors).toEqual([])
   })
 

@@ -1,13 +1,13 @@
 import { create } from 'zustand'
 import { todayKey } from '../lib/time'
 
-export type View = 'day' | 'week' | 'month' | 'focus' | 'settings'
+export type View = 'day' | 'week' | 'month' | 'focus' | 'settings' | 'categories' | 'icons'
 export type MobileTab = 'board' | 'backlog' | 'week'
 
-export interface Draft {
-  start_at: string | null
-  duration_min?: number
-}
+import type { TaskInput } from '../data/repo'
+
+/** TaskSheet in create mode, optionally prefilled (e.g. Tab from the command line). */
+export type Draft = TaskInput & { start_at: string | null }
 
 export interface Toast {
   id: number

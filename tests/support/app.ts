@@ -63,6 +63,12 @@ export async function openApp(page: Page, context: BrowserContext, opts: { seed?
   const errors = trackErrors(page)
   await page.goto('./')
   await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
+  // default categories seed after the first sync; wait until they are pushed so every test starts quiet
+  await expect.poll(() => page.evaluate(async () => {
+    const o = (window as any).__optimo
+    return (await o.db.categories.count()) >= 8 && (await o.db.outbox.count()) === 0
+  })).toBe(true)
+  await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
   return { server, errors }
 }
 

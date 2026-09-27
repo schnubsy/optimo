@@ -16,7 +16,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './data/db'
 import * as repo from './data/repo'
 import { useCategories, useSettings } from './data/hooks'
-import type { Task } from './data/types'
+import type { Category, SettingsData, Task } from './data/types'
 import { SyncEngine } from './sync/engine'
 import { supabase } from './sync/remote'
 import { useSync } from './state/sync'
@@ -26,6 +26,12 @@ import { SyncBadge } from './components/SyncBadge'
 import { Toast } from './components/Toast'
 import { TaskSheet } from './editor/TaskSheet'
 import { Day } from './views/Day'
+import { Inbox } from './views/Inbox'
+import { QuickAdd } from './quickadd/QuickAdd'
+import { PlacePicker } from './components/PlacePicker'
+import { Categories } from './categories/Categories'
+import { IconSheet } from './icons/IconSheet'
+import { keyBefore, inboxOrder } from './inbox/virtual'
 import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
 import { timelineEls } from './timeline/Timeline'
@@ -48,7 +54,7 @@ function useSyncEngine(userId: string) {
     // seed after the first sync attempt so a device never out-votes categories it has not pulled yet
     void engine.start().then(() => engine.run()).then(seedCategories)
     try {
-      if (localStorage.getItem('optimo.test') === '1') Object.assign(window, { __optimo: { db, repo, engine } })
+      if (localStorage.getItem('optimo.test') === '1') Object.assign(window, { __optimo: { db, repo, engine, ui: useUI } })
     } catch {
       /* no storage */
     }
@@ -59,9 +65,14 @@ function useSyncEngine(userId: string) {
 const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
 
 // Prefer the droppable under the pointer (timeline vs inbox rail); fall back to rect overlap for touch.
+// Inbox rows beat the inbox container (reorder), and a row never targets itself.
 const collision: CollisionDetection = (args) => {
   const hits = pointerWithin(args)
-  return hits.length ? hits : rectIntersection(args)
+  const self = `row:${String(args.active.id).replace(/^inbox:/, '')}`
+  const rows = hits.filter((h) => String(h.id).startsWith('row:') && h.id !== self)
+  if (rows.length) return rows
+  const rest = hits.filter((h) => h.id !== self)
+  return rest.length ? rest : rectIntersection(args).filter((h) => h.id !== self)
 }
 
 export function Planner({ userId }: { userId: string }) {
@@ -69,7 +80,7 @@ export function Planner({ userId }: { userId: string }) {
   const settings = useSettings()
   const cats = useCategories()
   const catMap = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats])
-  const { date, view, set } = useUI()
+  const { date, view, set, mobileTab: tab } = useUI()
   const isMobile = useIsMobile()
   const hourPx = useHourPx()
   const now = useNow()
@@ -125,7 +136,7 @@ export function Planner({ userId }: { userId: string }) {
   }
   const onDragEnd = (e: DragEndEvent) => {
     useDrag.getState().set({ ghost: null, activeId: null })
-    const o = e.over?.data.current as { type: string; day?: string } | undefined
+    const o = e.over?.data.current as { type: string; day?: string; task?: Task } | undefined
     const a = e.active.data.current as { type: string; item?: Item; task?: Task } | undefined
     if (!o || !a) return
     if (o.type === 'timeline' && o.day) {
@@ -133,7 +144,9 @@ export function Planner({ userId }: { userId: string }) {
       if (m === null) return
       if (a.type === 'block' && a.item) void moveItem(a.item, o.day, m)
       else if (a.task) void schedule(a.task, o.day, m)
-    } else if (o.type === 'inbox' && a.type === 'block' && a.item && !a.item.occurrence) {
+    } else if (o.type === 'row' && a.type === 'inbox' && a.task && o.task && a.task.id !== o.task.id) {
+      void reorderInbox(a.task, o.task)
+    } else if ((o.type === 'inbox' || o.type === 'row') && a.type === 'block' && a.item && !a.item.occurrence) {
       void unschedule(a.item.task)
     } else if (o.type === 'day' && o.day && a.type === 'block' && a.item) {
       void moveItem(a.item, o.day, a.item.start)
@@ -270,6 +283,9 @@ export function Planner({ userId }: { userId: string }) {
                   <kbd>{v[0].toUpperCase()}</kbd> {v[0].toUpperCase() + v.slice(1)}
                 </button>
               ))}
+              <button type="button" className={`key ${view === 'categories' ? 'on' : ''}`} aria-pressed={view === 'categories'} onClick={() => set({ view: 'categories' })}>
+                Categories
+              </button>
               <button type="button" className={`key ${view === 'settings' ? 'on' : ''}`} aria-pressed={view === 'settings'} onClick={() => set({ view: 'settings' })}>
                 Settings
               </button>
@@ -279,11 +295,30 @@ export function Planner({ userId }: { userId: string }) {
             <SyncBadge />
           </div>
         </header>
-        <div className="body no-rail">
+        {isMobile && <QuickAdd compact />}
+        <div className="body">
+          {!isMobile && <Inbox cats={catMap} />}
           <main className="pane">
-            <Day day={date} items={items} cats={catMap} settings={settings} />
+            {!isMobile && (view === 'day' || view === 'week' || view === 'month') && <QuickAdd />}
+            {isMobile && tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} catMap={catMap} settings={settings} />}
           </main>
         </div>
+        {isMobile && (
+          <nav className="tabs" aria-label="Sections">
+            <button type="button" aria-pressed={tab === 'board' && view === 'day'} onClick={() => set({ mobileTab: 'board', view: 'day' })}>
+              <b className="mono">D</b>Board
+            </button>
+            <button type="button" aria-pressed={tab === 'backlog'} onClick={() => set({ mobileTab: 'backlog' })} data-testid="tab-backlog">
+              <b className="mono">{inboxCount}</b>Inbox
+            </button>
+            <button type="button" aria-pressed={tab === 'board' && view === 'week'} onClick={() => set({ mobileTab: 'board', view: 'week' })}>
+              <b className="mono">W</b>Week
+            </button>
+            <button type="button" aria-pressed={tab === 'board' && view === 'settings'} onClick={() => set({ mobileTab: 'board', view: 'settings' })}>
+              <b className="mono">≡</b>More
+            </button>
+          </nav>
+        )}
         {!isMobile && (
           <footer className="foot" aria-label="Keyboard">
             <span><kbd>N</kbd> new</span>
@@ -296,10 +331,23 @@ export function Planner({ userId }: { userId: string }) {
           </footer>
         )}
         <TaskSheet />
+        <PlacePicker />
         <Toast />
       </div>
     </DndContext>
   )
+}
+
+async function reorderInbox(moving: Task, target: Task) {
+  const list = inboxOrder((await db.tasks.where('_kind').equals('inbox').toArray()).filter((t) => t.id !== moving.id))
+  const same = list.filter((t) => t.priority === target.priority)
+  await repo.updateTask(moving.id, { sort_key: keyBefore(same, target.id), priority: target.priority })
+}
+
+function ViewSwitch({ view, date, items, catMap, settings }: { view: string; date: string; items: Item[]; catMap: Map<string, Category>; settings: SettingsData }) {
+  if (view === 'categories') return <Categories />
+  if (view === 'icons') return <IconSheet />
+  return <Day day={date} items={items} cats={catMap} settings={settings} />
 }
 
 function useInboxCount(): number {

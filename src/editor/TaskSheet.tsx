@@ -95,7 +95,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
   const settings = useSettings()
   const cats = useCategories()
   const [form, setForm] = useState<Form>(() => {
-    if (!task) return toForm({ start_at: draft?.start_at ?? null, duration_min: draft?.duration_min ?? settings.default_duration }, day)
+    if (!task) return toForm({ ...draft, start_at: draft?.start_at ?? null, duration_min: draft?.duration_min ?? settings.default_duration }, day)
     // an occurrence edits that day's instance of the series
     const shown = occ && task.dtstart ? { ...task, start_at: isoAt(occ, minutesInDay(task.dtstart, dateKey(new Date(task.dtstart)))) } : task
     return toForm(shown, day)
