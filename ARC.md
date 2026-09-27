@@ -224,6 +224,7 @@ Done-criteria: dist/optimo.html builds deterministically (two builds, same hash)
   card (fake gate session) · gauntlet GREEN · evidence: card screenshot.
 
 === SLICE 7 — design review + P0 fixes + performance + close ===
+Status: done 3158271
 Scope: the standard UI-arc slices, then the close.
 Implementation: the Eye runs a LITE critique of this arc's evidence screenshots against
   docs/design/2026-09-27-final/final.html + spec.md; only 🔴 P0 findings are fixed here (🟡 → Issues labelled
