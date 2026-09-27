@@ -37,4 +37,4 @@ Any Claude Code prompt for arc 2 carries `MAIN CHECKOUT: /Users/mark/Documents/c
 2. (Optional, enables the real-server sync test) Create a password user for testing in press → Authentication →
    Users, then:
    `cd /Users/mark/Documents/code/optimo && git pull --ff-only && grep -c OPTIMO_TEST_EMAIL tests/sync.real.spec.ts && printf 'OPTIMO_TEST_EMAIL=...\nOPTIMO_TEST_PASSWORD=...\n' > .env.test.local && npx playwright test tests/sync.real.spec.ts --project=desktop`
-   Precondition prints `2` (a `0` means stale checkout — stop). Expected postcondition: `1 passed` (was `skipped`).
+   Precondition prints `3` (a `0` means stale checkout — stop). Expected postcondition: `1 passed` (was `skipped`).
