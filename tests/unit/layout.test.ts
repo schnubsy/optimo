@@ -149,3 +149,13 @@ describe('clusterShort (+n pill)', () => {
     expect(clusterShort([s('a', 600, 615), s('b', 640, 655), s('c', 680, 695)])).toEqual([])
   })
 })
+
+import { keyboardInset } from '../../src/quickadd/QuickAdd'
+describe('keyboardInset (A2-P0-4)', () => {
+  it('is the height the keyboard takes from the layout viewport', () => {
+    expect(keyboardInset(852, 852, 0)).toBe(0)
+    expect(keyboardInset(852, 516, 0)).toBe(336)
+    expect(keyboardInset(852, 516, 20)).toBe(316)
+    expect(keyboardInset(852, 900, 0)).toBe(0)
+  })
+})

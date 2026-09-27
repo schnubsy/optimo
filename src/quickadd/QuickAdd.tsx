@@ -10,6 +10,11 @@ import { CATEGORY_OF, suggestIcon, titleStem } from './suggest'
 import { useUI } from '../state/ui'
 import { parseQuickAdd, type Parsed } from './parse'
 
+/** Height the on-screen keyboard takes from the layout viewport (0 when closed). */
+export function keyboardInset(innerHeight: number, vvHeight: number, vvOffsetTop: number): number {
+  return Math.max(0, Math.round(innerHeight - vvHeight - vvOffsetTop))
+}
+
 function resolveCategory(p: Parsed, cats: Category[]): Category | null {
   if (p.category) {
     const q = p.category.toLowerCase()
@@ -50,6 +55,20 @@ export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?
   const input = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (sheet) input.current?.focus()
+  }, [sheet])
+  const wrap = useRef<HTMLDivElement>(null)
+  // A2-P0-4: keep the sheet above the on-screen keyboard — the visual viewport shrinks when it opens
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!sheet || !vv) return
+    const on = () => wrap.current?.style.setProperty('--kb-inset', `${keyboardInset(window.innerHeight, vv.height, vv.offsetTop)}px`)
+    on()
+    vv.addEventListener('resize', on)
+    vv.addEventListener('scroll', on)
+    return () => {
+      vv.removeEventListener('resize', on)
+      vv.removeEventListener('scroll', on)
+    }
   }, [sheet])
   const cats = useCategories()
   const settings = useSettings()
@@ -154,7 +173,7 @@ export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?
   )
   if (!sheet) return form
   return (
-    <div className="sheet-wrap qa-wrap" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onDone?.()}>
+    <div ref={wrap} className="sheet-wrap qa-wrap" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onDone?.()}>
       <div className="sheet qa-sheet" role="dialog" aria-modal="true" aria-label="Add a task" data-testid="quickadd-sheet">
         <i className="grabber" aria-hidden="true" />
         {form}
