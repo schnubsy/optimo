@@ -189,6 +189,7 @@ Done-criteria: recurrence.test.ts (daily/weekday/weekly/monthly, exception overr
   week.spec.ts drag between days + theme toggle persists · gauntlet GREEN · evidence screenshots week/month/focus.
 
 === SLICE 6 — offline PWA + performance at scale ===
+Status: done 70af207
 Scope: installable, fully offline, fast with 5k tasks.
 Files in play: vite.config.ts (vite-plugin-pwa: manifest, icons from src/icons brand mark, Workbox precache +
   navigateFallback), src/sw-register.ts, src/timeline/virtual.ts, src/inbox/virtual.ts, tests/offline.spec.ts,
