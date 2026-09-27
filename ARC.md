@@ -184,6 +184,7 @@ Done-criteria: unit tests for encrypt/decrypt round-trip, ICS parse + RRULE expa
   `deno check` + `deno test` for functions · gauntlet GREEN · evidence: screenshots + function test log.
 
 === SLICE 5 — web push reminders ===
+Status: done 4ab0ef6
 Scope: reminders fire as push notifications on the installed PWA (iPhone) and desktop browsers.
 Files in play: src/sw.ts (custom Workbox SW via `injectManifest`: push + notificationclick handlers),
   vite.config.ts (strategies: 'injectManifest'), src/push/{subscribe.ts,api.ts}, src/views/Settings.tsx
