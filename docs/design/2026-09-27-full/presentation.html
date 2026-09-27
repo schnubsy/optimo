@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>optimo — Eye FULL review · 2026-09-27</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Space+Grotesk:wght@500;700&family=Libre+Caslon+Display&family=Karla:wght@400;500;700&family=Anton&family=DM+Mono:wght@400;500&family=Lexend:wght@400;600;700&family=Nunito+Sans:ital,wght@0,400;0,600;0,800;1,400&family=Sora:wght@400;600;700&family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- deck chrome ---------- */
+:root{--bg:#ffffff;--ink:#14161a;--ink2:#5a6068;--line:#e6e8ec;--card:#f6f7f9;--pick:#0b6b3a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font:15px/1.5 "Figtree",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+#prog{position:fixed;top:0;left:0;height:3px;background:var(--ink);width:0;z-index:9}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 96px}
+h1{font-size:34px;line-height:1.1;margin:0 0 6px}
+h2{font-size:24px;margin:56px 0 12px;padding-top:24px;border-top:2px solid var(--ink)}
+h3{font-size:18px;margin:24px 0 8px}
+p{max-width:78ch}
+.muted{color:var(--ink2)}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px;background:var(--card)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;background:var(--card)}
+.win td:first-child{font-weight:700}
+.win{background:#eaf7ef}
+.fade{opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+.fade.in{opacity:1;transform:none}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px}
+nav.toc a{font-size:13px;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.dir{margin-top:48px;border:1px solid var(--line);border-radius:16px;padding:24px;background:#fff}
+.dir header{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:12px}
+.dir header h2{border:0;margin:0;padding:0;font-size:28px}
+.sw{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.sw i{width:34px;height:34px;border-radius:8px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+.sw i span{display:none}
+.typ{font-size:13px;margin:6px 0 14px}
+.mocks{display:grid;grid-template-columns:1fr 330px;gap:24px;align-items:start;margin:18px 0}
+@media(max-width:1000px){.mocks{grid-template-columns:1fr}}
+.cap{font-size:12px;color:var(--ink2);margin:6px 0 0}
+.flow{background:var(--card);border-radius:12px;padding:14px 16px;font-size:14px}
+.flow li{margin:4px 0}
+.ok{color:#0b6b3a;font-weight:700}.mid{color:#9a6a00;font-weight:700}.bad{color:#b3261e;font-weight:700}
+.score{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}
+.score div{background:var(--card);border-radius:10px;padding:8px 10px;font-size:12px}
+.score b{display:block;font-size:20px}
+.mode-toggle{position:fixed;right:16px;top:12px;z-index:10;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer}
+footer{margin-top:64px;font-size:12px;color:var(--ink2);border-top:1px solid var(--line);padding-top:16px}
+
+/* ---------- shared mock skeleton (presentation artifact, not production) ---------- */
+.mk{position:relative;font-family:var(--fu);color:var(--ink);background:var(--canvas);overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 20px 40px -24px rgba(0,0,0,.35)}
+.mk.desk{width:100%;aspect-ratio:1280/800;border-radius:10px;display:grid;grid-template-rows:44px 1fr;font-size:11px}
+.mk.phone{width:300px;height:620px;border-radius:32px;border:8px solid #111;margin:0 auto;display:grid;grid-template-rows:auto 1fr auto;font-size:11px}
+.mk .top{display:flex;align-items:center;gap:14px;padding:0 14px;border-bottom:1px solid var(--line-m)}
+.mk .top .date{font-family:var(--fd);font-size:17px;font-weight:var(--wd,700)}
+.mk .top .stat{color:var(--ink2-m)}
+.mk .top .stat b{color:var(--ink)}
+.mk .body{display:grid;grid-template-columns:250px 1fr;min-height:0}
+.mk .rail{border-right:1px solid var(--line-m);padding:12px;background:var(--panel)}
+.mk .rail h4{margin:0 0 8px;font-size:12px}
+.mk .row{display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:var(--r-row);background:var(--row-bg);margin-bottom:6px;border:1px solid var(--row-line)}
+.mk .row .dot{width:10px;height:10px;border-radius:var(--r-dot);background:var(--cc);flex:none}
+.mk .row .t{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk .row .dur{color:var(--ink2-m);font-variant-numeric:tabular-nums}
+.mk .row .place{font-size:10px;font-weight:700;border-radius:var(--r-btn);padding:3px 8px;background:var(--acc);color:var(--on-acc)}
+.mk .qa{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 12px;border-radius:var(--r-btn);background:var(--qa-bg);border:1px solid var(--qa-line);color:var(--ink2-m)}
+.mk .qa b{color:var(--acc)}
+.mk .tl{position:relative;padding:8px 14px 8px 0;overflow:hidden}
+.mk .col{position:relative;margin-left:54px;height:100%}
+.mk .hr{position:absolute;left:-54px;width:48px;text-align:right;font-family:var(--ft);font-variant-numeric:tabular-nums;color:var(--ink2-m);font-size:var(--hr-size,11px);transform:translateY(-50%);font-weight:var(--hr-w,500)}
+.mk .hl{position:absolute;left:0;right:0;border-top:1px solid var(--line-m)}
+.mk .blk{position:absolute;left:0;right:0;padding:6px 10px;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;color:var(--on-tint);background:var(--tint);border-radius:var(--r-blk)}
+.mk .blk .ti{font-weight:700;font-size:12px;line-height:1.2;display:flex;gap:6px;align-items:center}
+.mk .blk .tm{font-family:var(--ft);font-variant-numeric:tabular-nums;font-size:10px;opacity:.85;margin-top:2px}
+.mk .blk .ic{width:22px;height:22px;border-radius:var(--r-ic);background:var(--cc);color:#fff;display:grid;place-items:center;font-size:11px;flex:none}
+.mk .blk .ck{width:14px;height:14px;border:1.5px solid currentColor;border-radius:var(--r-ck);flex:none;display:grid;place-items:center;font-size:9px}
+.mk .blk.done{opacity:.55}.mk .blk.done .ti span{text-decoration:line-through}
+.mk .blk.short{padding:2px 10px;flex-direction:row;align-items:center;gap:8px}
+.mk .blk.short .tm{margin:0 0 0 auto}
+.mk .blk.short .ic{width:16px;height:16px;font-size:8px}
+.mk .blk.half{right:50%}.mk .blk.half2{left:51%}
+.mk .gap{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--ink2-m);font-size:10px}
+.mk .gap::before{content:"";position:absolute;left:var(--gap-x,18px);top:6px;bottom:6px;border-left:var(--gap-line)}
+.mk .gap .lab{position:relative;z-index:1;background:var(--gap-lab-bg,var(--canvas));color:var(--gap-lab-fg,var(--ink2-m));border:var(--gap-lab-line,0);padding:2px 8px;border-radius:var(--r-btn);font-variant-numeric:tabular-nums}
+.mk .gap .plus{position:absolute;right:8px;width:18px;height:18px;border-radius:var(--r-btn);display:grid;place-items:center;background:var(--plus-bg);color:var(--plus-fg);font-weight:700}
+.mk .now{position:absolute;left:-54px;right:0;height:0;border-top:var(--now-line);z-index:3}
+.mk .now .nl{position:absolute;left:0;top:-9px;font-family:var(--ft);font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--now-bg);color:var(--now-fg);padding:1px 6px;border-radius:var(--r-btn)}
+.mk .fab{position:absolute;right:16px;bottom:64px;width:48px;height:48px;border-radius:var(--r-fab);background:var(--acc);color:var(--on-acc);display:grid;place-items:center;font-size:24px;box-shadow:var(--fab-sh);z-index:4}
+.mk .tabs{display:flex;justify-content:space-around;padding:10px 6px 14px;border-top:1px solid var(--line-m);background:var(--panel);font-size:10px;font-weight:600}
+.mk .tabs span{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink2-m)}
+.mk .tabs span.on{color:var(--acc)}
+.mk .tabs i{width:20px;height:20px;border-radius:var(--r-ic);background:currentColor;opacity:.9}
+.mk .tabs .cnt{font-size:9px;background:var(--acc);color:var(--on-acc);border-radius:999px;padding:0 5px;margin-top:-8px}
+.mk .strip{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line-m)}
+.mk .strip span{flex:1;text-align:center;font-size:10px;padding:5px 0;border-radius:var(--r-btn);color:var(--ink2-m)}
+.mk .strip span.on{background:var(--acc);color:var(--on-acc);font-weight:700}
+.mk .phone .tl{padding-left:0}
+.mk.phone .col{margin-left:46px}
+.mk.phone .hr{left:-46px;width:40px}
+.mk.phone .now{left:-46px}
+/* secondary: week */
+.mk.sec{width:100%;aspect-ratio:1280/560;border-radius:10px;display:grid;grid-template-rows:44px 1fr;font-size:10px}
+.mk .wk{display:grid;grid-template-columns:40px repeat(7,1fr);gap:0;padding:8px 12px}
+.mk .wk .dh{font-weight:700;padding:4px;border-bottom:1px solid var(--line-m);font-size:11px}
+.mk .wk .dh small{display:block;font-weight:400;color:var(--ink2-m)}
+.mk .wk .dh.today{color:var(--acc)}
+.mk .wk .dc{position:relative;height:380px;border-left:1px solid var(--line-m)}
+.mk .wk .dc.today{background:var(--today-bg)}
+.mk .wk .wb{position:absolute;left:3px;right:3px;padding:3px 6px;border-radius:var(--r-wb);background:var(--tint);color:var(--on-tint);font-weight:600;font-size:9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:var(--wb-edge)}
+.mk .wk .wg{position:absolute;left:8px;right:8px;border-top:2px dotted var(--line-m);text-align:center;font-size:8px;color:var(--ink2-m)}
+/* secondary: editor */
+.mk.ed{width:300px;height:520px;border-radius:32px;border:8px solid #111;margin:0 auto;font-size:11px;display:grid;grid-template-rows:auto 1fr}
+.mk .sheet{background:var(--panel);border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:16px 16px;margin-top:70px;height:100%;box-shadow:0 -12px 30px -18px rgba(0,0,0,.4)}
+.mk .sheet h5{margin:0 0 12px;font-family:var(--fd);font-size:20px;font-weight:var(--wd,700)}
+.mk .fld{margin:8px 0}
+.mk .fld label{display:block;font-size:10px;color:var(--ink2-m);margin-bottom:3px}
+.mk .fld .in{background:var(--in-bg);border:1px solid var(--in-line);border-radius:var(--r-btn);padding:8px 10px;font-weight:600}
+.mk .chips{display:flex;gap:6px;flex-wrap:wrap}
+.mk .chips span{padding:5px 10px;border-radius:var(--r-btn);border:1px solid var(--in-line);font-weight:600}
+.mk .chips span.on{background:var(--acc);color:var(--on-acc);border-color:transparent}
+.mk .cats{display:flex;gap:6px}
+.mk .cats i{width:26px;height:26px;border-radius:var(--r-ic);display:inline-block}
+.mk .cats i.on{outline:2px solid var(--ink);outline-offset:2px}
+.mk .save{margin-top:10px;background:var(--acc);color:var(--on-acc);text-align:center;padding:10px;border-radius:var(--r-btn);font-weight:700}
+
+/* ---------- D1 Fahrplan · Grid · Swiss/International ---------- */
+.d-fahrplan{--fu:"Archivo",sans-serif;--fd:"Archivo",sans-serif;--ft:"Space Grotesk",sans-serif;--wd:800;--hr-size:13px;--hr-w:700;
+ --canvas:#fff;--panel:#fff;--ink:#131417;--ink2-m:#5b6068;--line-m:#e3e5e9;--acc:oklch(0.66 0.19 45);--on-acc:#131417;
+ --r-blk:3px;--r-row:0;--r-dot:0;--r-btn:3px;--r-ic:0;--r-ck:0;--r-fab:0;--r-wb:2px;--r-sheet:0;--row-bg:#fff;--row-line:#131417;--qa-bg:#fff;--qa-line:#131417;
+ --gap-x:-8px;--gap-line:2px solid #c9ccd2;--gap-lab-bg:#fff;--gap-lab-fg:#131417;--gap-lab-line:1px solid #131417;--plus-bg:#131417;--plus-fg:#fff;
+ --now-line:3px solid oklch(0.66 0.19 45);--now-bg:oklch(0.66 0.19 45);--now-fg:#131417;--fab-sh:none;--today-bg:oklch(0.97 0.03 45);--wb-edge:3px solid var(--cc);--in-bg:#fff;--in-line:#131417}
+.d-fahrplan .blk{background:#fff;border:1.5px solid var(--cc);color:#131417;padding-left:12px}
+.d-fahrplan .blk::before{content:"";position:absolute;left:-8px;top:0;bottom:0;width:5px;background:var(--cc)}
+.d-fahrplan .blk .ic{display:none}
+.d-fahrplan .blk .ti{font-weight:600}
+.d-fahrplan .col{margin-left:62px}.d-fahrplan .hr{left:-62px}
+.d-fahrplan .tabs span.on{color:#131417;border-top:3px solid var(--acc);margin-top:-13px;padding-top:10px}
+/* ---------- D2 Gelateria · Vogue · Editorial ---------- */
+.d-gelateria{--fu:"Karla",sans-serif;--fd:"Libre Caslon Display",serif;--ft:"Karla",sans-serif;--wd:400;--hr-size:15px;--hr-w:400;
+ --canvas:#fff;--panel:#fff;--ink:oklch(0.22 0.02 60);--ink2-m:oklch(0.48 0.02 60);--line-m:oklch(0.93 0.01 60);--acc:oklch(0.55 0.19 75);--on-acc:#fff;
+ --r-blk:16px;--r-row:14px;--r-dot:999px;--r-btn:999px;--r-ic:999px;--r-ck:999px;--r-fab:999px;--r-wb:10px;--r-sheet:28px;--row-bg:oklch(0.97 0.01 60);--row-line:transparent;--qa-bg:oklch(0.97 0.01 60);--qa-line:transparent;
+ --gap-x:50%;--gap-line:2px dotted oklch(0.75 0.03 60);--gap-lab-bg:#fff;--gap-lab-fg:oklch(0.40 0.02 60);--plus-bg:oklch(0.94 0.02 60);--plus-fg:var(--ink);
+ --now-line:2px solid var(--ink);--now-bg:var(--ink);--now-fg:#fff;--fab-sh:0 10px 24px -10px oklch(0.4 0.1 75 / .6);--today-bg:oklch(0.98 0.02 75);--wb-edge:0;--in-bg:oklch(0.97 0.01 60);--in-line:transparent}
+.d-gelateria .hr{font-family:"Libre Caslon Display",serif;font-style:italic}
+.d-gelateria .blk{box-shadow:inset 0 0 0 1px oklch(0 0 0 / .04)}
+.d-gelateria .blk .ic{position:absolute;right:8px;top:8px;width:26px;height:26px}
+.d-gelateria .blk.short .ic{position:static;width:16px;height:16px}
+.d-gelateria .gap .lab{font-family:"Libre Caslon Display",serif;font-style:italic;font-size:12px}
+.d-gelateria .top .date{font-style:italic;font-size:20px}
+.d-gelateria .sheet h5{font-style:italic;font-size:24px}
+/* ---------- D3 Bauklotz · Steel · Bauhaus ---------- */
+.d-bauklotz{--fu:"Lexend",sans-serif;--fd:"Anton",sans-serif;--ft:"DM Mono",monospace;--wd:400;--hr-size:14px;--hr-w:500;
+ --canvas:#fff;--panel:#fff;--ink:#111;--ink2-m:#444;--line-m:#111;--acc:oklch(0.88 0.18 95);--on-acc:#111;
+ --r-blk:0;--r-row:0;--r-dot:0;--r-btn:0;--r-ic:0;--r-ck:0;--r-fab:999px;--r-wb:0;--r-sheet:0;--row-bg:#fff;--row-line:#111;--qa-bg:#fff;--qa-line:#111;
+ --gap-x:-8px;--gap-line:3px solid #111;--gap-lab-bg:oklch(0.88 0.18 95);--gap-lab-fg:#111;--plus-bg:#111;--plus-fg:#fff;
+ --now-line:3px solid #111;--now-bg:oklch(0.55 0.2 25);--now-fg:#fff;--fab-sh:none;--today-bg:oklch(0.96 0.06 95);--wb-edge:0;--in-bg:#fff;--in-line:#111}
+.d-bauklotz .blk{background:var(--cc);color:#fff;border-radius:0}
+.d-bauklotz .blk[data-c=learn],.d-bauklotz .blk[data-c=home]{color:#111}
+.d-bauklotz .blk .ic{background:#fff;color:#111;border-radius:0}
+.d-bauklotz .blk[data-c=meet] .ic{border-radius:999px}
+.d-bauklotz .blk[data-c=health] .ic{clip-path:polygon(50% 0,100% 100%,0 100%)}
+.d-bauklotz .blk[data-c=personal] .ic{transform:rotate(45deg) scale(.8)}
+.d-bauklotz .hl{border-top:1px solid #ddd}
+.d-bauklotz .top{border-bottom:3px solid #111}
+.d-bauklotz .top .date{font-size:22px;letter-spacing:.02em;text-transform:uppercase}
+.d-bauklotz .rail{border-right:3px solid #111}
+.d-bauklotz .wk .wb{color:#fff;background:var(--cc)}
+.d-bauklotz .wk .dh.today{color:#111;background:var(--acc)}
+.d-bauklotz .tabs{border-top:3px solid #111}
+/* ---------- D4 Meadow · Calm · Organic ---------- */
+.d-meadow{--fu:"Nunito Sans",sans-serif;--fd:"Nunito Sans",sans-serif;--ft:"Nunito Sans",sans-serif;--wd:800;--hr-size:11px;--hr-w:600;
+ --canvas:oklch(0.99 0.006 110);--panel:oklch(0.975 0.01 110);--ink:oklch(0.26 0.03 140);--ink2-m:oklch(0.48 0.03 140);--line-m:oklch(0.92 0.02 110);--acc:oklch(0.52 0.13 130);--on-acc:#fff;
+ --r-blk:999px;--r-row:999px;--r-dot:999px;--r-btn:999px;--r-ic:999px;--r-ck:999px;--r-fab:999px;--r-wb:999px;--r-sheet:28px;--row-bg:#fff;--row-line:transparent;--qa-bg:#fff;--qa-line:transparent;
+ --gap-x:14px;--gap-line:3px dotted oklch(0.78 0.06 130);--gap-lab-bg:oklch(0.95 0.04 130);--gap-lab-fg:oklch(0.32 0.09 130);--plus-bg:oklch(0.95 0.04 130);--plus-fg:oklch(0.32 0.09 130);
+ --now-line:2px solid oklch(0.52 0.13 130);--now-bg:oklch(0.52 0.13 130);--now-fg:#fff;--fab-sh:0 12px 24px -12px oklch(0.4 0.1 130 / .7);--today-bg:oklch(0.97 0.03 130);--wb-edge:0;--in-bg:#fff;--in-line:transparent}
+.d-meadow .blk{border-radius:22px;padding-left:44px;justify-content:center}
+.d-meadow .blk .ic{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:28px;height:28px}
+.d-meadow .blk.short{padding-left:36px}.d-meadow .blk.short .ic{width:20px;height:20px}
+.d-meadow .blk.run::after{content:"";position:absolute;left:0;top:0;bottom:0;width:45%;background:oklch(0 0 0 / .06);border-radius:22px 0 0 22px;pointer-events:none}
+.d-meadow .hl{border-top:1px dashed var(--line-m)}
+/* ---------- D5 Prism · Neon · Glassmorphism (daylight) ---------- */
+.d-prism{--fu:"Sora",sans-serif;--fd:"Syne",sans-serif;--ft:"Sora",sans-serif;--wd:800;--hr-size:11px;--hr-w:600;
+ --canvas:linear-gradient(160deg,oklch(0.97 0.03 215),oklch(0.97 0.03 320));--panel:oklch(1 0 0 / .72);--ink:oklch(0.22 0.03 290);--ink2-m:oklch(0.46 0.04 290);--line-m:oklch(0.86 0.03 290 / .6);--acc:oklch(0.56 0.2 320);--on-acc:#fff;
+ --r-blk:14px;--r-row:12px;--r-dot:999px;--r-btn:999px;--r-ic:10px;--r-ck:6px;--r-fab:16px;--r-wb:8px;--r-sheet:24px;--row-bg:oklch(1 0 0 / .7);--row-line:oklch(1 0 0);--qa-bg:oklch(1 0 0 / .7);--qa-line:oklch(1 0 0);
+ --gap-x:-8px;--gap-line:2px solid transparent;--gap-lab-bg:oklch(1 0 0 / .8);--gap-lab-fg:var(--ink);--gap-lab-line:1px solid oklch(1 0 0);--plus-bg:oklch(1 0 0 / .8);--plus-fg:var(--ink);
+ --now-line:2px solid oklch(0.56 0.2 320);--now-bg:oklch(0.56 0.2 320);--now-fg:#fff;--fab-sh:0 12px 28px -10px oklch(0.56 0.2 320 / .7);--today-bg:oklch(1 0 0 / .5);--wb-edge:0;--in-bg:oklch(1 0 0 / .7);--in-line:oklch(1 0 0)}
+.d-prism .blk{background:oklch(1 0 0 / .78);color:var(--ink);box-shadow:0 8px 20px -14px oklch(0.3 0.05 290 / .5),inset 0 0 0 1px oklch(1 0 0)}
+.d-prism .blk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--cc),oklch(0.62 0.19 320))}
+.d-prism .blk .ic{background:linear-gradient(135deg,var(--cc),oklch(0.62 0.19 320))}
+.d-prism .gap::before{border-left:0;width:2px;background:linear-gradient(180deg,oklch(0.62 0.16 215),oklch(0.62 0.19 320));box-shadow:0 0 8px oklch(0.62 0.19 320 / .6)}
+.d-prism .now{box-shadow:0 0 10px oklch(0.56 0.2 320 / .7)}
+.d-prism .rail,.d-prism .tabs,.d-prism .top{backdrop-filter:blur(14px) saturate(1.3);background:oklch(1 0 0 / .55)}
+.d-prism .top .date{background:linear-gradient(90deg,oklch(0.45 0.16 215),oklch(0.5 0.2 320));-webkit-background-clip:text;background-clip:text;color:transparent}
+/* ---------- D6 Orchard · Cupertino · HIG-native (web) ---------- */
+.d-orchard{--fu:"Figtree",sans-serif;--fd:"Figtree",sans-serif;--ft:"Figtree",sans-serif;--wd:700;--hr-size:11px;--hr-w:500;
+ --canvas:#f2f2f7;--panel:#fff;--ink:#1c1c1e;--ink2-m:#6e6e73;--line-m:#d9d9de;--acc:oklch(0.5 0.2 290);--on-acc:#fff;
+ --r-blk:12px;--r-row:0;--r-dot:7px;--r-btn:10px;--r-ic:7px;--r-ck:999px;--r-fab:999px;--r-wb:8px;--r-sheet:16px;--row-bg:#fff;--row-line:transparent;--qa-bg:#e9e9ee;--qa-line:transparent;
+ --gap-x:-8px;--gap-line:1px solid #c7c7cc;--gap-lab-bg:#e9e9ee;--gap-lab-fg:#3a3a3c;--plus-bg:#e9e9ee;--plus-fg:var(--acc);
+ --now-line:2px solid oklch(0.5 0.2 290);--now-bg:oklch(0.5 0.2 290);--now-fg:#fff;--fab-sh:0 8px 20px -8px rgba(0,0,0,.3);--today-bg:#fff;--wb-edge:0;--in-bg:#f2f2f7;--in-line:transparent}
+.d-orchard .blk{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06);padding-left:44px}
+.d-orchard .blk .ic{position:absolute;left:10px;top:8px;width:26px;height:26px}
+.d-orchard .blk.short{padding-left:36px}.d-orchard .blk.short .ic{top:50%;transform:translateY(-50%);width:18px;height:18px}
+.d-orchard .blk .tm{color:var(--cc);opacity:1;font-weight:600}
+.d-orchard .rail .row{border-bottom:1px solid var(--line-m);border-radius:0;margin:0}
+.d-orchard .rail .row:first-of-type{border-radius:10px 10px 0 0}.d-orchard .rail .row:last-of-type{border-bottom:0;border-radius:0 0 10px 10px}
+.d-orchard .wk .wb{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);border-left:4px solid var(--cc)}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<button class="mode-toggle" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='light'?'dark':'light';this.textContent=document.documentElement.dataset.theme==='light'?'Preview: light mocks':'Preview: dark mocks (see tokens)'" title="Dark tokens ship in tokens-*.css; the deck previews light">Preview: light mocks</button>
+<div class="wrap">
+
+<p class="muted" style="margin:0">The Eye · FULL review · Marlowe Holm, Creative Director · 2026-09-27</p>
+<h1>optimo — six directions for a fun, bright, graphical planner</h1>
+<p class="muted">Mode: <b>FULL</b> (six authored directions, Flow review, scored rubric, handoff for winner + runner-up). Surface: Claude Code sub-agent without Task/shell — directions were authored one at a time with the collision check run after each; the Mac dossier and design register were unreadable here, so the portable dossier-lite was read silently and the collision check ran against the 2026-09-26 LITE pack only.</p>
+
+<h3>The project, as read</h3>
+<p>optimo is Mark's own day, placed: every intention gets a slot on one timeline, unscheduled work waits in an inbox, and free time is a visible thing you can drop into — not empty grid. It is used in two rituals (plan the morning, reconcile the evening) and dozens of one-thumb moves between them, so the hero job is <b>placing and re-placing blocks</b> — create, drag, resize-by-edge (which must persist duration; it does not today), complete, and inbox→timeline on a phone. Arc 1 shipped on Switchboard, a dark instrument panel Mark now calls "very technical"; his ask is a fun, bright, graphical, sleek register in the spirit of Structured — colour-coded bubbles with a line between them that says "you're free here" — without any of Structured's assets. Stack: React 18 + TypeScript + Vite, CSS-variable tokens, light + dark, iPhone 390 and desktop 1280, Google Fonts only, in-repo 24px icons.</p>
+
+<nav class="toc">
+<a href="#rubric">Rubric &amp; cast</a><a href="#fahrplan">1 Fahrplan</a><a href="#gelateria">2 Gelateria</a><a href="#bauklotz">3 Bauklotz</a><a href="#meadow">4 Meadow</a><a href="#prism">5 Prism</a><a href="#orchard">6 Orchard</a><a href="#scores">Scores</a><a href="#rec">Recommendation</a>
+</nav>
+
+<h2 id="rubric">A · Rubric, cast, gates</h2>
+<p>Project-weighted rubric (set by the brief, not the default consumer table): <span class="tag">Fun/bright register fit · 30</span><span class="tag">Legibility at 5-min granularity &amp; mobile · 25</span><span class="tag">Originality vs Structured &amp; category signatures · 20</span><span class="tag">Buildability in React + CSS variables incl. dark · 15</span><span class="tag">Motion / fluidity · 10</span></p>
+<p>Cast: Grid (Atticus Vance), Vogue (Coco Belmont), Steel (Viktor Stahl), Calm (Anaya Shrestha), Neon (Mr. Neon), Cupertino (Nils Brunner) each author one direction from a firewalled material kit; Flow (Ingrid Falk) reviews all six and authors none. Two seats left their home defaults for stated, project-driven reasons: Steel moved from Brutalist to <b>Bauhaus</b> (Mark retired the dark-instrument register; Bauhaus keeps Steel's honesty — geometric, primary, nothing hidden — in a bright key) and Neon ships <b>light by default</b> (the brief is "bright"; night glass is its dark theme, not its home). Fonts ruled out by the LITE pack (Chivo, Newsreader, Spline Sans, Bodoni Moda, Work Sans) were not used; where that emptied a kit's only UI sans, the substitute is named in the direction.</p>
+<p>Gates every direction had to pass: text on tinted surfaces ≥ 4.5:1 in both modes via the same-hue tint/ink recipe (tint L 0.95 / ink L 0.32 light; tint L 0.30 / ink L 0.88 dark); category, done and task-vs-event never colour-only; 44px targets (hit area may exceed the visual block); a reduced-motion variant for every motion token; and an explicit statement of how it differs from Structured and from every signature in the category survey.</p>
+
+<!-- ================= D1 ================= -->
+<section class="dir d-fahrplan fade" id="fahrplan">
+<header><h2>1 · Fahrplan</h2><span class="tag">Grid — Atticus Vance</span><span class="tag">Swiss / International</span><span class="tag">light default</span><span class="tag">block strategy 2 · outlined card on a coloured spine</span></header>
+<div class="sw"><i style="background:#fff"></i><i style="background:#131417"></i><i style="background:oklch(0.66 0.19 45)"></i><i style="background:oklch(0.55 0.18 30)"></i><i style="background:oklch(0.55 0.15 150)"></i><i style="background:oklch(0.55 0.15 200)"></i><i style="background:oklch(0.55 0.18 260)"></i><i style="background:oklch(0.55 0.18 300)"></i><i style="background:oklch(0.55 0.16 340)"></i><i style="background:oklch(0.62 0.14 90)"></i></div>
+<p class="typ"><span style="font-family:Archivo;font-weight:800;font-size:20px">Archivo 800 — Saturday 26</span> &nbsp; <span style="font-family:'Space Grotesk';font-weight:700;font-size:16px">Space Grotesk 09:00–11:00</span> &nbsp; <span style="font-family:Archivo">Archivo 400/600 for UI</span></p>
+<div class="mocks"><div><div class="mk desk" data-dir="fahrplan"></div><p class="cap">Desktop 1280 — two-pane. Colour lives on a 5px spine at the column's left edge and a 1.5px card outline; text is always ink on white. The free-time connector is a 2px grey rule with a boxed tabular label; tangerine is the one signal (now line, Place, selected tab).</p></div><div><div class="mk phone" data-dir="fahrplan"></div><p class="cap">iPhone 390 — single pane, square FAB, tab underline.</p></div></div>
+<div class="mk sec" data-dir="fahrplan" data-sec="week"></div><p class="cap">Secondary — week view: seven strict columns, blocks as outlined cards with a 3px edge, dotted free-time rules with the free hours per day in the header.</p>
+<div class="grid2">
+<div><h3>Rationale</h3><p>The Swiss answer to "fun" is proportion: a bold Archivo date, oversized tabular hour numerals in Space Grotesk, and eight fully saturated category colours used as thin structural lines, so the timetable reads like a railway departure board that happens to be joyful. Blocks stay white with ink text — the single most legible option at 5-minute granularity, because a 6px-tall card still shows a coloured spine and an outline. Free time is drawn honestly as a rule and a number, not a mood.</p><p>What it gives up is softness. There are no tints, no chips, no springs; the brightness comes from saturated lines on white and from the tangerine signal. It is the direction to choose if "sleek" outweighs "bubbly".</p>
+<h3>Originality statement</h3><p>No icon bubbles, no spine circles (the spine is a flat bar that never carries a glyph), no progress fill, gap label is a number in a box rather than prompt copy, no pink. Differs from Apple's left-bar chip (bar sits outside the card on the column edge), from Notion Calendar's monochrome (eight saturated lines), from Akiflow (no command bar, no purple), from Sunsama (no kanban).</p></div>
+<div class="flow"><h3 style="margin-top:0">Flow review — Ingrid Falk</h3><ul>
+<li><span class="ok">Create</span> quick-add parse row shows chips inline; tap empty slot creates at that time. Addressed: the parse row needs a 44px "wrong? edit" target — added.</li>
+<li><span class="ok">Drag</span> outline lifts to 2px + tangerine, ghost shows start/end in the gutter. Grid layout snaps to 5 min — good.</li>
+<li><span class="mid">Resize by edge</span> a 1.5px outline gives no grab affordance. Addressed: on hover/selected, a 44px invisible band below the card plus a 24×4 ink handle; commit writes <code>duration_min</code> only (the persistence bug is a data-path fix, called out in the prompt).</li>
+<li><span class="ok">Complete</span> square check + strike + 55% opacity — three cues, not colour.</li>
+<li><span class="mid">Mobile inbox→timeline</span> cross-tab drag is impossible; Place opens a slot list of real free rows. Open trade-off: the inbox tab needs a count badge (added) so unplaced work isn't invisible.</li>
+<li><span class="ok">A11y</span> ink on white 16:1; category colours are lines only, never text; now line has a time flag. Reduced motion: no transforms to drop.</li></ul></div></div>
+<div class="score"><div>Register 30<b>6</b></div><div>Legibility 25<b>10</b></div><div>Originality 20<b>7</b></div><div>Build 15<b>10</b></div><div>Motion 10<b>6</b></div><div>Weighted<b>77.0</b></div></div>
+</section>
+
+<!-- ================= D2 ================= -->
+<section class="dir d-gelateria fade" id="gelateria">
+<header><h2>2 · Gelateria</h2><span class="tag">Vogue — Coco Belmont</span><span class="tag">Editorial / Fashion (pop-editorial)</span><span class="tag">light default</span><span class="tag">block strategy 1 · tinted rounded block with corner icon chip</span></header>
+<div class="sw"><i style="background:oklch(0.95 0.045 15)"></i><i style="background:oklch(0.55 0.19 15)"></i><i style="background:oklch(0.95 0.045 70)"></i><i style="background:oklch(0.55 0.19 70)"></i><i style="background:oklch(0.95 0.045 140)"></i><i style="background:oklch(0.50 0.16 140)"></i><i style="background:oklch(0.95 0.045 250)"></i><i style="background:oklch(0.55 0.19 250)"></i><i style="background:oklch(0.95 0.045 300)"></i><i style="background:oklch(0.55 0.19 300)"></i><i style="background:oklch(0.22 0.02 60)"></i></div>
+<p class="typ"><span style="font-family:'Libre Caslon Display';font-style:italic;font-size:24px">Libre Caslon Display — Saturday, 26 September</span> &nbsp; <span style="font-family:Karla;font-weight:700;font-size:16px">Karla 700 titles</span> &nbsp; <span style="font-family:Karla">Karla 400/500 UI, tabular figures</span></p>
+<div class="mocks"><div><div class="mk desk" data-dir="gelateria"></div><p class="cap">Desktop — sherbet-tinted 16px blocks with same-hue ink text, a 26px icon chip in the block's top-right corner, italic Caslon hour numerals in the gutter, and a dotted connector with an italic "1 h 15 free" between blocks. Mango is the app accent.</p></div><div><div class="mk phone" data-dir="gelateria"></div><p class="cap">iPhone — round FAB, pill date strip, tab bar with inbox count.</p></div></div>
+<div class="mk ed" data-dir="gelateria" data-sec="editor"></div><p class="cap">Secondary — task editor sheet (28px radius): title, category swatches, duration chips, start, priority; the same tint/chip pairs the block uses.</p>
+<div class="grid2">
+<div><h3>Rationale</h3><p>An ice-cream counter is bright, sophisticated and edible-looking at once, which is the exact register asked for. Every block is a scoop: a 90%-lightness tint with the same hue at 32% lightness for text (≈10:1), so the colour is unmistakable and the words are always crisp. The editorial move is the type: Libre Caslon Display italic for the day title, hour numerals and the free-time label turns the timetable into a menu, and Karla keeps everything interactive plain and fast. The hero moment is the gutter itself — big italic hours you can read from across the room.</p><p>It trades a little density (16px radius and 12px padding cost about 20% vertical space versus Fahrplan) and puts a serif on screen, which some will read as "less app-like". The serif is limited to numerals, the day title and the gap label; no cream, no terracotta — the palette is white plus sherbet, so the warm-cream-serif tell does not apply.</p>
+<h3>Originality statement</h3><p>Blocks are rounded rectangles with the icon inside them, not bubbles on a spine; there is no progress fill (running state = 2px ink outline + "now" flag); free time is a dotted connector with a duration, not a prompt sentence; the accent is mango, not pink; week view is compact tinted blocks, not icon stacks. Differs from Tiimo (no illustrated icon library, no ring/timer hero), Amie (no emoji identity, no bouncy springs, radius 16 not pill), Google Calendar (tints not solid fills, no tonal containers), Apple (chip top-right inside the block, no left bar).</p></div>
+<div class="flow"><h3 style="margin-top:0">Flow review — Ingrid Falk</h3><ul>
+<li><span class="ok">Create</span> quick-add is a pill field with a parse-preview row of chips; tap-empty-slot creates. Addressed: the italic gap label doubles as a create target (44px) — added.</li>
+<li><span class="ok">Drag</span> block lifts (scale 1.02, shadow), tint deepens one step, ghost keeps the chip; gutter shows the live start time.</li>
+<li><span class="mid">Resize by edge</span> radius 16 hides the edge. Addressed: selected block shows a 28×5 pill handle centred on the bottom edge, 44px hit band; live duration label while dragging; commit writes <code>duration_min</code> only.</li>
+<li><span class="ok">Complete</span> chip flips to a check glyph, title strikes, tint fades to neutral — shape + text + tone.</li>
+<li><span class="mid">Mobile inbox→timeline</span> Place button on every inbox row → slot sheet listing free connectors first. Open trade-off: below 25 min the chip hides and the block becomes a single-line pill; Flow accepts, with title truncation tested at 390px.</li>
+<li><span class="ok">A11y</span> tint/ink ≈10:1 light, ≈9.3:1 dark; chips with white text at L 0.55 (pistachio uses ink text); now line is ink, not red. Reduced motion: lifts become tone shifts.</li></ul></div></div>
+<div class="score"><div>Register 30<b>9</b></div><div>Legibility 25<b>8</b></div><div>Originality 20<b>8</b></div><div>Build 15<b>9</b></div><div>Motion 10<b>7</b></div><div>Weighted<b>83.5</b></div></div>
+</section>
+
+<!-- ================= D3 ================= -->
+<section class="dir d-bauklotz fade" id="bauklotz">
+<header><h2>3 · Bauklotz</h2><span class="tag">Steel — Viktor Stahl</span><span class="tag">Bauhaus (adapted from Brutalist — stated)</span><span class="tag">light default</span><span class="tag">block strategy · solid saturated geometric block, shape-coded</span></header>
+<div class="sw"><i style="background:#111"></i><i style="background:oklch(0.88 0.18 95)"></i><i style="background:oklch(0.55 0.2 25)"></i><i style="background:oklch(0.5 0.2 255)"></i><i style="background:oklch(0.5 0.17 145)"></i><i style="background:oklch(0.6 0.19 55)"></i><i style="background:oklch(0.5 0.2 295)"></i><i style="background:oklch(0.55 0.14 205)"></i><i style="background:oklch(0.5 0 0)"></i></div>
+<p class="typ"><span style="font-family:Anton;font-size:24px;text-transform:uppercase">Anton — SAT 26 SEP</span> &nbsp; <span style="font-family:'DM Mono';font-size:15px">DM Mono 09:00–11:00</span> &nbsp; <span style="font-family:Lexend;font-weight:600">Lexend 400/600 UI</span> <span class="muted">(Lexend substitutes the kit's Chivo, ruled out by the LITE pack)</span></p>
+<div class="mocks"><div><div class="mk desk" data-dir="bauklotz"></div><p class="cap">Desktop — solid primary-coloured rectangles, zero radius, white (or ink on yellow) text, a white geometric marker per category (square = work, circle = meetings, triangle = health, diamond = personal). Free time is a 3px black line with a yellow tab; the now marker is a red flag on a black rule.</p></div><div><div class="mk phone" data-dir="bauklotz"></div><p class="cap">iPhone — black tab rule, round yellow FAB (the one circle, deliberately).</p></div></div>
+<div class="mk sec" data-dir="bauklotz" data-sec="week"></div><p class="cap">Secondary — week view: solid blocks read as a poster; today's column is yellow-tinted; free time as dotted black rules.</p>
+<div class="grid2">
+<div><h3>Rationale</h3><p>Steel's honesty survives the move from a dark control room to a Bauhaus kindergarten: every block is a solid coloured object with its true size, every gap is a drawn line, nothing is implied. Brightness comes from saturation on white and from black used as a colour. Categories are encoded twice — hue and a white geometric marker — so the day is legible in greyscale, which no other direction manages without a glyph library. Anton's condensed display makes the date a poster headline; DM Mono keeps the rail tabular (a mono for times is a project need at 5-minute granularity, stated per the banned-defaults rule).</p><p>It gives up softness on purpose. White text on solid fills forces every category to L ≤ 0.55 (yellow and grey take ink text), and a full-fill day can feel loud by 6pm; the dark theme keeps hues and drops the canvas to near-black, which reads calmer.</p>
+<h3>Originality statement</h3><p>Rectangles, not bubbles; markers inside blocks, not on a spine; no progress fill; the gap line is black with a number tab, not a dashed prompt; no pink. Differs from Google Calendar (zero radius, geometric markers, no tonal containers), Motion (no hatch/dashed task-vs-event, no density tables), TickTick (no list-dot system, no blue), Duolingo-style brights (no 3D lip).</p></div>
+<div class="flow"><h3 style="margin-top:0">Flow review — Ingrid Falk</h3><ul>
+<li><span class="ok">Create</span> boxed quick-add, parse preview as black-outlined chips; tap the yellow gap tab to create in the gap.</li>
+<li><span class="ok">Drag</span> block gets a 3px black outline and offsets 2px; no scale (Bauhaus does not bounce). Ghost is a black outline at the target.</li>
+<li><span class="mid">Resize by edge</span> Addressed: a black 44px band with a 32×4 handle appears on the selected block; live "1:30 → 1:45" in the gutter.</li>
+<li><span class="ok">Complete</span> block turns to a white box with a black outline, marker becomes a check, title strikes.</li>
+<li><span class="mid">Mobile inbox→timeline</span> Place picks from real gaps; Flow flagged that solid fills make overlapping blocks (side-by-side) hard to separate — addressed with a 2px white gutter between overlap columns.</li>
+<li><span class="mid">A11y</span> white on L 0.55 fills ≥ 4.5:1 for red/blue/green/violet/orange; cyan at 0.55 is 4.3:1 → lowered to 0.52; yellow/grey use ink. Open: the all-solid canvas has no reduced-contrast mode; noted.</li></ul></div></div>
+<div class="score"><div>Register 30<b>8</b></div><div>Legibility 25<b>8</b></div><div>Originality 20<b>9</b></div><div>Build 15<b>9</b></div><div>Motion 10<b>5</b></div><div>Weighted<b>80.5</b></div></div>
+</section>
+
+<!-- ================= D4 ================= -->
+<section class="dir d-meadow fade" id="meadow">
+<header><h2>4 · Meadow</h2><span class="tag">Calm — Anaya Shrestha</span><span class="tag">Organic / Calm-tech</span><span class="tag">light default</span><span class="tag">block strategy 3 · stacked pill rows with elapsed fill</span></header>
+<div class="sw"><i style="background:oklch(0.99 0.006 110)"></i><i style="background:oklch(0.26 0.03 140)"></i><i style="background:oklch(0.52 0.13 130)"></i><i style="background:oklch(0.94 0.05 230)"></i><i style="background:oklch(0.94 0.05 135)"></i><i style="background:oklch(0.94 0.06 90)"></i><i style="background:oklch(0.94 0.04 330)"></i><i style="background:oklch(0.94 0.05 285)"></i><i style="background:oklch(0.94 0.05 50)"></i><i style="background:oklch(0.94 0.04 190)"></i><i style="background:oklch(0.94 0.02 60)"></i></div>
+<p class="typ"><span style="font-family:'Nunito Sans';font-weight:800;font-size:22px">Nunito Sans 800 — Saturday 26</span> &nbsp; <span style="font-family:'Nunito Sans';font-weight:600;font-size:15px">600 titles · 400 body · tabular-nums times</span> — one family, five weights</p>
+<div class="mocks"><div><div class="mk desk" data-dir="meadow"></div><p class="cap">Desktop — full-width pill rows (radius 22px, min height 32px) on a warm-white canvas; a 28px circular chip sits inside the pill's left end; the running pill shows a soft elapsed fill from the left; free time is a dotted stem in sage with a leaf-green label pill.</p></div><div><div class="mk phone" data-dir="meadow"></div><p class="cap">iPhone — the pills are the touch targets; FAB in moss green.</p></div></div>
+<div class="mk ed" data-dir="meadow" data-sec="editor"></div><p class="cap">Secondary — editor sheet with the same pill vocabulary: duration chips, category dots, gentle Save.</p>
+<div class="grid2">
+<div><h3>Rationale</h3><p>The closest to Mark's word "bubbles" without borrowing Structured's bubbles: each task is a soft pill you could pick up, the day reads as a stack of stones in a stream, and the free time between them is a stem you can drop into. The palette is a spring meadow at noon — sky, grass, buttercup, heather, lavender, apricot — at 94% lightness with matching 32%-lightness ink, so it is bright without glare. One family (Nunito Sans) in five weights keeps the type friendly and the bundle small; times use tabular figures.</p><p>The pill's known cost: below 25 minutes proportionality is lost (a 10-minute call and a 25-minute call are both 32px). Calm accepts this as the price of touchability and shows a small "+2" cluster when three or more short items collide.</p>
+<h3>Originality statement</h3><p>Pills with the chip inside, not circles on a spine; elapsed fill is a left-to-right tone sweep on the pill, never a circular fill; the free-time stem is dotted with a duration pill, no prompt copy; accent is moss, not pink; week view is compact pills, not icon stacks. Differs from Amie (radius capped at 22px, not 999; no emoji; no springs), Tiimo (no illustrated icons, no timer ring), Things (there is a timeline; no draggable "+").</p></div>
+<div class="flow"><h3 style="margin-top:0">Flow review — Ingrid Falk</h3><ul>
+<li><span class="ok">Create</span> pill quick-add with parse preview; the stem label is a create target.</li>
+<li><span class="ok">Drag</span> pill lifts with a soft shadow, neighbours reflow with 250ms ease; the stem re-measures live.</li>
+<li><span class="mid">Resize by edge</span> pills have no visible edge. Addressed: selected pill grows a 6px-wide translucent bottom band with a 32×5 handle (44px hit); live duration in the pill; commit writes <code>duration_min</code> only.</li>
+<li><span class="ok">Complete</span> chip → check, title strikes, pill tone drops to neutral; no confetti — Calm declines the burst by design.</li>
+<li><span class="mid">Mobile inbox→timeline</span> Place lists stems (free gaps) that fit; Flow flagged the short-block cluster ("+2") needs a tap-to-expand list — added.</li>
+<li><span class="ok">A11y</span> tint/ink ≈10:1; running fill is tone, not hue; now line is moss with a time pill; reduced motion drops lifts and reflow, keeps tone.</li></ul></div></div>
+<div class="score"><div>Register 30<b>9</b></div><div>Legibility 25<b>7</b></div><div>Originality 20<b>7</b></div><div>Build 15<b>9</b></div><div>Motion 10<b>8</b></div><div>Weighted<b>80.5</b></div></div>
+</section>
+
+<!-- ================= D5 ================= -->
+<section class="dir d-prism fade" id="prism">
+<header><h2>5 · Prism</h2><span class="tag">Neon — Mr. Neon</span><span class="tag">Glassmorphism / Futurist (daylight glass — stated)</span><span class="tag">light default (stated)</span><span class="tag">block strategy 1 variant · tinted card with luminous gradient edge + chip</span></header>
+<div class="sw"><i style="background:linear-gradient(135deg,oklch(0.62 0.16 215),oklch(0.62 0.19 320))"></i><i style="background:oklch(0.97 0.03 215)"></i><i style="background:oklch(0.97 0.03 320)"></i><i style="background:oklch(0.62 0.16 215)"></i><i style="background:oklch(0.56 0.2 320)"></i><i style="background:oklch(0.6 0.17 120)"></i><i style="background:oklch(0.6 0.18 30)"></i><i style="background:oklch(0.7 0.16 80)"></i><i style="background:oklch(0.55 0.13 185)"></i><i style="background:oklch(0.5 0.18 275)"></i></div>
+<p class="typ"><span style="font-family:Syne;font-weight:800;font-size:22px">Syne 800 — SAT 26</span> &nbsp; <span style="font-family:Sora;font-weight:600;font-size:15px">Sora 600 titles · 400 UI · tabular-nums</span></p>
+<div class="mocks"><div><div class="mk desk" data-dir="prism"></div><p class="cap">Desktop — a cyan→violet daylight gradient canvas, frosted white cards (78% white, no blur on content), a 4px luminous gradient edge per block, gradient icon chips, and a glowing 2px thread as the free-time connector. Only the rail, top bar and tab bar use backdrop blur.</p></div><div><div class="mk phone" data-dir="prism"></div><p class="cap">iPhone — glass tab bar over a plain canvas; violet FAB.</p></div></div>
+<div class="mk ed" data-dir="prism" data-sec="editor"></div><p class="cap">Secondary — editor sheet on glass; the day-capacity arc (Neon's luminous chart) lives in the sheet header as "8h15 open".</p>
+<div class="grid2">
+<div><h3>Rationale</h3><p>Neon's job is the screenshot, and the screenshot here is a day that glows: a soft dual-tone gradient sits under everything, blocks float as frosted cards with a lit gradient edge, and the free-time thread literally lights up the gap. It is the most "graphical" direction and the one that feels most like 2026. Neon left his dark default because the brief says bright; the dark theme is the same system with a deep-indigo gradient and brighter edges.</p><p>The costs are real: contrast on a gradient canvas needs opaque cards (78–85% white) to hold 4.5:1, blur is limited to chrome per NN/g, and a gradient border per block costs a pseudo-element — buildable, but the heaviest of the six, and the look will date fastest.</p>
+<h3>Originality statement</h3><p>Frosted cards with an inner chip, no spine circles; glow thread instead of dashed prompt; no progress fill (running = brighter edge + now thread); accent violet, not pink; no icon-stack week. Differs from Apple Liquid Glass (no glass over content, no floating toolbars over the timeline; blur only on the rail/bars with an opaque fallback), Fantastical (no rainbow parser field), Amie (no emoji, radius 14).</p></div>
+<div class="flow"><h3 style="margin-top:0">Flow review — Ingrid Falk</h3><ul>
+<li><span class="ok">Create</span> glass quick-add with a parse-preview strip; the thread label creates in the gap.</li>
+<li><span class="ok">Drag</span> card lifts with a glow; the target gap's thread brightens. Nice, and it stays transform-only.</li>
+<li><span class="mid">Resize by edge</span> Addressed: selected card shows a gradient 32×4 handle on the bottom edge with a 44px band; duration label glows while dragging; commit writes <code>duration_min</code> only.</li>
+<li><span class="ok">Complete</span> chip → check, edge goes grey, title strikes — three cues.</li>
+<li><span class="bad">→</span><span class="mid">Mobile inbox→timeline</span> the inbox as a glass sheet over the timeline failed Flow's first pass (text-over-text). Fixed: inbox is a full-height tab; Place lists lit threads. Open: glass bars must fall back to opaque under <code>prefers-reduced-transparency</code> and <code>prefers-contrast: more</code>.</li>
+<li><span class="mid">A11y</span> ink on 78% white over the gradient ≈ 11:1 (verified at the darkest gradient corner); chips with white text at L 0.56–0.62 need the ink-text rule for lime/gold; glow pulses stop under reduced motion.</li></ul></div></div>
+<div class="score"><div>Register 30<b>9</b></div><div>Legibility 25<b>6</b></div><div>Originality 20<b>8</b></div><div>Build 15<b>6</b></div><div>Motion 10<b>9</b></div><div>Weighted<b>76.0</b></div></div>
+</section>
+
+<!-- ================= D6 ================= -->
+<section class="dir d-orchard fade" id="orchard">
+<header><h2>6 · Orchard</h2><span class="tag">Cupertino — Nils Brunner</span><span class="tag">Apple HIG / native idiom, web-rendered</span><span class="tag">adaptive (system light/dark)</span><span class="tag">block strategy · inset grouped card with icon tile</span></header>
+<div class="sw"><i style="background:#f2f2f7"></i><i style="background:#fff"></i><i style="background:#1c1c1e"></i><i style="background:oklch(0.5 0.2 290)"></i><i style="background:oklch(0.55 0.19 255)"></i><i style="background:oklch(0.55 0.17 150)"></i><i style="background:oklch(0.62 0.19 55)"></i><i style="background:oklch(0.55 0.2 25)"></i><i style="background:oklch(0.5 0.2 305)"></i><i style="background:oklch(0.55 0.13 200)"></i><i style="background:oklch(0.5 0.08 60)"></i></div>
+<p class="typ"><span style="font-family:Figtree;font-weight:700;font-size:22px">Figtree 700 — Saturday 26</span> &nbsp; <span style="font-family:Figtree;font-weight:500">Figtree 400/500/600 UI, tabular-nums</span> <span class="muted">(stands in for SF on the web; SF Symbols are not used)</span></p>
+<div class="mocks"><div><div class="mk desk" data-dir="orchard"></div><p class="cap">Desktop — system-grey canvas, white inset cards with a 26px rounded-square category tile at left and the time set in the category colour; the inbox is a grouped-inset list; free time is a 1px system line with a grey capsule; the now line is indigo, not red.</p></div><div><div class="mk phone" data-dir="orchard"></div><p class="cap">iPhone — native tab bar idiom, round FAB.</p></div></div>
+<div class="mk sec" data-dir="orchard" data-sec="week"></div><p class="cap">Secondary — week view: white cards with a 4px category edge, today's column white on grey.</p>
+<div class="grid2">
+<div><h3>Rationale</h3><p>The platform contract, honoured on the web: grouped-inset surfaces, semantic system tints, a tab bar that behaves like a tab bar, and motion that matches what an iPhone user's thumb expects — so the later Swift clients inherit the look for free. Brightness comes from the category tiles and coloured time labels on white; the calm grey canvas keeps it "sleek".</p><p>It is the least original of the six by design — the survey lists Apple's own left-bar chip as a signature, so Orchard uses the Settings-row idiom (tile at left, white card) instead. It reads as a very good calendar app rather than as optimo.</p>
+<h3>Originality statement</h3><p>White inset cards with an inside icon tile, no spine, no bubbles, no progress fill; grey capsule for free time with a duration, no prompt copy; indigo accent (not pink, not Apple's red now-line); compact-card week, not icon stacks. Differs from Apple Calendar (no left-bar tint chip, no glass over the timeline, no red), Fantastical (no DayTicker), Things (there is a timeline; no magic "+").</p></div>
+<div class="flow"><h3 style="margin-top:0">Flow review — Ingrid Falk</h3><ul>
+<li><span class="ok">Create</span> quick-add as a grey search-style field with a parse preview; tap-empty-slot creates.</li>
+<li><span class="ok">Drag</span> card lifts with the system shadow, haptic-style tick on snap (visual only on web).</li>
+<li><span class="mid">Resize by edge</span> Addressed: selected card shows a grey 36×5 grabber at the bottom edge, 44px band; commit writes <code>duration_min</code> only.</li>
+<li><span class="ok">Complete</span> tile → check, title strikes, card goes to secondary grey.</li>
+<li><span class="ok">Mobile inbox→timeline</span> Place via a native-style action sheet of free slots; inbox tab badge.</li>
+<li><span class="ok">A11y</span> ink on white 16:1; coloured time labels at L ≤ 0.55 pass 4.5:1; increase-contrast variant raises card border. Reduced motion: dissolve instead of slide.</li></ul></div></div>
+<div class="score"><div>Register 30<b>7</b></div><div>Legibility 25<b>9</b></div><div>Originality 20<b>5</b></div><div>Build 15<b>9</b></div><div>Motion 10<b>7</b></div><div>Weighted<b>74.0</b></div></div>
+</section>
+
+<h2 id="scores">C · Side-by-side and scoring</h2>
+<table>
+<tr><th>Direction</th><th>Seat · movement</th><th>Type</th><th>Palette family</th><th>Block strategy</th><th>Free-time connector</th><th>Motion character</th></tr>
+<tr><td>Fahrplan</td><td>Grid · Swiss/International</td><td>Archivo + Space Grotesk</td><td>white/ink + 8 saturated lines, tangerine signal</td><td>2 · outlined card on coloured spine</td><td>2px grey rule + boxed number</td><td>mechanical, 150ms, no springs</td></tr>
+<tr><td>Gelateria</td><td>Vogue · Editorial</td><td>Libre Caslon Display + Karla</td><td>sherbet tints + same-hue ink, mango accent</td><td>1 · tinted block + corner chip</td><td>dotted rule + italic duration</td><td>languid 300–400ms ease-out</td></tr>
+<tr><td>Bauklotz</td><td>Steel · Bauhaus</td><td>Anton + DM Mono + Lexend</td><td>primaries on white, black as colour, yellow accent</td><td>solid geometric, shape-coded</td><td>3px black line + yellow tab</td><td>instant, 120ms linear, no scale</td></tr>
+<tr><td>Meadow</td><td>Calm · Organic</td><td>Nunito Sans (one family)</td><td>meadow pastels 94% L + 32% ink, moss accent</td><td>3 · pill rows + elapsed fill</td><td>dotted sage stem + leaf pill</td><td>slow ease 250–350ms, reflow</td></tr>
+<tr><td>Prism</td><td>Neon · Glass (daylight)</td><td>Syne + Sora</td><td>cyan→violet gradient canvas, frosted white</td><td>1 variant · card + gradient edge + chip</td><td>glowing gradient thread</td><td>springs + glow, 500ms settle</td></tr>
+<tr><td>Orchard</td><td>Cupertino · HIG</td><td>Figtree</td><td>system grey/white + semantic tints, indigo accent</td><td>inset grouped card + icon tile</td><td>1px system line + grey capsule</td><td>platform curves, 250–350ms</td></tr>
+</table>
+<h3>Weighted matrix (0–10 per criterion × weight / 10)</h3>
+<table>
+<tr><th>Direction</th><th>Register ×3.0</th><th>Legibility ×2.5</th><th>Originality ×2.0</th><th>Build ×1.5</th><th>Motion ×1.0</th><th>Total /100</th></tr>
+<tr class="win"><td>Gelateria</td><td>9</td><td>8</td><td>8</td><td>9</td><td>7</td><td><b>83.5</b></td></tr>
+<tr><td>Meadow</td><td>9</td><td>7</td><td>7</td><td>9</td><td>8</td><td><b>80.5</b></td></tr>
+<tr><td>Bauklotz</td><td>8</td><td>8</td><td>9</td><td>9</td><td>5</td><td><b>80.5</b></td></tr>
+<tr><td>Fahrplan</td><td>6</td><td>10</td><td>7</td><td>10</td><td>6</td><td>77.0</td></tr>
+<tr><td>Prism</td><td>9</td><td>6</td><td>8</td><td>6</td><td>9</td><td>76.0</td></tr>
+<tr><td>Orchard</td><td>7</td><td>9</td><td>5</td><td>9</td><td>7</td><td>74.0</td></tr>
+</table>
+<p class="muted">Tie-break Meadow vs Bauklotz for runner-up: the brief's word "bubbles" and the 25-weight on mobile legibility favour Meadow's touchable pills over Bauklotz's solid fills, whose loudness across a full day Flow flagged as an open item. Per-criterion notes: Register — Gelateria, Meadow and Prism are the three that look like the ask; Fahrplan is sleek but not fun. Legibility — Fahrplan's outlined cards are unbeatable at 5-min granularity; Prism's gradient canvas and Meadow's 32px pill floor cost points. Originality — Bauklotz's shape coding is the most genuinely different idea on the table; Orchard is deliberately conventional. Build — Prism's per-block gradient borders and blur fallbacks are the only real cost. Motion — Prism and Meadow feel most fluid; Bauklotz refuses to.</p>
+
+<h2 id="rec">D · Recommendation — Marlowe Holm</h2>
+<p><b>Winner: Gelateria (Vogue · Editorial).</b> It is the only direction that scores 8+ on every criterion Mark weighted, and it answers his sentence literally: colour-coded blocks you could pick up, a line between them that tells you how long you are free, in a register that is bright and grown-up at once. The tint/ink recipe makes it the safest of the "fun" three at 5-minute granularity and in dark mode, and it is a tokens-and-CSS change for the existing components — no new layout engine.</p>
+<p><b>Runner-up: Meadow (Calm · Organic).</b> If the serif numerals feel like a magazine rather than a planner after a week, Meadow is the same tint/ink system in a rounder, softer, single-family body — closest in spirit to the Structured feel Mark referenced, at the cost of proportionality below 25 minutes.</p>
+<p><b>Named tension.</b> Mark's reference (Structured) is rounded-sans; Gelateria's identity is a serif in the gutter. If he wants the reference's softness more than a distinct voice, pick Meadow. <b>Optional hybrid:</b> Gelateria's palette and blocks with Meadow's Nunito Sans in place of Caslon + Karla — lower risk, less memorable; the tokens make this a two-line swap.</p>
+<p>Handoff files for winner and runner-up sit beside this deck: <code>tokens-gelateria.css</code>, <code>tokens-meadow.css</code>, <code>spec-gelateria.md</code>, <code>spec-meadow.md</code>, <code>design-system-prompt.md</code> (winner), <code>recommendation.md</code>.</p>
+
+<footer>The mock UI in this deck is a presentation artifact rendered by CSS from a shared task fixture (Sat 26 Sep, now = 14:40) — not production code. Fonts via Google Fonts; colours in OKLCH as shipped in the token files; the dark themes are specified in the tokens and specs and are not previewed here.</footer>
+</div>
+
+<script>
+const CATS={work:{h:'work',s:'▤'},meet:{h:'meet',s:'●'},health:{h:'health',s:'▲'},personal:{h:'personal',s:'◆'},errand:{h:'errand',s:'✓'},learn:{h:'learn',s:'▣'},family:{h:'family',s:'♥'},home:{h:'home',s:'⌂'}};
+const HUES={
+ fahrplan:{work:'oklch(0.55 0.18 260)',meet:'oklch(0.55 0.18 300)',health:'oklch(0.55 0.15 150)',personal:'oklch(0.55 0.18 30)',errand:'oklch(0.55 0.15 200)',learn:'oklch(0.62 0.14 90)',family:'oklch(0.55 0.16 340)',home:'oklch(0.5 0.05 60)'},
+ gelateria:{work:'oklch(0.55 0.19 250)',meet:'oklch(0.55 0.19 300)',health:'oklch(0.50 0.16 140)',personal:'oklch(0.55 0.19 70)',errand:'oklch(0.55 0.13 170)',learn:'oklch(0.60 0.16 95)',family:'oklch(0.55 0.19 15)',home:'oklch(0.50 0.14 340)'},
+ bauklotz:{work:'oklch(0.5 0.2 255)',meet:'oklch(0.55 0.2 25)',health:'oklch(0.5 0.17 145)',personal:'oklch(0.6 0.19 55)',errand:'oklch(0.52 0.14 205)',learn:'oklch(0.88 0.18 95)',family:'oklch(0.5 0.2 295)',home:'oklch(0.85 0 0)'},
+ meadow:{work:'oklch(0.52 0.13 230)',meet:'oklch(0.52 0.13 285)',health:'oklch(0.52 0.13 135)',personal:'oklch(0.55 0.14 50)',errand:'oklch(0.52 0.11 190)',learn:'oklch(0.58 0.13 90)',family:'oklch(0.52 0.12 330)',home:'oklch(0.5 0.05 60)'},
+ prism:{work:'oklch(0.62 0.16 215)',meet:'oklch(0.5 0.18 275)',health:'oklch(0.6 0.17 120)',personal:'oklch(0.7 0.16 80)',errand:'oklch(0.55 0.13 185)',learn:'oklch(0.6 0.18 30)',family:'oklch(0.56 0.2 320)',home:'oklch(0.55 0.05 290)'},
+ orchard:{work:'oklch(0.55 0.19 255)',meet:'oklch(0.5 0.2 305)',health:'oklch(0.55 0.17 150)',personal:'oklch(0.62 0.19 55)',errand:'oklch(0.55 0.13 200)',learn:'oklch(0.62 0.15 85)',family:'oklch(0.55 0.2 25)',home:'oklch(0.5 0.08 60)'}};
+const TINT={ // tint bg + on-tint text per direction (light)
+ fahrplan:c=>['#fff','#131417'],
+ gelateria:c=>[c.replace(/oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/,'oklch(0.95 0.045 $3)'),c.replace(/oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/,'oklch(0.32 0.11 $3)')],
+ bauklotz:c=>[c,'#fff'],
+ meadow:c=>[c.replace(/oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/,'oklch(0.94 0.05 $3)'),c.replace(/oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/,'oklch(0.32 0.10 $3)')],
+ prism:c=>['oklch(1 0 0 / .78)','oklch(0.22 0.03 290)'],
+ orchard:c=>['#fff','#1c1c1e']};
+const GAPLAB={fahrplan:m=>`${Math.floor(m/60)}:${String(m%60).padStart(2,'0')} free`,gelateria:m=>`${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')} free`,bauklotz:m=>`FREE ${Math.floor(m/60)}H${String(m%60).padStart(2,'0')}`,meadow:m=>`${Math.floor(m/60)}h ${m%60}m free`,prism:m=>`${Math.floor(m/60)}h${String(m%60).padStart(2,'0')} open`,orchard:m=>`${Math.floor(m/60)}h ${m%60}m free`};
+const TASKS=[{t:'Morning run',s:420,d:45,c:'health',done:1},{t:'Deep work: forecast draft',s:540,d:120,c:'work'},{t:'Standup, platform team',s:660,d:15,c:'meet'},{t:'Lunch with Sam',s:780,d:60,c:'personal'},{t:'Write the migration plan',s:840,d:90,c:'work',run:1},{t:'Call the dentist',s:930,d:10,c:'errand'},{t:'1:1 with Dana',s:960,d:30,c:'meet',half:1},{t:'Review pull request',s:975,d:30,c:'work',half:2}];
+const INBOX=[['Book flights for October','personal','0:30'],['Reply to Ellen re budget','work','0:15'],['Renew car registration','errand','0:20'],['Read chapter 4','learn','0:45']];
+const NOW=880, START=420, END=1050;
+function tm(m){return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`}
+function timeline(dir,pxm,phone){
+ const H=HUES[dir];let h='';
+ for(let m=START;m<=END;m+=60){h+=`<span class="hr" style="top:${(m-START)*pxm}px">${phone?String(m/60).padStart(2,'0'):tm(m)}</span><span class="hl" style="top:${(m-START)*pxm}px"></span>`}
+ // gaps
+ let cur=START;const sorted=[...TASKS].sort((a,b)=>a.s-b.s);
+ sorted.forEach(t=>{if(t.s>cur+5&&!(t.half===2)){const len=t.s-cur;h+=`<div class="gap" style="top:${(cur-START)*pxm}px;height:${len*pxm}px"><span class="lab">${GAPLAB[dir](len)}</span><span class="plus">+</span></div>`}cur=Math.max(cur,t.s+t.d)});
+ sorted.forEach(t=>{const cc=H[t.c];const [bg,fg]=TINT[dir](cc);const short=t.d<=15;const hgt=t.d*pxm-3;
+  h+=`<div class="blk ${short?'short':''} ${t.done?'done':''} ${t.run?'run':''} ${t.half===1?'half':t.half===2?'half2':''}" data-c="${t.c}" style="top:${(t.s-START)*pxm}px;height:${hgt}px;--cc:${cc};--tint:${bg};--on-tint:${fg};${t.run?'outline:2px solid '+fg+';outline-offset:-2px':''}"><div class="ti"><span class="ck">${t.done?'✓':''}</span><span>${t.t}</span><span class="ic">${t.done?'✓':CATS[t.c].s}</span></div><div class="tm">${tm(t.s)}–${tm(t.s+t.d)}${short?'':' · '+Math.floor(t.d/60)+':'+String(t.d%60).padStart(2,'0')}</div></div>`});
+ h+=`<div class="now" style="top:${(NOW-START)*pxm}px"><span class="nl">${tm(NOW)}</span></div>`;
+ return `<div class="col" style="height:${(END-START)*pxm+20}px">${h}</div>`}
+function desk(dir){const H=HUES[dir];return `<div class="top"><span>‹</span><span class="date">Sat 26 Sep</span><span>›</span><span class="stat">Planned <b>6h30</b></span><span class="stat">Free <b>3h20</b></span><span class="stat">Done <b>1/8</b></span><span class="stat" style="margin-left:auto">Day · Week · Month</span></div>
+<div class="body"><div class="rail"><h4>Inbox <span style="font-weight:400;color:var(--ink2-m)">4 · 1h50</span></h4>${INBOX.map(r=>`<div class="row" style="--cc:${H[r[1]]}"><span class="dot"></span><span class="t">${r[0]}</span><span class="dur">${r[2]}</span><span class="place">Place</span></div>`).join('')}</div>
+<div class="tl"><div class="qa"><b>+</b> Lunch with Sam at 1pm for 1h #personal</div>${timeline(dir,0.62,false)}</div></div>`}
+function phone(dir){return `<div><div class="top" style="height:40px"><span class="date">Sat 26</span><span class="stat">Free <b>3h20</b></span><span class="stat" style="margin-left:auto">1/8</span></div><div class="strip"><span>22</span><span>23</span><span>24</span><span>25</span><span class="on">26</span><span>27</span><span>28</span></div></div>
+<div class="tl" style="padding:8px 8px 0 0"><div class="qa" style="margin-left:8px"><b>+</b> Add a task…</div>${timeline(dir,0.5,true)}</div>
+<div class="fab">+</div><div class="tabs"><span class="on"><i></i>Day</span><span><i></i>Inbox<span class="cnt">4</span></span><span><i></i>Week</span><span><i></i>More</span></div>`}
+function week(dir){const H=HUES[dir];const days=['Mon 21','Tue 22','Wed 23','Thu 24','Fri 25','Sat 26','Sun 27'];const pxm=380/(END-START);
+ let cols=days.map((d,i)=>{let inner='';if(i===5){TASKS.forEach(t=>{const [bg,fg]=TINT[dir](H[t.c]);inner+=`<div class="wb" style="top:${(t.s-START)*pxm}px;height:${Math.max(t.d*pxm-2,12)}px;--cc:${H[t.c]};--tint:${bg};--on-tint:${fg};${t.half===1?'right:50%':''}${t.half===2?'left:50%':''}">${t.t}</div>`});inner+=`<div class="wg" style="top:${(465-START)*pxm+10}px">1:15</div><div class="wg" style="top:${(675-START)*pxm+10}px">1:45</div>`}else if(i<5){[[540,90,'work'],[720,60,'personal'],[900,45,'meet']].forEach(([s,d,c],k)=>{const [bg,fg]=TINT[dir](H[c]);inner+=`<div class="wb" style="top:${(s+(i*20))-START>0?((s+i*20)-START)*pxm:0}px;height:${d*pxm}px;--cc:${H[c]};--tint:${bg};--on-tint:${fg}">${['Focus block','Lunch','Sync'][k]}</div>`})}
+ return `<div class="dc ${i===5?'today':''}">${inner}</div>`}).join('');
+ return `<div class="top"><span class="date">Week 39</span><span class="stat">21–27 Sep</span><span class="stat" style="margin-left:auto">Day · <b>Week</b> · Month</span></div><div class="wk"><div></div>${days.map((d,i)=>`<div class="dh ${i===5?'today':''}">${d}<small>${i===5?'6h30 · 3h20 free':i<5?'3h15 · 6h45 free':'0h · 10h free'}</small></div>`).join('')}<div class="dc" style="border:0"></div>${cols}</div>`}
+function editor(dir){const H=HUES[dir];return `<div class="top" style="height:40px;opacity:.5"><span class="date">Sat 26</span></div><div class="sheet"><h5>Write the migration plan</h5>
+<div class="fld"><label>Category</label><div class="cats">${Object.keys(H).slice(0,6).map((k,i)=>`<i class="${i===0?'on':''}" style="background:${H[k]}"></i>`).join('')}</div></div>
+<div class="fld"><label>Duration</label><div class="chips"><span>30</span><span>45</span><span>60</span><span class="on">90</span><span>2h</span></div></div>
+<div class="fld"><label>Start</label><div class="in">Sat 26 · 14:00 → 15:30</div></div>
+<div class="fld"><label>Priority</label><div class="chips"><span>None</span><span>Low</span><span>Med</span><span class="on">High</span></div></div>
+<div class="fld"><label>Subtasks</label><div class="in" style="font-weight:400">✓ Outline &nbsp; ○ Rollback plan</div></div>
+<div class="save">Save</div></div>`}
+document.querySelectorAll('.mk').forEach(el=>{const d=el.dataset.dir,s=el.dataset.sec;el.innerHTML=s==='week'?week(d):s==='editor'?editor(d):el.classList.contains('phone')?phone(d):desk(d)});
+const io=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add('in')),{threshold:.05});document.querySelectorAll('.fade').forEach(e=>io.observe(e));
+addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%'});
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>optimo — Meadow vs Gelateria · compare &amp; blend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Karla:ital,wght@0,400;0,500;0,700;1,400&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--ink:#14161a;--ink2:#5a6068;--line:#e6e8ec;--card:#f6f7f9}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 Figtree,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 20px 80px}
+h1{font-size:30px;margin:0 0 4px}h2{font-size:22px;margin:40px 0 12px}h3{font-size:16px;margin:16px 0 6px}
+.muted{color:var(--ink2)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.col h2{margin-top:0}
+.strip{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.strip td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.strip td:first-child{font-weight:600;width:34%;color:var(--ink2)}
+.cap{font-size:12px;color:var(--ink2);margin:6px 0 14px}
+.blend{border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:12px}
+.tog{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px 18px;margin-bottom:18px}
+.tog label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px}
+.tog .opts{display:flex;gap:6px}
+.tog button{min-height:44px;flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.tog button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.bmocks{display:grid;grid-template-columns:1fr 330px;gap:24px;align-items:start}
+@media(max-width:1000px){.bmocks{grid-template-columns:1fr}}
+pre#recipe{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;user-select:all;margin:0}
+.copy{min-height:44px;border:1px solid var(--ink);background:#fff;border-radius:10px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;margin:10px 0}
+
+/* ---------- mock skeleton (presentation artifact) ---------- */
+.mk{position:relative;font-family:var(--fu);color:var(--ink-m);background:var(--canvas);overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 20px 40px -24px rgba(0,0,0,.35);font-size:11px}
+.mk.desk{width:100%;aspect-ratio:1280/760;border-radius:10px;display:grid;grid-template-rows:44px 1fr}
+.mk.phone{width:300px;height:600px;border-radius:32px;border:8px solid #111;margin:16px auto 0;display:grid;grid-template-rows:auto 1fr auto}
+.mk .top{display:flex;align-items:center;gap:14px;padding:0 14px;border-bottom:1px solid var(--line-m);background:var(--panel)}
+.mk .top .date{font-family:var(--fd);font-size:18px;font-weight:var(--wd);font-style:var(--sd)}
+.mk .top .stat{color:var(--ink2-m)}.mk .top .stat b{color:var(--ink-m)}
+.mk .body{display:grid;grid-template-columns:240px 1fr;min-height:0}
+.mk .rail{border-right:1px solid var(--line-m);padding:12px;background:var(--panel)}
+.mk .rail h4{margin:0 0 8px;font-size:12px}
+.mk .row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-row);background:var(--surface);margin-bottom:6px}
+.mk .row .dot{width:12px;height:12px;border-radius:999px;background:oklch(var(--chip-l) var(--chip-c) var(--cat-h));flex:none}
+.mk .row .t{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk .row .dur{color:var(--ink2-m);font-variant-numeric:tabular-nums}
+.mk .row .place{font-size:10px;font-weight:700;border-radius:999px;padding:4px 9px;background:var(--acc);color:var(--on-acc)}
+.mk .qa{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 12px;border-radius:999px;background:var(--surface);color:var(--ink2-m)}
+.mk .qa b{color:var(--acc)}
+.mk .tl{position:relative;padding:8px 14px 8px 0;overflow:hidden}
+.mk .col{position:relative;margin-left:58px}
+.mk .hr{position:absolute;left:-58px;width:50px;text-align:right;font-family:var(--fh);font-style:var(--sh);font-size:var(--hr-size);font-weight:var(--hr-w);font-variant-numeric:tabular-nums;color:var(--ink2-m);transform:translateY(-50%)}
+.mk .hl{position:absolute;left:0;right:0;border-top:1px solid var(--line-m)}
+.mk .blk{position:absolute;left:0;right:0;padding:6px 10px;overflow:hidden;color:oklch(var(--tint-ink-l) var(--tint-ink-c) var(--cat-h));background:oklch(var(--tint-l) var(--tint-c) var(--cat-h));border-radius:var(--r-blk);box-shadow:var(--blk-ring)}
+.mk .blk .ti{font-weight:700;font-size:12px;line-height:1.2;display:flex;gap:6px;align-items:center;white-space:nowrap}
+.mk .blk .ti span:nth-child(2){overflow:hidden;text-overflow:ellipsis}
+.mk .blk .tm{font-variant-numeric:tabular-nums;font-size:10px;opacity:.85;margin-top:2px}
+.mk .blk .ic{width:26px;height:26px;border-radius:999px;background:oklch(var(--chip-l) var(--chip-c) var(--cat-h));color:var(--chip-ink);display:grid;place-items:center;font-size:11px;flex:none;position:absolute}
+.mk .blk .ck{width:14px;height:14px;border:1.5px solid currentColor;border-radius:999px;flex:none;display:grid;place-items:center;font-size:9px}
+.mk .blk.done{background:var(--done-tint);color:var(--done-ink)}.mk .blk.done .ti span:nth-child(2){text-decoration:line-through}
+.mk .blk.short{padding:2px 10px;display:flex;align-items:center;gap:8px}
+.mk .blk.short .tm{margin:0 0 0 auto}.mk .blk.short .ic{position:static;width:16px;height:16px;font-size:8px}
+.mk .blk.half{right:50%}.mk .blk.half2{left:51%}
+.mk .gap{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;color:var(--ink2-m);font-size:10px}
+.mk .gap::before{content:"";position:absolute;left:var(--gap-x);top:6px;bottom:6px;border-left:var(--gap-line)}
+.mk .gap .lab{position:relative;z-index:1;padding:2px 9px;border-radius:999px;font-variant-numeric:tabular-nums;font-family:var(--fg);font-style:var(--sg);font-size:var(--gap-fs);font-weight:var(--gap-w);background:var(--gap-lab-bg);color:var(--gap-lab-fg)}
+.mk .gap .plus{position:absolute;right:8px;width:20px;height:20px;border-radius:999px;display:grid;place-items:center;background:var(--surface);color:var(--ink-m);font-weight:700}
+.mk .now{position:absolute;left:-58px;right:0;height:0;border-top:2px solid var(--now);z-index:3}
+.mk .now .nl{position:absolute;left:0;top:-9px;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--now);color:var(--now-fg);padding:1px 6px;border-radius:999px}
+.mk .fab{position:absolute;right:16px;bottom:64px;width:48px;height:48px;border-radius:999px;background:var(--acc);color:var(--on-acc);display:grid;place-items:center;font-size:24px;z-index:4;box-shadow:0 10px 24px -10px rgba(0,0,0,.4)}
+.mk .tabs{display:flex;justify-content:space-around;padding:10px 6px 14px;border-top:1px solid var(--line-m);background:var(--panel);font-size:10px;font-weight:700}
+.mk .tabs span{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink2-m)}
+.mk .tabs span.on{color:var(--acc)}.mk .tabs i{width:20px;height:20px;border-radius:999px;background:currentColor}
+.mk .tabs .cnt{font-size:9px;background:var(--acc);color:var(--on-acc);border-radius:999px;padding:0 5px;margin-top:-8px}
+.mk .strip2{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line-m)}
+.mk .strip2 span{flex:1;text-align:center;font-size:10px;padding:5px 0;border-radius:999px;color:var(--ink2-m)}
+.mk .strip2 span.on{background:var(--acc);color:var(--on-acc);font-weight:700}
+.mk.phone .col{margin-left:46px}.mk.phone .hr{left:-46px;width:40px;font-size:calc(var(--hr-size) - 3px)}.mk.phone .now{left:-46px}
+
+/* ---------- shared light/dark recipe (from both token files) ---------- */
+.sys{--tint-l:.95;--tint-c:.045;--tint-ink-l:.32;--tint-ink-c:.11;--chip-l:.55;--chip-c:.19;--chip-ink:#fff;--blk-ring:none}
+.sys[data-theme=dark]{--tint-l:.30;--tint-c:.055;--tint-ink-l:.88;--tint-ink-c:.08;--chip-l:.78;--chip-c:.16;--chip-ink:oklch(.2 .02 60);--blk-ring:inset 0 0 0 1px oklch(1 0 0 / .06)}
+/* ---------- palette: Meadow ---------- */
+.p-meadow{--h-work:230;--h-meet:285;--h-health:135;--h-personal:50;--h-errand:190;--h-learn:90;--h-family:330;--h-home:60;
+ --canvas:oklch(.99 .006 110);--panel:oklch(.975 .01 110);--surface:#fff;--line-m:oklch(.92 .02 110);--ink-m:oklch(.26 .03 140);--ink2-m:oklch(.48 .03 140);
+ --acc:oklch(.52 .13 130);--on-acc:#fff;--now:oklch(.52 .13 130);--now-fg:#fff;--done-tint:oklch(.955 .012 110);--done-ink:oklch(.48 .03 140);
+ --tint-l:.94;--tint-c:.05;--tint-ink-c:.10;--chip-l:.52;--chip-c:.13;
+ --stem-line:oklch(.78 .06 130);--stem-bg:oklch(.95 .04 130);--stem-fg:oklch(.32 .09 130);--free-line:oklch(.75 .03 60);--free-fg:oklch(.38 .02 60)}
+.p-meadow[data-theme=dark]{--canvas:oklch(.17 .012 140);--panel:oklch(.20 .013 140);--surface:oklch(.23 .015 140);--line-m:oklch(.28 .016 140);--ink-m:oklch(.93 .01 110);--ink2-m:oklch(.72 .022 140);
+ --acc:oklch(.80 .14 130);--on-acc:oklch(.2 .02 130);--now:oklch(.80 .14 130);--now-fg:oklch(.2 .02 130);--done-tint:oklch(.23 .015 140);--done-ink:oklch(.72 .022 140);
+ --tint-l:.30;--tint-c:.055;--tint-ink-c:.08;--chip-l:.78;--chip-c:.14;--stem-line:oklch(.48 .05 130);--stem-bg:oklch(.30 .05 130);--stem-fg:oklch(.88 .08 130);--free-line:oklch(.46 .02 260);--free-fg:oklch(.80 .018 260)}
+/* ---------- palette: Gelateria ---------- */
+.p-gelateria{--h-work:250;--h-meet:300;--h-health:140;--h-personal:70;--h-errand:170;--h-learn:95;--h-family:15;--h-home:340;
+ --canvas:#fff;--panel:oklch(.985 .005 60);--surface:oklch(.97 .008 60);--line-m:oklch(.93 .01 60);--ink-m:oklch(.22 .02 60);--ink2-m:oklch(.48 .02 60);
+ --acc:oklch(.55 .19 75);--on-acc:#fff;--now:oklch(.22 .02 60);--now-fg:#fff;--done-tint:oklch(.97 .008 60);--done-ink:oklch(.48 .02 60);
+ --stem-line:oklch(.78 .06 130);--stem-bg:oklch(.95 .04 130);--stem-fg:oklch(.32 .09 130);--free-line:oklch(.75 .03 60);--free-fg:oklch(.38 .02 60)}
+.p-gelateria[data-theme=dark]{--canvas:oklch(.16 .012 260);--panel:oklch(.19 .012 260);--surface:oklch(.22 .014 260);--line-m:oklch(.27 .015 260);--ink-m:oklch(.93 .01 260);--ink2-m:oklch(.72 .02 260);
+ --acc:oklch(.78 .16 75);--on-acc:oklch(.2 .02 75);--now:oklch(.93 .01 260);--now-fg:oklch(.16 .012 260);--done-tint:oklch(.22 .014 260);--done-ink:oklch(.72 .02 260);
+ --stem-line:oklch(.48 .05 130);--stem-bg:oklch(.30 .05 130);--stem-fg:oklch(.88 .08 130);--free-line:oklch(.46 .02 260);--free-fg:oklch(.80 .018 260)}
+/* mint/lemon chips take an ink glyph in light (both systems) */
+.sys:not([data-theme=dark]) .blk[data-c=errand] .ic,.sys:not([data-theme=dark]) .blk[data-c=learn] .ic{color:oklch(.2 .02 60)}
+/* ---------- type ---------- */
+.t-nunito{--fu:"Nunito Sans",sans-serif;--fd:"Nunito Sans",sans-serif;--fh:"Nunito Sans",sans-serif;--fg:"Nunito Sans",sans-serif;--wd:800;--sd:normal;--sh:normal;--sg:normal;--hr-size:12px;--hr-w:600;--gap-fs:11px;--gap-w:700}
+.t-caslon{--fu:"Karla",sans-serif;--fd:"Libre Caslon Display",serif;--fh:"Libre Caslon Display",serif;--fg:"Libre Caslon Display",serif;--wd:400;--sd:italic;--sh:italic;--sg:italic;--hr-size:16px;--hr-w:400;--gap-fs:13px;--gap-w:400}
+/* ---------- block shape ---------- */
+.s-pill{--r-blk:22px;--r-row:999px}
+.s-pill .blk{padding-left:44px;display:flex;flex-direction:column;justify-content:center}
+.s-pill .blk .ic{left:8px;top:50%;transform:translateY(-50%);width:28px;height:28px}
+.s-pill .blk.short{padding-left:34px;flex-direction:row}.s-pill .blk.short .ic{position:absolute;left:8px;width:20px;height:20px;transform:translateY(-50%)}
+.s-card{--r-blk:16px;--r-row:14px}
+.s-card .blk .ic{right:8px;top:8px}
+.s-card .blk.short{border-radius:999px}
+/* ---------- free-time connector ---------- */
+.g-stem{--gap-x:14px;--gap-line:3px dotted var(--stem-line);--gap-lab-bg:var(--stem-bg);--gap-lab-fg:var(--stem-fg)}
+.g-stem .gap{justify-content:flex-start;padding-left:34px}
+.g-stem .gap .lab{font-family:var(--fu);font-style:normal;font-weight:700;font-size:11px}
+.g-dots{--gap-x:50%;--gap-line:2px dotted var(--free-line);--gap-lab-bg:var(--canvas);--gap-lab-fg:var(--free-fg)}
+.g-dots .gap .lab{font-family:var(--fg);font-style:var(--sg);font-size:var(--gap-fs);font-weight:var(--gap-w)}
+.g-stem .lab .l2,.g-dots .lab .l1{display:none}
+/* ---------- running block ---------- */
+.r-sweep .blk.run::after{content:"";position:absolute;left:0;top:0;bottom:0;width:44%;background:oklch(0 0 0 / .06);pointer-events:none}
+.sys[data-theme=dark].r-sweep .blk.run::after{background:oklch(1 0 0 / .07)}
+.r-outline .blk.run{outline:2px solid currentColor;outline-offset:-2px}
+.r-outline .blk.run .ti::after{content:"now";font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--acc);color:var(--on-acc);font-family:var(--fu);font-style:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="muted" style="margin:0">The Eye · optimo · 2026-09-27 · companion to presentation.html</p>
+<h1>Meadow vs Gelateria — side by side, then blend</h1>
+<p class="muted">Same day on both sides (Sat 26 Sep, now 14:40, running task 14:00–15:30, free gaps 07:45–09:00, 11:15–13:00, 15:40–16:00). Everything shown is driven by the two token files' values; the only thing that changes between columns is the system.</p>
+
+<div class="cols">
+<div class="col"><h2>Meadow <span class="muted" style="font-size:14px">— Calm · Organic</span></h2>
+ <div class="mk desk sys p-meadow t-nunito s-pill g-stem r-sweep" data-dir="meadow"></div>
+ <div class="mk phone sys p-meadow t-nunito s-pill g-stem r-sweep" data-dir="meadow"></div>
+ <table class="strip">
+ <tr><td>Font</td><td>Nunito Sans only — 800 date, 700 titles, 600 numerals/labels, 400 body; tabular-nums</td></tr>
+ <tr><td>Block shape / radius</td><td>Full-width pill, radius min(22px, h/2), min height 32px; padding 6×14</td></tr>
+ <tr><td>Palette family</td><td>Meadow at noon: sky 230 · lavender 285 · grass 135 · apricot 50 · pond 190 · buttercup 90 · heather 330 · pebble 60; tint L.94/ink L.32; moss accent H130; warm off-white canvas</td></tr>
+ <tr><td>Icon chip placement</td><td>28px circle at the pill's left end, vertically centred; priority = 2px ring on the chip</td></tr>
+ <tr><td>Free-time connector</td><td>3px dotted sage stem at x=14 (chip axis) + leaf-green label pill "1h 15m free" + "+"</td></tr>
+ <tr><td>Now indicator</td><td>2px moss line + moss time pill in the gutter</td></tr>
+ <tr><td>Running / done</td><td>Running = elapsed tone-sweep from the left (6% overlay). Done = neutral tint, strike, chip → check</td></tr>
+ </table></div>
+<div class="col"><h2>Gelateria <span class="muted" style="font-size:14px">— Vogue · Editorial</span></h2>
+ <div class="mk desk sys p-gelateria t-caslon s-card g-dots r-outline" data-dir="gelateria"></div>
+ <div class="mk phone sys p-gelateria t-caslon s-card g-dots r-outline" data-dir="gelateria"></div>
+ <table class="strip">
+ <tr><td>Font</td><td>Libre Caslon Display italic 400 (date, hour numerals, gap label, sheet title) + Karla 400/500/700 for all UI; tabular-nums</td></tr>
+ <tr><td>Block shape / radius</td><td>Rounded rectangle r16 (pill below 40px tall); padding 8×12</td></tr>
+ <tr><td>Palette family</td><td>Sherbet: blueberry 250 · grape 300 · pistachio 140 · mango 70 · mint 170 · lemon 95 · strawberry 15 · fig 340; tint L.95/ink L.32; mango accent H75; pure white canvas</td></tr>
+ <tr><td>Icon chip placement</td><td>28px circle in the block's top-right corner (hidden &lt; 40px, inline 18px instead); priority = 3px inner-left bar</td></tr>
+ <tr><td>Free-time connector</td><td>2px dotted rule centred in the column + italic Caslon "1 h 15 free" on a canvas pill + "+"</td></tr>
+ <tr><td>Now indicator</td><td>2px ink line + ink time pill (never red, never accent)</td></tr>
+ <tr><td>Running / done</td><td>Running = 2px ink outline + "now" chip after the title; no fill. Done = neutral tint, strike, chip → check</td></tr>
+ </table></div>
+</div>
+
+<h2>Blend</h2>
+<p class="muted">Each toggle swaps one dimension between the two systems. Defaults to Meadow. Both palettes keep the tint/ink recipe in both themes (light ≈10:1, dark ≈9.3:1); the recipe below is what to paste back.</p>
+<div class="blend">
+<div class="tog" id="tog">
+ <div><label>Type</label><div class="opts"><button data-k="type" data-v="nunito" aria-pressed="true">Nunito Sans</button><button data-k="type" data-v="caslon" aria-pressed="false">Karla + Caslon italic numerals</button></div></div>
+ <div><label>Block shape</label><div class="opts"><button data-k="shape" data-v="pill" aria-pressed="true">Pill r22 + left chip</button><button data-k="shape" data-v="card" aria-pressed="false">Rounded r16 + corner chip</button></div></div>
+ <div><label>Palette</label><div class="opts"><button data-k="palette" data-v="meadow" aria-pressed="true">Meadow (sage / moss)</button><button data-k="palette" data-v="gelateria" aria-pressed="false">Gelateria (sherbet / mango)</button></div></div>
+ <div><label>Free-time connector</label><div class="opts"><button data-k="gap" data-v="stem" aria-pressed="true">Sage stem + pill label</button><button data-k="gap" data-v="dots" aria-pressed="false">Dotted rule + italic duration</button></div></div>
+ <div><label>Running block</label><div class="opts"><button data-k="run" data-v="sweep" aria-pressed="true">Elapsed tone-sweep</button><button data-k="run" data-v="outline" aria-pressed="false">Ink outline + now chip</button></div></div>
+ <div><label>Theme</label><div class="opts"><button data-k="theme" data-v="light" aria-pressed="true">Light</button><button data-k="theme" data-v="dark" aria-pressed="false">Dark</button></div></div>
+</div>
+<div class="bmocks">
+ <div><div class="mk desk sys p-meadow t-nunito s-pill g-stem r-sweep" id="bdesk" data-dir="blend"></div></div>
+ <div><div class="mk phone sys p-meadow t-nunito s-pill g-stem r-sweep" id="bphone" data-dir="blend"></div></div>
+</div>
+<h3>Blend recipe</h3>
+<button class="copy" id="copy">Copy recipe</button>
+<pre id="recipe" aria-live="polite"></pre>
+</div>
+<p class="muted" style="font-size:12px;margin-top:40px">Mock UI is a presentation artifact rendered from a shared fixture, not production code. Values mirror tokens-meadow.css and tokens-gelateria.css.</p>
+</div>
+
+<script>
+const G={work:'▤',meet:'●',health:'▲',personal:'◆',errand:'✓',learn:'▣',family:'♥',home:'⌂'};
+const TASKS=[{t:'Morning run',s:420,d:45,c:'health',done:1},{t:'Deep work: forecast draft',s:540,d:120,c:'work'},{t:'Standup, platform team',s:660,d:15,c:'meet'},{t:'Lunch with Sam',s:780,d:60,c:'personal'},{t:'Write the migration plan',s:840,d:90,c:'work',run:1},{t:'Call the dentist',s:930,d:10,c:'errand'},{t:'1:1 with Dana',s:960,d:30,c:'meet',half:1},{t:'Review pull request',s:975,d:30,c:'work',half:2}];
+const INBOX=[['Book flights for October','personal','0:30'],['Reply to Ellen re budget','work','0:15'],['Renew car registration','errand','0:20'],['Read chapter 4','learn','0:45']];
+const NOW=880,START=420,END=1050;
+const tm=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const lab1=m=>`${Math.floor(m/60)}h ${m%60}m free`, lab2=m=>`${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')} free`;
+function timeline(pxm,phone){let h='';
+ for(let m=START;m<=END;m+=60)h+=`<span class="hr" style="top:${(m-START)*pxm}px">${phone?String(m/60).padStart(2,'0'):tm(m)}</span><span class="hl" style="top:${(m-START)*pxm}px"></span>`;
+ let cur=START;const sorted=[...TASKS].sort((a,b)=>a.s-b.s);
+ sorted.forEach(t=>{if(t.s>cur+5&&t.half!==2){const len=t.s-cur;h+=`<div class="gap" style="top:${(cur-START)*pxm}px;height:${len*pxm}px"><span class="lab"><span class="l1">${lab1(len)}</span><span class="l2">${lab2(len)}</span></span><span class="plus">+</span></div>`}cur=Math.max(cur,t.s+t.d)});
+ sorted.forEach(t=>{const short=t.d<=15;h+=`<div class="blk ${short?'short':''} ${t.done?'done':''} ${t.run?'run':''} ${t.half===1?'half':t.half===2?'half2':''}" data-c="${t.c}" style="top:${(t.s-START)*pxm}px;height:${t.d*pxm-3}px;--cat-h:var(--h-${t.c})"><div class="ti"><span class="ck">${t.done?'✓':''}</span><span>${t.t}</span></div>${short?'':`<div class="tm">${tm(t.s)}–${tm(t.s+t.d)}</div>`}<span class="ic">${t.done?'✓':G[t.c]}</span>${short?`<span class="tm">${tm(t.s)}</span>`:''}</div>`});
+ h+=`<div class="now" style="top:${(NOW-START)*pxm}px"><span class="nl">${tm(NOW)}</span></div>`;
+ return `<div class="col" style="height:${(END-START)*pxm+20}px">${h}</div>`}
+const desk=()=>`<div class="top"><span>‹</span><span class="date">Sat 26 Sep</span><span>›</span><span class="stat">Planned <b>6h30</b></span><span class="stat">Free <b>3h20</b></span><span class="stat">Done <b>1/8</b></span><span class="stat" style="margin-left:auto">Day · Week · Month</span></div><div class="body"><div class="rail"><h4>Inbox <span style="font-weight:400;color:var(--ink2-m)">4, 1h50</span></h4>${INBOX.map(r=>`<div class="row" style="--cat-h:var(--h-${r[1]})"><span class="dot"></span><span class="t">${r[0]}</span><span class="dur">${r[2]}</span><span class="place">Place</span></div>`).join('')}</div><div class="tl"><div class="qa"><b>+</b> Lunch with Sam at 1pm for 1h #personal</div>${timeline(0.58,false)}</div></div>`;
+const phone=()=>`<div><div class="top" style="height:40px"><span class="date">Sat 26</span><span class="stat">Free <b>3h20</b></span><span class="stat" style="margin-left:auto">1/8</span></div><div class="strip2"><span>22</span><span>23</span><span>24</span><span>25</span><span class="on">26</span><span>27</span><span>28</span></div></div><div class="tl" style="padding:8px 8px 0 0"><div class="qa" style="margin-left:8px"><b>+</b> Add a task…</div>${timeline(0.48,true)}</div><div class="fab">+</div><div class="tabs"><span class="on"><i></i>Day</span><span><i></i>Inbox<span class="cnt">4</span></span><span><i></i>Week</span><span><i></i>More</span></div>`;
+document.querySelectorAll('.mk').forEach(el=>el.innerHTML=el.classList.contains('phone')?phone():desk());
+
+/* ---- blend state ---- */
+const st={type:'nunito',shape:'pill',palette:'meadow',gap:'stem',run:'sweep',theme:'light'};
+const R={
+ type:{nunito:['Nunito Sans (one family: 400/600/700/800)','--font-display: "Nunito Sans"; --font-ui: "Nunito Sans"; hour numerals 12px/600 upright'],caslon:['Karla + Libre Caslon Display italic','--font-display: "Libre Caslon Display" (italic 400: date, hour numerals 20/16px, gap label, sheet title); --font-ui: "Karla"']},
+ shape:{pill:['Pill r22, chip left','--r-md: 22px (radius = min(22px, h/2)); --pill-min-h: 32px; chip 28px at left end; priority = 2px ring on chip'],card:['Rounded r16, chip top-right','--r-md: 16px (pill < 40px); chip 28px top-right (inline 18px < 40px); priority = 3px inner-left bar']},
+ palette:{meadow:['Meadow — tokens-meadow.css','hues 230/285/135/50/190/90/330/60; accent oklch(.52 .13 130) light / oklch(.80 .14 130) dark; canvas oklch(.99 .006 110); now line = accent'],gelateria:['Gelateria — tokens-gelateria.css','hues 250/300/140/70/170/95/15/340; accent oklch(.55 .19 75) light / oklch(.78 .16 75) dark; canvas #fff; now line = ink']},
+ gap:{stem:['Sage stem + pill label','3px dotted --stem-line at x=14px; label pill --stem-label-bg/--stem-label-fg "1h 15m free"; "+" at right'],dots:['Dotted rule + italic duration','2px dotted --free-line centred; label in display italic "1 h 15 free" on a canvas pill; "+" at right']},
+ run:{sweep:['Elapsed tone-sweep','.block[data-running]::after width = elapsed%; --elapsed-overlay 6% black light / 7% white dark'],outline:['Ink outline + now chip','.block[data-running] outline 2px currentColor inset; "now" chip --accent-tint/--accent-ink after title']},
+ theme:{light:['Light','tint L.94–.95 C.045–.05 / ink L.32 (≈10:1); chips L.52–.55 white glyph (mint, lemon, buttercup: ink glyph)'],dark:['Dark','tint L.30 C.055 / ink L.88 (≈9.3:1); chips L.78 with ink glyph; 1px inset ring on blocks']}};
+function apply(){const cls=['sys',`p-${st.palette}`,`t-${st.type}`,`s-${st.shape}`,`g-${st.gap}`,`r-${st.run}`];
+ ['bdesk','bphone'].forEach(id=>{const el=document.getElementById(id);el.className=`mk ${id==='bdesk'?'desk':'phone'} ${cls.join(' ')}`;el.dataset.theme=st.theme});
+ document.querySelectorAll('#tog button').forEach(b=>b.setAttribute('aria-pressed',String(st[b.dataset.k]===b.dataset.v)));
+ const base=st.palette==='meadow'?'tokens-meadow.css':'tokens-gelateria.css';
+ document.getElementById('recipe').textContent=
+`optimo blend recipe — ${new Date().toISOString().slice(0,10)}
+base tokens: ${base}
+type:      ${R.type[st.type][0]}
+           ${R.type[st.type][1]}
+shape:     ${R.shape[st.shape][0]}
+           ${R.shape[st.shape][1]}
+palette:   ${R.palette[st.palette][0]}
+           ${R.palette[st.palette][1]}
+free-time: ${R.gap[st.gap][0]}
+           ${R.gap[st.gap][1]}
+running:   ${R.run[st.run][0]}
+           ${R.run[st.run][1]}
+theme previewed: ${R.theme[st.theme][0]} — ${R.theme[st.theme][1]}
+pure: ${st.type==='nunito'&&st.shape==='pill'&&st.palette==='meadow'&&st.gap==='stem'&&st.run==='sweep'?'Meadow':st.type==='caslon'&&st.shape==='card'&&st.palette==='gelateria'&&st.gap==='dots'&&st.run==='outline'?'Gelateria':'hybrid'}`}
+document.getElementById('tog').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st[b.dataset.k]=b.dataset.v;apply()});
+document.getElementById('copy').addEventListener('click',()=>{navigator.clipboard.writeText(document.getElementById('recipe').textContent).then(()=>{const c=document.getElementById('copy');c.textContent='Copied';setTimeout(()=>c.textContent='Copy recipe',1200)})});
+apply();
+</script>
+</body>
+</html>
