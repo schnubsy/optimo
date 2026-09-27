@@ -143,6 +143,7 @@ Done-criteria: merge.test.ts proves newer-field-wins + tombstone + ts-merge (mir
   merged row within 5 s · gauntlet GREEN · evidence: sync spec trace + a screenshot of SyncBadge states.
 
 === SLICE 3 — day timeline, drag/resize, task editor ===
+Status: done 2328bd2
 Scope: the hero view per Switchboard mock (desktop two-pane, mobile single pane).
 Files in play: src/views/Day.tsx, src/timeline/{Timeline,HourRail,NowLine,Block,FreeRow,AllDayStrip}.tsx,
   src/timeline/layout.ts (overlap columns, snap, bounds), src/editor/TaskSheet.tsx, src/state/ui.ts,
