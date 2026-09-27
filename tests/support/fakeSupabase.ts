@@ -16,7 +16,7 @@ export const TEST_USER = { id: '00000000-0000-4000-8000-00000000cafe', email: 't
 type Row = Record<string, unknown> & { field_ts?: Record<string, number> }
 const TABLES = ['planner_categories', 'planner_tasks', 'planner_exceptions', 'planner_settings'] as const
 /** server-owned tables written only by the (in-process) Edge Function handlers */
-const SERVER_TABLES = ['planner_calendar_accounts', 'planner_events'] as const
+const SERVER_TABLES = ['planner_calendar_accounts', 'planner_events', 'planner_push_subscriptions'] as const
 
 const DEFAULTS: Record<string, Row> = {
   planner_categories: { color: 'work', icon: 'dot', sort_key: 0 },
@@ -133,6 +133,19 @@ export class FakeSupabase {
     const m = p.match(/^\/rest\/v1\/(planner_\w+)$/)
     if (m) {
       const table = m[1]
+      if (table === 'planner_push_subscriptions') {
+        const subs = this.rows.planner_push_subscriptions
+        if (method === 'POST') {
+          const body = JSON.parse(req.postData() ?? '[]')
+          for (const r of Array.isArray(body) ? body : [body]) subs.set(r.endpoint, { ...subs.get(r.endpoint), ...r, user_id: TEST_USER.id })
+          return route.fulfill({ status: 201, headers: cors })
+        }
+        if (method === 'DELETE') {
+          subs.delete((url.searchParams.get('endpoint') ?? '').replace(/^eq\./, ''))
+          return route.fulfill({ status: 204, headers: cors })
+        }
+        if (method === 'GET') return json(200, [...subs.values()])
+      }
       if (table === 'planner_calendar_accounts_public' && method === 'GET')
         return json(200, [...this.rows.planner_calendar_accounts.values()].map(({ secret_enc: _s, ...rest }) => rest))
       if (table === 'planner_calendar_accounts' && (method === 'PATCH' || method === 'DELETE')) {

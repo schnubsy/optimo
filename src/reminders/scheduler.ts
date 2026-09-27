@@ -1,9 +1,11 @@
-// In-app reminders (v0.1): while the app is open, fire each reminder once at start − offset.
-// Uses the Notification API when permission is granted, otherwise an in-app toast. No push (arc 2).
+// In-app reminders: while the app is open, fire each reminder once at start − offset (Notification API when
+// permitted, else a toast). The fallback since arc 2: when web push is on for this device, push-send delivers and
+// this stays quiet so a reminder never arrives twice.
 
 import { loadItems } from '../timeline/items'
 import { todayKey } from '../lib/time'
 import { useUI } from '../state/ui'
+import { pushOn } from '../push/subscribe'
 
 const FIRED_KEY = 'optimo.reminders.fired'
 
@@ -44,7 +46,7 @@ export function startReminders(): () => void {
     const items = (await loadItems([day]))[day] ?? []
     const done = fired()
     for (const r of dueReminders(items, last, now)) {
-      if (done.has(r.id)) continue
+      if (done.has(r.id) || pushOn()) continue
       done.add(r.id)
       const text = r.offset ? `${r.title} starts in ${r.offset} min` : `${r.title} is starting`
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {

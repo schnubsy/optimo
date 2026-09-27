@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useSettings } from '../data/hooks'
 import { updateSettings } from '../data/repo'
 import type { SettingsData } from '../data/types'
@@ -8,6 +8,7 @@ import { fmtClock, todayKey } from '../lib/time'
 import { useUI } from '../state/ui'
 import '../categories/categories.css'
 import { CalendarSettings } from '../calendar/CalendarSettings'
+import { PushSettings } from '../push/PushSettings'
 import { supabase } from '../sync/remote'
 
 // #12: day bounds are chosen from 15-min steps rendered in the user's clock (a native time field ignores it)
@@ -49,7 +50,6 @@ export function Settings() {
   const set = useUI((x) => x.set)
   const notify = useUI((x) => x.notify)
   const file = useRef<HTMLInputElement>(null)
-  const [perm, setPerm] = useState(() => (typeof Notification === 'undefined' ? 'unsupported' : Notification.permission))
   const up = (p: Partial<SettingsData>) => void updateSettings(p)
 
   return (
@@ -83,15 +83,7 @@ export function Settings() {
 
       {supabase() && <CalendarSettings />}
 
-      <fieldset className="set-row">
-        <legend>Reminders</legend>
-        <p className="muted">In-app while optimo is open{perm === 'granted' ? ', with system notifications.' : '.'} Push arrives in a later version.</p>
-        {perm === 'default' && (
-          <button type="button" className="ghost-btn" onClick={() => Notification.requestPermission().then(setPerm)}>
-            Allow notifications
-          </button>
-        )}
-      </fieldset>
+      <PushSettings />
 
       <fieldset className="set-row">
         <legend>Organise</legend>

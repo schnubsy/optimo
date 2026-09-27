@@ -9,3 +9,8 @@ import_map = "./functions/deno.json"
 [functions.calendar-sync]
 verify_jwt = false
 import_map = "./functions/deno.json"
+
+# every minute from pg_cron with x-cron-secret (no JWT)
+[functions.push-send]
+verify_jwt = false
+import_map = "./functions/deno.json"

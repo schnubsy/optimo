@@ -21,8 +21,17 @@ web client is load-bearing for them.
 ### 2.1 Task
 Fields: `title`, `notes` (markdown-lite), `category` (color + icon), `priority` (none / low /
 med / high), `start_at` (null ⇒ inbox), `duration_min` (default from settings, 30), `all_day`,
-`subtasks[]` (title, done), `reminders[]` (offset minutes before start; in-app only in v0.1),
+`subtasks[]` (title, done), `reminders[]` (offset minutes before start — see *Reminders* below),
 `completed_at`, recurrence (§2.5).
+
+**Reminders (arc 2).** Web push on the installed PWA (iPhone Home Screen app, iOS 16.4+) and desktop browsers:
+Settings → Reminders asks permission, subscribes with the VAPID public key (`VITE_VAPID_PUBLIC_KEY`) and writes a
+`planner_push_subscriptions` row (+ `settings.data.tz`). `push-send` (pg_cron every minute, `x-cron-secret`) finds
+reminders due in [now, now+60 s) — plain tasks, per-occurrence overrides and series occurrences expanded in the
+user's zone (floating, like the client) minus skipped/overridden occurrences and `planner_reminder_sent` — sends
+`{title, body "in 10 min · 14:00", tag task_id, url /optimo/?date=…}` to every live endpoint, prunes 404/410
+endpoints and records the send. The SW shows it; a click focuses the app on that day. In-app reminders remain the
+fallback and stay quiet on a device where push is on.
 
 ### 2.2 Views
 - **Day timeline** — hour rail, "now" line that tracks live, blocks sized by duration, overlapping

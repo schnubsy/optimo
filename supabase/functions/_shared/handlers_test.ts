@@ -29,3 +29,11 @@ Deno.test('wrong password is a 401 with a plain message', async () => {
   const r = await handleConnect(post({ username: FAKE_USER, password: 'nope-nope-nope-nope' }), new MemPorts(fakeCalDav().fetch))
   assert(r.status === 401, `status ${r.status}`)
 })
+
+import { dueReminders, zoned } from './due.ts'
+Deno.test('due: a daily 09:00 series fires at 08:50 local (npm:rrule in the Edge runtime)', () => {
+  const tz = 'America/New_York'
+  const s = zoned(2026, 9, 1, 9, 0, tz).toISOString()
+  const d = dueReminders([{ id: 's', title: 'x', start_at: s, dtstart: s, rrule: 'FREQ=DAILY', reminders: [10], completed_at: null, deleted_at: null }], [], new Set(), zoned(2026, 9, 28, 8, 50, tz), tz)
+  assert(d.length === 1 && d[0].occurrence_date === '2026-09-28', JSON.stringify(d))
+})

@@ -69,6 +69,8 @@ export interface SettingsData {
   focus_min: number
   /** Icon chosen for a title stem (src/quickadd/suggest.ts titleStem) — wins over the keyword map. */
   iconOverrides?: Record<string, string>
+  /** IANA zone, written when push is enabled — push-send expands series in the user's wall-clock time. */
+  tz?: string
 }
 
 export const DEFAULT_SETTINGS: SettingsData = {

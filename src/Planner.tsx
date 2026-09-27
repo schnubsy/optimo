@@ -109,6 +109,17 @@ export function Planner({ userId }: { userId: string }) {
   useCalendarSync(!!supabase())
   useEffect(() => applyTheme(settings.theme), [settings.theme])
   useEffect(() => startReminders(), [])
+  // a notification click (service worker) or a ?date= deep link opens that day
+  useEffect(() => {
+    const open = (href: string) => {
+      const d = new URL(href, location.href).searchParams.get('date')
+      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) useUI.getState().set({ date: d, view: 'day', mobileTab: 'board' })
+    }
+    open(location.href)
+    const onMsg = (e: MessageEvent) => e.data?.type === 'optimo:open' && open(e.data.url)
+    navigator.serviceWorker?.addEventListener('message', onMsg)
+    return () => navigator.serviceWorker?.removeEventListener('message', onMsg)
+  }, [])
   const itemsRef = useRef(items)
   useEffect(() => {
     itemsRef.current = items

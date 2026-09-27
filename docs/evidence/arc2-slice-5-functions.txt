@@ -1,0 +1,28 @@
+running 3 tests from ./_shared/handlers_test.ts
+connect stores ciphertext only; sync expands the recurring fixture; resync is a no-op ... ok (22ms)
+wrong password is a 401 with a plain message ... ok (390µs)
+due: a daily 09:00 series fires at 08:50 local (npm:rrule in the Edge runtime) ... ok (12ms)
+
+ok | 3 passed | 0 failed (37ms)
+
+ ✓ tests/unit/sql.test.ts > db/*.sql parse as PostgreSQL > db/001_planner.sql 7ms
+ ✓ tests/unit/sql.test.ts > db/*.sql parse as PostgreSQL > db/002_calendar_push.sql 1ms
+ ✓ tests/unit/sql.test.ts > db/*.sql parse as PostgreSQL > db/003_cron.sql 1ms
+ ✓ tests/unit/sql.test.ts > db/*.sql parse as PostgreSQL > db/003 schedules both jobs and never embeds a secret 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > plain task: a 10-min reminder fires in its minute 1ms
+ ✓ tests/unit/due.test.ts > dueReminders > not before its minute, not after it 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > an at-start reminder (0) fires at the start 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > several lead times: only the one in the window 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > completed, deleted and reminder-less tasks never fire 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > already sent → skipped 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > series: today’s occurrence fires 10 min before its 09:00 1ms
+ ✓ tests/unit/due.test.ts > dueReminders > series: a skipped occurrence stays quiet 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > series: a moved occurrence fires from its override row at the new time, not the series time 1ms
+ ✓ tests/unit/due.test.ts > dueReminders > series: a completed occurrence (override with completed_at) stays quiet 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > series: floating time — 09:00 stays 09:00 local across the DST change 1ms
+ ✓ tests/unit/due.test.ts > dueReminders > series: an exception row that was itself deleted no longer suppresses the occurrence 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > the occurrence date is the user’s local date, not UTC’s 0ms
+ ✓ tests/unit/due.test.ts > dueReminders > payload: title, "in 10 min · 09:00", tag and a link to the day 0ms
+ ✓ tests/unit/due.test.ts > push-send handler > needs the cron secret 1ms
+ ✓ tests/unit/due.test.ts > push-send handler > sends to every live endpoint, prunes 410s, records the send once 1ms
+      Tests  20 passed (20)
