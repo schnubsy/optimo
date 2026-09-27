@@ -175,6 +175,7 @@ Done-criteria: parse.test.ts ≥ 20 cases incl. "Lunch with Sam at 1pm" → {tit
   timeline, unschedule back · gauntlet GREEN · evidence screenshots + icon sheet render.
 
 === SLICE 5 — recurrence, week + month, subtasks/reminders, settings, focus mode ===
+Status: done 703960c
 Scope: the rest of baseline parity.
 Files in play: src/recurrence/{materialize.ts,exceptions.ts}, src/views/{Week,Month}.tsx, src/focus/Focus.tsx,
   src/reminders/scheduler.ts (in-app: Notification API if granted, else toast), src/views/Settings.tsx,
