@@ -56,6 +56,16 @@ export function Inbox({ cats }: { cats: Map<string, Category> }) {
   const win = rowWindow(view.top, view.h, list.length)
 
   useEffect(() => {
+    if (!q) return
+    performance.mark('optimo:filter-end')
+    try {
+      performance.measure('optimo:filter', 'optimo:filter-start', 'optimo:filter-end')
+    } catch {
+      /* ignore */
+    }
+  }, [q, list])
+
+  useEffect(() => {
     const el = scroller.current
     if (!el) return
     let raf = 0
@@ -87,7 +97,17 @@ export function Inbox({ cats }: { cats: Map<string, Category> }) {
         <label htmlFor="inbox-filter" className="sr-only">
           Filter inbox
         </label>
-        <input id="inbox-filter" type="search" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} data-testid="inbox-filter" />
+        <input
+          id="inbox-filter"
+          type="search"
+          placeholder="Filter"
+          value={q}
+          onChange={(e) => {
+            performance.mark('optimo:filter-start')
+            setQ(e.target.value)
+          }}
+          data-testid="inbox-filter"
+        />
       </div>
       <div className="ilist" ref={scroller}>
         <ul style={{ height: list.length * ROW_H }} aria-label="Unscheduled tasks">

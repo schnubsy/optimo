@@ -92,7 +92,10 @@ export function Planner({ userId }: { userId: string }) {
   const now = useNow()
   const days = useMemo(() => [date], [date])
   const itemsByDay = useItems(days)
-  const items = useMemo(() => itemsByDay?.[date] ?? [], [itemsByDay, date])
+  const items = useMemo(() => {
+    if (itemsByDay) performance.mark('optimo:day-data')
+    return itemsByDay?.[date] ?? []
+  }, [itemsByDay, date])
   const inboxCount = useInboxCount()
   const isToday = date === todayKey()
   const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null)

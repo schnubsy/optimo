@@ -58,6 +58,19 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
   const win = visibleWindow(view.top, view.h, hourPx)
   const visible = placed.filter((p) => p.end >= win.from && p.start <= win.to)
 
+  // perf budget probe: data ready → blocks committed and painted (docs/spec.md §2.9)
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      performance.mark('optimo:day-paint')
+      try {
+        performance.measure('optimo:day-ready', 'optimo:day-data', 'optimo:day-paint')
+      } catch {
+        /* no data mark yet */
+      }
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [items])
+
   // initial scroll: an hour before now on today, else the day start
   useLayoutEffect(() => {
     const el = scrollRef.current
