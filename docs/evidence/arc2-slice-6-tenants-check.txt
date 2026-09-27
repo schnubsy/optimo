@@ -1,0 +1,50 @@
+# tenants-check — press branch arc/optimo-card (3d7d410), 2026-09-27
+
+## 1. Real press checkout (branch), before the close — expected: T1 (pages.json, written by release.js at close) and T8 (council registry row, Mark's manual step) pending
+  [FAIL] T1 registry          optimo.html          not in pages.json
+  [PASS] T2 source            optimo.html          optimo present
+  [PASS] T3 gate              optimo.html          src/vendor/family-gate.js == press/src/family-gate.js (9eba177d)
+  [PASS] T4 release           optimo.html          PRESS_DIR + spaces.json read + gate compare; no registry writes
+  [FAIL] T8 registry-parity   optimo.html          no snag-registry row (add it to council instruments/snag/registry.json)
+        where a.page in ('remit.html', 'perth.html', 'optimo.html')
+tenants-check: 44 pass, 2 fail, 20 skip, 1 emitted
+
+## 2. Overlay = the post-close state: pages.json as release.js writes it (--dry run above) + the proposed council registry row; with --rebuild
+tenants-check — press root: /private/tmp/claude-501/-Users-mark-Documents-code-optimo/0f17f6c3-3583-4217-87f3-91333c81233d/scratchpad/press-overlay
+  [PASS] T1 registry          optimo.html          tier family
+  [PASS] T2 source            optimo.html          optimo present
+  [PASS] T3 gate              optimo.html          src/vendor/family-gate.js == press/src/family-gate.js (9eba177d)
+  [PASS] T4 release           optimo.html          PRESS_DIR + spaces.json read + gate compare; no registry writes
+  [PASS] T5 rebuild           optimo.html          rebuild == press/optimo.html (b7f32089)
+  [PASS] T8 registry-parity   optimo.html          optimo → schnubsy/optimo
+        where a.page in ('remit.html', 'perth.html', 'optimo.html')
+tenants-check: 47 pass, 0 fail, 28 skip, 1 emitted, 4 info
+
+## 3. Deterministic build
+build 1 blob b7f32089aa8ce40b4987d1f78bc65c180c6f7c6d
+build 2 blob b7f32089aa8ce40b4987d1f78bc65c180c6f7c6d
+vendored gate 9eba177d0fef38f9d02d8881b0a413792f2ff6fb == press canonical 9eba177d0fef38f9d02d8881b0a413792f2ff6fb
+publish-checks: ✓ vendored family-gate.js == press/src/family-gate.js (9eba177d)
+publish-checks: ✓ build-press is deterministic (b7f32089)
+publish-checks: ✓ dist/optimo.html is fresh (== a rebuild from src-press/)
+
+## Proposed council snag-registry row (instruments/snag/registry.json → solutions[])
+{
+  "id": "optimo",
+  "name": "optimo",
+  "kind": "web",
+  "repo": "schnubsy/optimo",
+  "page": "optimo.html",
+  "tier": "family",
+  "labels": [
+    "snag"
+  ],
+  "release": "tools/release.js",
+  "aliases": [
+    "planner",
+    "day planner",
+    "timeline",
+    "optimo"
+  ],
+  "notes": "Day-planner PWA (https://schnubsy.github.io/optimo/); optimo.html is its Family Wing launcher card."
+}
