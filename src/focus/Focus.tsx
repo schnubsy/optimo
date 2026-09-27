@@ -78,7 +78,7 @@ export function Focus() {
           {task.subtasks.map((s, i) => (
             <li key={s.id} className={s.done ? 'done' : ''}>
               <button type="button" className="sub-chip" aria-pressed={s.done} aria-label={`Mark ${s.title} done`} onClick={() => patchItem(item, { subtasks: task.subtasks.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })}>
-                {s.done && <Icon name="check" size={14} />}
+                {s.done && <Icon name="ui-check" size={14} />}
               </button>
               <span className="sub-t">{s.title}</span>
             </li>
@@ -87,7 +87,7 @@ export function Focus() {
       )}
       <div className="factions">
         <button type="button" className="primary" onClick={() => toggleComplete(item).then(stop)} data-testid="focus-complete">
-          <Icon name="check" /> Complete
+          <Icon name="ui-check" /> Complete
         </button>
         <button type="button" className="ghost-btn" onClick={() => patchItem(item, { duration_min: task.duration_min + 5 }, '+5 min')} data-testid="focus-plus5">
           +5 min

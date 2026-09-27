@@ -1,7 +1,7 @@
 // Arc-1 design snags #1–#12 (label `snag`), one regression case each. Assertions are behavioural (text, geometry,
 // computed state) so they survive the arc-2 restyle.
 import { test, expect, type Page } from '@playwright/test'
-import { CAT, openApp, seedDay, seedTask } from './support/app'
+import { CAT, openApp, seedDay, seedTask, quickAdd } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 const setView = (page: Page, view: string) => page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board' }), view)
@@ -68,16 +68,17 @@ test.describe('snags #1–#12', () => {
     expect(dot).toBe(ink3)
   })
 
-  test('#6 mobile chrome: one strip row, hint only while typing', async ({ page, context }) => {
+  test('#6 mobile chrome stays within its budget; the syntax hint shows only while typing', async ({ page, context }) => {
     test.skip(test.info().project.name !== 'iphone-15', 'mobile chrome')
     await openApp(page, context, { seed: seedDay })
+    // arc 2: the strip is replaced by the faded header (112pt + safe area) and a floating bar the board scrolls under
     await expect(page.getByTestId('stat-unplaced')).toHaveCount(0)
-    expect((await page.locator('.strip').boundingBox())!.height).toBeLessThanOrEqual(44 + 60) // one 40px row + safe-area top
-    const rows = await page.locator('.strip .cell').evaluateAll((els) => new Set(els.map((e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.height / 2) / 8) })).size)
-    expect(rows).toBe(1)
-    await expect(page.getByTestId('parse-row')).toBeHidden()
-    await page.getByTestId('quickadd').focus()
+    expect((await page.getByTestId('header').boundingBox())!.height).toBeLessThanOrEqual(112 + 60)
+    await expect(page.getByTestId('quickadd')).toHaveCount(0)
+    const field = await quickAdd(page)
     await expect(page.getByTestId('parse-row')).toBeVisible()
+    await field.fill('Lunch at 1pm')
+    await expect(page.getByTestId('parse-row')).toContainText('Lunch')
   })
 
   test('#7 hour lines do not run through the free-time label', async ({ page, context }) => {

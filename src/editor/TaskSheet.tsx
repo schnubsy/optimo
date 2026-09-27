@@ -11,6 +11,8 @@ import { deleteItem, patchItem, toggleComplete } from '../actions'
 import { editOccurrence, occurrenceStart, type Scope } from '../recurrence/exceptions'
 import { REPEAT_OPTIONS, repeatLabel, repeatToRule, ruleToRepeat } from '../recurrence/rules'
 import { Icon } from '../icons/Icon'
+import { GlyphPicker } from '../icons/GlyphPicker'
+import { taskIcon, titleStem } from '../quickadd/suggest'
 import './sheet.css'
 
 const PRIORITIES: { v: Priority; label: string }[] = [
@@ -132,6 +134,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
     setForm((f) => (f.duration_min === prev ? { ...f, duration_min: task.duration_min } : f))
   }, [task])
   const [scope, setScope] = useState<Scope>('this')
+  const [iconOpen, setIconOpen] = useState(false)
   const [newSub, setNewSub] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
 
@@ -172,7 +175,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
         <header className="sheet-hd">
           <h2 id="sheet-h">{task ? (occ ? 'Edit occurrence' : 'Edit task') : 'New task'}</h2>
           <button type="button" className="icon-btn" onClick={close} aria-label="Close">
-            <Icon name="close" size={16} />
+            <Icon name="ui-close" size={16} />
           </button>
         </header>
 
@@ -190,6 +193,31 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
               </button>
             ))}
           </div>
+        </fieldset>
+        <fieldset className="fld">
+          <legend>Icon</legend>
+          <button
+            type="button"
+            className={`icon-choice cat-${cats.find((c) => c.id === form.category_id)?.color ?? 'work'}`}
+            aria-expanded={iconOpen}
+            onClick={() => setIconOpen(!iconOpen)}
+            disabled={!form.title.trim()}
+            data-testid="sheet-icon"
+          >
+            <span className="icon-choice-chip"><Icon name={taskIcon(form.title, cats.find((c) => c.id === form.category_id)?.icon, settings.iconOverrides)} size={18} /></span>
+            {iconOpen ? 'Done' : 'Change icon'}
+          </button>
+          {iconOpen && (
+            <GlyphPicker
+              value={taskIcon(form.title, cats.find((c) => c.id === form.category_id)?.icon, settings.iconOverrides)}
+              label={`Icon for ${form.title}`}
+              onPick={(icon) => {
+                // remembered for this title stem (planner_settings.data.iconOverrides) — wins over the keyword map
+                void repo.updateSettings({ iconOverrides: { ...(settings.iconOverrides ?? {}), [titleStem(form.title)]: icon } })
+                setIconOpen(false)
+              }}
+            />
+          )}
         </fieldset>
         <fieldset className="fld seg">
           <legend>Priority</legend>
@@ -254,7 +282,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
                   aria-label={`Mark ${s.title} done`}
                   onClick={() => up({ subtasks: form.subtasks.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })}
                 >
-                  {s.done && <Icon name="check" size={14} />}
+                  {s.done && <Icon name="ui-check" size={14} />}
                 </button>
                 <span className="sub-t">{s.title}</span>
                 <button type="button" className="ghost-btn" aria-label={`Remove ${s.title}`} onClick={() => up({ subtasks: form.subtasks.filter((_, j) => j !== i) })}>
@@ -325,7 +353,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
                 className="ghost-btn"
                 onClick={() => toggleComplete({ task, occurrence: occ ? { seriesId: task.id, date: occ } : undefined }).then(close)}
               >
-                <Icon name="check" /> {done ? 'Not done' : 'Complete'}
+                <Icon name="ui-check" /> {done ? 'Not done' : 'Complete'}
               </button>
               {!done && task.start_at && (
                 <button type="button" className="ghost-btn" onClick={() => set({ focusId: editingId, view: 'focus', editingId: null })}>

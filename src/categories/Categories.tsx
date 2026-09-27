@@ -3,7 +3,7 @@ import { createCategory, updateCategory } from '../data/repo'
 import { useCategories } from '../data/hooks'
 import { CATEGORY_COLORS, type Category, type CategoryColor } from '../data/types'
 import { Icon } from '../icons/Icon'
-import { ICON_NAMES } from '../icons/glyphs'
+import { ICON_GROUPS } from '../icons/set'
 import { useUI } from '../state/ui'
 import './categories.css'
 
@@ -48,13 +48,15 @@ function CategoryRow({ c }: { c: Category }) {
           </fieldset>
           <fieldset>
             <legend>Icon</legend>
-            <div className="icon-grid">
-              {ICON_NAMES.map((n) => (
-                <button key={n} type="button" aria-pressed={c.icon === n} aria-label={n} title={n} onClick={() => updateCategory(c.id, { icon: n })}>
-                  <Icon name={n} size={18} />
-                </button>
-              ))}
-            </div>
+            {ICON_GROUPS.map((g) => (
+              <div key={g.id} className="icon-grid" role="group" aria-label={g.label}>
+                {g.icons.map((n) => (
+                  <button key={n} type="button" aria-pressed={c.icon === n} aria-label={n} title={n} onClick={() => updateCategory(c.id, { icon: n })}>
+                    <Icon name={n} size={18} />
+                  </button>
+                ))}
+              </div>
+            ))}
           </fieldset>
         </div>
       )}
@@ -80,7 +82,7 @@ export function Categories() {
         onSubmit={async (e) => {
           e.preventDefault()
           if (!name.trim()) return
-          await createCategory({ name: name.trim(), color, icon: 'dot', sort_key: Date.now() })
+          await createCategory({ name: name.trim(), color, icon: 'work-document', sort_key: Date.now() })
           setName('')
         }}
       >

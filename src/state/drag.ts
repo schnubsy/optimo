@@ -4,6 +4,7 @@ import { create } from 'zustand'
 interface DragStore {
   ghost: { day: string; start: number; len: number } | null
   activeId: string | null
+  nearBar: boolean // a dragged pill is within 80px of the floating tab bar → the bar recedes
   set: (p: Partial<Omit<DragStore, 'set'>>) => void
 }
-export const useDrag = create<DragStore>((set) => ({ ghost: null, activeId: null, set: (p) => set(p) }))
+export const useDrag = create<DragStore>((set) => ({ ghost: null, activeId: null, nearBar: false, set: (p) => set(p) }))

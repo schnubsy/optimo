@@ -1,6 +1,6 @@
 // Regression guards for the slice-7 design review P0s (docs/evidence/arc1-slice-7-design-critique.md).
 import { test, expect, type Page } from '@playwright/test'
-import { openApp, seedDay } from './support/app'
+import { openApp, seedDay, quickAdd } from './support/app'
 
 const setView = (page: Page, view: string) => page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board' }), view)
 /** The resolved --accent (selected state) as the browser serialises a background colour. */
@@ -45,8 +45,8 @@ test.describe('design review P0 guards', () => {
     test.skip(info.project.name !== 'desktop', 'desktop strip')
     await openApp(page, context, { seed: seedDay })
     await context.setOffline(true)
-    await page.getByTestId('quickadd').fill('queued thing')
-    await page.getByTestId('quickadd').press('Enter')
+    await (await quickAdd(page)).fill('queued thing')
+    await (await quickAdd(page)).press('Enter')
     for (const v of ['day', 'week', 'month', 'settings']) {
       await setView(page, v)
       const badge = page.getByTestId('sync-badge')
@@ -78,7 +78,7 @@ test.describe('design review P0 guards', () => {
 
   test('P0-5 the parse row shows a parsed duration even for all-day/recurring input', async ({ page, context }) => {
     await openApp(page, context)
-    await page.getByTestId('quickadd').fill('Gym every weekday for 1h #health !!')
+    await (await quickAdd(page)).fill('Gym every weekday for 1h #health !!')
     await expect(page.getByTestId('parse-duration')).toHaveText('1:00')
   })
 

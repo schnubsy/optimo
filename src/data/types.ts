@@ -67,6 +67,8 @@ export interface SettingsData {
   clock24: boolean
   reminder_lead: number
   focus_min: number
+  /** Icon chosen for a title stem (src/quickadd/suggest.ts titleStem) — wins over the keyword map. */
+  iconOverrides?: Record<string, string>
 }
 
 export const DEFAULT_SETTINGS: SettingsData = {

@@ -78,3 +78,11 @@ export async function openApp(page: Page, context: BrowserContext, opts: { seed?
 }
 
 export const row = (page: Page, id: string) => page.evaluate((i) => (window as any).__optimo.db.tasks.get(i), id)
+
+/** The quick-add field: on iPhone it lives in the FAB's bottom sheet, so open that first. */
+export async function quickAdd(page: Page) {
+  const field = page.getByTestId('quickadd')
+  if (!(await field.isVisible()) && (await page.getByTestId('fab').isVisible())) await page.getByTestId('fab').click()
+  await expect(field).toBeVisible()
+  return field
+}

@@ -6,6 +6,8 @@ import { fmtDur, fmtHours } from '../lib/time'
 import { useUI } from '../state/ui'
 import { useDrag } from '../state/drag'
 import { Icon } from '../icons/Icon'
+import { taskIcon } from '../quickadd/suggest'
+import { useSettings } from '../data/hooks'
 import { ROW_H, filterInbox, inboxOrder, rowWindow } from '../inbox/virtual'
 
 const PRI = ['—', 'P3', 'P2', 'P1']
@@ -14,7 +16,7 @@ const PRIO = ['', 'low', 'med', 'high']
 const SHORT: Record<string, string> = { personal: 'Pers', errands: 'Err', work: 'Work', learning: 'Learn', meetings: 'Meet', family: 'Fam', health: 'Hlth', home: 'Home' }
 export const shortCat = (name: string) => SHORT[name.trim().toLowerCase()] ?? name.slice(0, 4)
 
-const Row = memo(function Row({ task, cat, top }: { task: Task; cat?: Category; top: number }) {
+const Row = memo(function Row({ task, cat, top, icon }: { task: Task; cat?: Category; top: number; icon: string }) {
   const set = useUI((s) => s.set)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `inbox:${task.id}`, data: { type: 'inbox', task } })
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `row:${task.id}`, data: { type: 'row', task } })
@@ -31,7 +33,7 @@ const Row = memo(function Row({ task, cat, top }: { task: Task; cat?: Category; 
       <div className="irow-in" ref={setNodeRef} style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}>
         {/* in the inbox the chip opens the editor — it is not a complete control (design spec §5.9) */}
         <button type="button" className={`irow-chip ${PRIO[task.priority] ? `prio-${PRIO[task.priority]}` : ''}`} onClick={() => set({ editingId: task.id })} aria-label={`Edit ${task.title || 'Untitled'}`} tabIndex={-1}>
-          <Icon name={cat?.icon ?? 'dot'} size={15} />
+          <Icon name={icon} size={15} />
         </button>
         <button type="button" className="irow-main" {...attributes} {...listeners} aria-roledescription="draggable task" aria-label={`${task.title || 'Untitled'}, ${fmtDur(task.duration_min)}${task.priority ? `, priority ${PRI[task.priority]}` : ''}`} onClick={() => set({ editingId: task.id })}>
           <span className="it">{task.title || 'Untitled'}</span>
@@ -50,6 +52,7 @@ const Row = memo(function Row({ task, cat, top }: { task: Task; cat?: Category; 
 
 export function Inbox({ cats }: { cats: Map<string, Category> }) {
   const raw = useInbox()
+  const settings = useSettings()
   const [q, setQ] = useState('')
   const scroller = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ top: 0, h: 0 })
@@ -117,12 +120,12 @@ export function Inbox({ cats }: { cats: Map<string, Category> }) {
       <div className="ilist" ref={scroller}>
         <ul style={{ height: list.length * ROW_H }} aria-label="Unscheduled tasks">
           {list.slice(win.from, win.to).map((t, i) => (
-            <Row key={t.id} task={t} cat={cats.get(t.category_id ?? '')} top={(win.from + i) * ROW_H} />
+            <Row key={t.id} task={t} cat={cats.get(t.category_id ?? '')} top={(win.from + i) * ROW_H} icon={taskIcon(t.title, cats.get(t.category_id ?? '')?.icon, settings.iconOverrides)} />
           ))}
         </ul>
         {raw && !list.length && (
           <div className="empty">
-            <span className="empty-chip" aria-hidden="true"><Icon name="inbox" size={22} /></span>
+            <span className="empty-chip" aria-hidden="true"><Icon name="ui-inbox" size={22} /></span>
             <p>{q ? 'Nothing matches.' : 'Nothing waiting — enjoy the space.'}</p>
           </div>
         )}

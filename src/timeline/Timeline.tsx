@@ -14,6 +14,7 @@ import { NowLine, useNow } from './NowLine'
 import type { Item } from './items'
 import { clusterShort, freeRows, isLate, isOutOfBounds, layoutColumns } from './layout'
 import { visibleWindow } from './virtual'
+import { taskIcon } from '../quickadd/suggest'
 
 /** Timeline inner elements by day — drop maths reads their live rect. */
 export const timelineEls = new Map<string, HTMLElement>()
@@ -192,6 +193,7 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
               hourPx={hourPx}
               cat={cats.get(item.task.category_id ?? '')}
               cats={catList}
+              icon={taskIcon(item.task.title, cats.get(item.task.category_id ?? '')?.icon, settings.iconOverrides)}
               selected={selectedKey === item.key}
               running={isToday && !item.task.completed_at && now >= item.start && now < item.end}
               late={isLate(item.end, !!item.task.completed_at, isToday ? now : null)}

@@ -7,11 +7,12 @@ import { useUI } from '../state/ui'
 import { useItems, type Item } from '../timeline/items'
 import { freeRows, layoutColumns } from '../timeline/layout'
 import { Icon } from '../icons/Icon'
+import { taskIcon } from '../quickadd/suggest'
 import { useNow } from '../timeline/NowLine'
 
 export const WEEK_HOUR_PX = 40
 
-const WBlock = memo(function WBlock({ item, col, cols, cat, clock24 }: { item: Item; col: number; cols: number; cat?: Category; clock24: boolean }) {
+const WBlock = memo(function WBlock({ item, col, cols, cat, clock24, icon }: { item: Item; col: number; cols: number; cat?: Category; clock24: boolean; icon: string }) {
   const set = useUI((s) => s.set)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `wblk:${item.key}`, data: { type: 'block', item } })
   const h = Math.max(16, (item.task.duration_min / 60) * WEEK_HOUR_PX - 2)
@@ -37,7 +38,7 @@ const WBlock = memo(function WBlock({ item, col, cols, cat, clock24 }: { item: I
       data-id={item.task.id}
     >
       <span className="wt">
-        <span className="wchip" aria-hidden="true"><Icon name={item.task.completed_at ? 'check' : (cat?.icon ?? 'dot')} size={11} /></span>
+        <span className="wchip" aria-hidden="true"><Icon name={item.task.completed_at ? 'ui-check' : icon} size={11} /></span>
         <span className="tt">{item.task.title || 'Untitled'}</span>
       </span>
       {h >= 30 && <span className="wm mono">{fmtClock(item.start, clock24)}</span>}
@@ -60,7 +61,7 @@ function DayColumn({ day, items, cats, settings, isToday, now }: { day: string; 
         <div key={r.start} className="wfree" style={{ top: (r.start / 60) * WEEK_HOUR_PX + 6, height: (r.len / 60) * WEEK_HOUR_PX - 12 }} data-testid="week-free" aria-hidden="true" />
       ))}
       {placed.map((p) => (
-        <WBlock key={p.id} item={by.get(p.id)!} col={p.col} cols={p.cols} cat={cats.get(by.get(p.id)!.task.category_id ?? '')} clock24={settings.clock24} />
+        <WBlock key={p.id} item={by.get(p.id)!} col={p.col} cols={p.cols} cat={cats.get(by.get(p.id)!.task.category_id ?? '')} clock24={settings.clock24} icon={taskIcon(by.get(p.id)!.task.title, cats.get(by.get(p.id)!.task.category_id ?? '')?.icon, settings.iconOverrides)} />
       ))}
       {isToday && <div className="wnow" style={{ top: (now / 60) * WEEK_HOUR_PX }} />}
     </div>

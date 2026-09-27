@@ -13,6 +13,8 @@ export interface BlockProps {
   hourPx: number
   cat?: Category
   cats?: Category[]
+  /** the chip glyph: override → keyword map → category glyph (src/quickadd/suggest.ts taskIcon) */
+  icon?: string
   selected: boolean
   running: boolean
   late: boolean
@@ -154,7 +156,7 @@ export const Block = memo(function Block(p: BlockProps) {
         onTouchStart={stop}
         data-testid="chip"
       >
-        <Icon name={done ? 'check' : (p.cat?.icon ?? 'dot')} size={short ? 13 : 18} />
+        <Icon name={done ? 'ui-check' : (p.icon ?? p.cat?.icon ?? 'work-document')} size={short ? 13 : 18} />
       </button>
       <button
         type="button"
@@ -197,7 +199,7 @@ export const Block = memo(function Block(p: BlockProps) {
             </button>
           ))}
           <button type="button" className="catpick-x" aria-label="Close" onClick={(e) => { e.stopPropagation(); setPicking(false) }}>
-            <Icon name="close" size={14} />
+            <Icon name="ui-close" size={14} />
           </button>
         </div>
       )}

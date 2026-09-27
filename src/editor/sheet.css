@@ -48,3 +48,6 @@
 .ghost-btn { min-height: var(--tap-min); min-width: var(--tap-min); padding: 0 var(--sp-4); display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--surface); border: 0; border-radius: var(--r-pill); font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink); }
 .primary { min-height: 48px; padding: 0 var(--sp-6); display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent); color: var(--ink-on-accent); border: 0; border-radius: var(--r-pill); font-weight: var(--fw-bold); }
 .primary:hover { background: var(--accent-hover); }
+.icon-choice { display: inline-flex; align-items: center; gap: var(--sp-3); min-height: 48px; padding: 0 var(--sp-4) 0 6px; border: 0; border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font-weight: var(--fw-bold); justify-self: start; }
+.icon-choice:disabled { color: var(--ink-2); }
+.icon-choice-chip { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }

@@ -25,6 +25,7 @@ interface UI {
   placeId: string | null // PlacePicker open for this inbox task
   focusId: string | null
   mobileTab: MobileTab
+  quickAdd: boolean // mobile quick-add sheet (FAB)
   toast: Toast | null
   set: (p: Partial<Omit<UI, 'set' | 'notify'>>) => void
   notify: (t: Omit<Toast, 'id'>) => void
@@ -40,6 +41,7 @@ export const useUI = create<UI>((set) => ({
   placeId: null,
   focusId: null,
   mobileTab: 'board',
+  quickAdd: false,
   toast: null,
   set: (p) => set(p),
   notify: (t) => set({ toast: { ...t, id: ++toastId } }),
