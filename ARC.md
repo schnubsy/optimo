@@ -160,6 +160,7 @@ Done-criteria: layout.test.ts (overlap columns, snap, bounds) · timeline.spec.t
   errors · axe clean · gauntlet GREEN · evidence screenshots desktop + iPhone (dark + light).
 
 === SLICE 4 — inbox, quick-add NLP, categories / icons / priority ===
+Status: done 985c551
 Scope: unscheduled work and fast capture.
 Files in play: src/views/Inbox.tsx (rail / bottom sheet), src/quickadd/{QuickAdd.tsx,parse.ts}, src/categories/*,
   src/icons/ (≥40 original 24px line SVGs as React components + index), src/components/PlacePicker.tsx,
