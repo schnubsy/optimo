@@ -28,5 +28,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
     setupFiles: ['tests/unit/setup.ts'],
+    // a DST-observing zone so the floating-time recurrence tests are meaningful on any machine
+    env: { TZ: 'America/New_York' },
   },
 })

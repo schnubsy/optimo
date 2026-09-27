@@ -31,6 +31,12 @@ import { QuickAdd } from './quickadd/QuickAdd'
 import { PlacePicker } from './components/PlacePicker'
 import { Categories } from './categories/Categories'
 import { IconSheet } from './icons/IconSheet'
+import { Week, WEEK_HOUR_PX } from './views/Week'
+import { Month } from './views/Month'
+import { Settings } from './views/Settings'
+import { Focus } from './focus/Focus'
+import { startReminders } from './reminders/scheduler'
+import { applyTheme } from './lib/theme'
 import { keyBefore, inboxOrder } from './inbox/virtual'
 import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
@@ -90,6 +96,8 @@ export function Planner({ userId }: { userId: string }) {
   const inboxCount = useInboxCount()
   const isToday = date === todayKey()
   const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null)
+  useEffect(() => applyTheme(settings.theme), [settings.theme])
+  useEffect(() => startReminders(), [])
   const itemsRef = useRef(items)
   useEffect(() => {
     itemsRef.current = items
@@ -149,9 +157,13 @@ export function Planner({ userId }: { userId: string }) {
     } else if ((o.type === 'inbox' || o.type === 'row') && a.type === 'block' && a.item && !a.item.occurrence) {
       void unschedule(a.item.task)
     } else if (o.type === 'day' && o.day && a.type === 'block' && a.item) {
-      void moveItem(a.item, o.day, a.item.start)
+      const m = clampStart(snap(a.item.start + pxToMin(e.delta.y, WEEK_HOUR_PX), settings.snap), a.item.task.duration_min)
+      void moveItem(a.item, o.day, m)
     } else if (o.type === 'day' && o.day && a.task) {
-      void schedule(a.task, o.day, settings.day_start + 3 * 60)
+      const col = document.querySelector(`[data-testid="week-col"][data-day="${o.day}"]`)
+      const r = e.active.rect.current.translated
+      const m = col && r ? snap(pxToMin(r.top - col.getBoundingClientRect().top, WEEK_HOUR_PX), settings.snap) : settings.day_start + 3 * 60
+      void schedule(a.task, o.day, clampStart(m, a.task.duration_min))
     }
   }
 
@@ -332,6 +344,7 @@ export function Planner({ userId }: { userId: string }) {
         )}
         <TaskSheet />
         <PlacePicker />
+        {view === 'focus' && <Focus />}
         <Toast />
       </div>
     </DndContext>
@@ -347,6 +360,9 @@ async function reorderInbox(moving: Task, target: Task) {
 function ViewSwitch({ view, date, items, catMap, settings }: { view: string; date: string; items: Item[]; catMap: Map<string, Category>; settings: SettingsData }) {
   if (view === 'categories') return <Categories />
   if (view === 'icons') return <IconSheet />
+  if (view === 'settings') return <Settings />
+  if (view === 'week') return <Week date={date} cats={catMap} settings={settings} />
+  if (view === 'month') return <Month date={date} cats={catMap} settings={settings} />
   return <Day day={date} items={items} cats={catMap} settings={settings} />
 }
 

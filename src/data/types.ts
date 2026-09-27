@@ -78,7 +78,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   push_down: false,
   week_start: 1,
   clock24: true,
-  reminder_lead: 10,
+  reminder_lead: 0, // default reminder for new timed tasks; 0 = none
   focus_min: 25,
 }
 

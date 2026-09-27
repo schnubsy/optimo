@@ -20,8 +20,8 @@ async function snapshot(id: string) {
 
 /** Apply a patch to an item: plain task directly; a series occurrence becomes a per-occurrence override. */
 export async function patchItem(item: Pick<Item, 'task' | 'occurrence'>, patch: TaskInput, label?: string) {
-  if (item.occurrence && item.task.rrule) {
-    await editOccurrence(item.task, item.occurrence.date, patch, 'this')
+  if (item.occurrence) {
+    await editOccurrence(item.occurrence.seriesId, item.occurrence.date, patch, 'this')
     if (label) notify({ text: label })
     return
   }
@@ -82,8 +82,8 @@ export async function toggleComplete(item: Pick<Item, 'task' | 'occurrence'>) {
 }
 
 export async function deleteItem(item: Pick<Item, 'task' | 'occurrence'>) {
-  if (item.occurrence && item.task.rrule) {
-    await editOccurrence(item.task, item.occurrence.date, { deleted_at: new Date().toISOString() }, 'this')
+  if (item.occurrence) {
+    await editOccurrence(item.occurrence.seriesId, item.occurrence.date, { deleted_at: new Date().toISOString() }, 'this')
     notify({ text: 'Occurrence skipped' })
     return
   }

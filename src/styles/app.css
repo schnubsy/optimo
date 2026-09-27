@@ -188,3 +188,68 @@
 .icon-sheet { list-style: none; padding: 0; margin: var(--sp-4) 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .icon-sheet li { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--sp-3) var(--sp-1); background: var(--bg); }
 .icon-sheet span { font-size: var(--fs-11); color: var(--ink-2); }
+
+/* ---------- week ---------- */
+.week { display: flex; flex-direction: column; min-height: 0; }
+.whead { display: grid; grid-template-columns: 48px repeat(7, 1fr); border-bottom: 1px solid var(--line); background: var(--panel); }
+.wnav { display: flex; align-items: center; justify-content: center; }
+.wnav .nav { min-width: 22px; height: 32px; border: 0; background: none; font-size: 16px; color: var(--ink-2); }
+.wday { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px var(--sp-2); border: 0; border-left: 1px solid var(--line); background: none; text-align: left; min-height: 48px; }
+.wday b { font-size: var(--fs-13); font-weight: var(--fw-black); }
+.wday span { font-size: var(--fs-11); color: var(--ink-2); }
+.wday.today b { box-shadow: inset 0 -2px 0 var(--signal); }
+.wday.sel { background: var(--panel-2); }
+.wbody { flex: 1; overflow: auto; min-height: 0; }
+.wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, 1fr); }
+.wrail { position: relative; }
+.wrail .hour { position: absolute; left: 0; right: 0; }
+.wrail .hour b { position: absolute; right: 6px; top: -7px; font-size: var(--fs-10); font-weight: var(--fw-regular); color: var(--ink-2); }
+.wcol { position: relative; border-left: 1px solid var(--line); background-image: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 40px); }
+.wcol.over { background-color: var(--signal-soft); }
+.wcol .oob { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--panel) 6px 7px); opacity: 0.6; pointer-events: none; }
+.wcol.today { background-color: color-mix(in srgb, var(--signal) 5%, transparent); }
+.wblk { all: unset; box-sizing: border-box; position: absolute; overflow: hidden; background: var(--panel-2); border: 1px solid var(--line); border-left: 3px solid var(--c); border-radius: var(--r); padding: 1px 4px; font-size: var(--fs-11); line-height: 1.25; cursor: grab; z-index: 2; display: flex; flex-direction: column; }
+.wblk:focus-visible { outline: var(--border-active) solid var(--signal); }
+.wblk .wt { font-weight: var(--fw-bold); display: flex; gap: 3px; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wblk .wt .ic { color: var(--c); flex: none; }
+.wblk .wm { font-size: var(--fs-10); color: var(--ink-2); }
+.wblk.done { background: transparent; color: var(--ink-2); text-decoration: line-through; }
+.wblk.grab { z-index: 30; border: var(--border-active) solid var(--signal); border-left: 3px solid var(--c); box-shadow: var(--shadow-grab); will-change: transform; }
+.wnow { position: absolute; left: 0; right: 0; height: 2px; background: var(--signal); z-index: 5; pointer-events: none; }
+.week.m .whead, .week.m .wgrid { grid-template-columns: 32px repeat(7, minmax(0, 1fr)); }
+.week.m .wday { padding: 4px 2px; }
+.week.m .wday span { display: none; }
+.week.m .wday b { font-size: var(--fs-11); }
+
+/* ---------- month ---------- */
+.month { padding: var(--sp-4); overflow: auto; }
+.mhead { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.mhead h2 { margin: 0; font-size: var(--fs-20); font-weight: var(--fw-black); min-width: 10ch; }
+.mhead .nav { min-width: 44px; height: 44px; border: 1px solid var(--line-strong); background: none; border-radius: var(--r); font-size: 18px; }
+.mgrid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.mrow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+.mrow > span { background: var(--bg); min-width: 0; }
+.mdow { padding: 4px 6px; font-size: var(--fs-11); color: var(--ink-2); background: var(--panel) !important; }
+.mday { width: 100%; min-height: 72px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 6px; border: 0; background: none; text-align: left; }
+.mday b { font-size: var(--fs-13); }
+.mday.out { color: var(--ink-2); }
+.mday.today b { box-shadow: inset 0 -2px 0 var(--signal); }
+.mday.sel { background: var(--panel-2); }
+.mday .dots { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.mday .dots i { width: 7px; height: 7px; background: var(--c); }
+.mday .dots i.done { background: transparent; box-shadow: inset 0 0 0 1px var(--c); }
+.mday .dots em { font-style: normal; font-size: var(--fs-10); color: var(--ink-2); }
+.is-mobile .mday { min-height: 52px; padding: 4px; }
+.is-mobile .month { padding: var(--sp-2); }
+
+/* ---------- settings ---------- */
+.settings { display: grid; gap: var(--sp-4); align-content: start; }
+.settings .set-row { display: grid; gap: var(--sp-1); border: 0; padding: 0; margin: 0; }
+.settings .set-row > span, .settings legend { font-size: var(--fs-12); color: var(--ink-2); margin-bottom: var(--sp-1); padding: 0; }
+.settings input:not([type='file']) { min-height: var(--tap-min); padding: 0 var(--sp-2); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: var(--fs-14); max-width: 220px; }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+.settings .seg > div { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+.settings .seg button { min-height: var(--tap-min); padding: 0 var(--sp-3); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-size: var(--fs-13); font-weight: var(--fw-bold); }
+.settings [aria-pressed='true'] { border-color: var(--signal); background: var(--signal-soft); }
+.set-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.settings .build { margin-top: var(--sp-4); }

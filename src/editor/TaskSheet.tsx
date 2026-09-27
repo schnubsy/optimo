@@ -8,7 +8,7 @@ import { newId } from '../data/ids'
 import { dateKey, fmtDur, fromKey, isoAt, minutesInDay } from '../lib/time'
 import { useUI } from '../state/ui'
 import { deleteItem, patchItem, toggleComplete } from '../actions'
-import { editOccurrence, type Scope } from '../recurrence/exceptions'
+import { editOccurrence, occurrenceStart, type Scope } from '../recurrence/exceptions'
 import { REPEAT_OPTIONS, repeatLabel, repeatToRule, ruleToRepeat } from '../recurrence/rules'
 import { Icon } from '../icons/Icon'
 import './sheet.css'
@@ -20,6 +20,7 @@ const PRIORITIES: { v: Priority; label: string }[] = [
   { v: 3, label: 'High' },
 ]
 const REMINDER_CHOICES = [0, 5, 10, 15, 30, 60]
+
 
 interface Form {
   title: string
@@ -81,7 +82,16 @@ function parseKey(key: string) {
 export function TaskSheet() {
   const editingId = useUI((s) => s.editingId)
   const draft = useUI((s) => s.draft)
-  const loaded = useLiveQuery(async () => (editingId ? ((await db.tasks.get(parseKey(editingId).id)) ?? null) : null), [editingId])
+  const loaded = useLiveQuery(async () => {
+    if (!editingId) return null
+    const { id, date } = parseKey(editingId)
+    const t = await db.tasks.get(id)
+    if (!t || !date) return t ?? null
+    // an occurrence shows its override row when one exists
+    const ex = await db.exceptions.get([id, date])
+    const o = ex?.task_id ? await db.tasks.get(ex.task_id) : undefined
+    return o && !o.deleted_at ? { ...o, id: t.id, rrule: t.rrule, dtstart: t.dtstart, _override: true } : t
+  }, [editingId])
   if (draft) return <SheetForm key={`draft:${draft.start_at}`} task={null} occ={null} />
   if (!editingId || !loaded) return null
   return <SheetForm key={editingId} task={loaded} occ={parseKey(editingId).date} />
@@ -95,9 +105,10 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
   const settings = useSettings()
   const cats = useCategories()
   const [form, setForm] = useState<Form>(() => {
-    if (!task) return toForm({ ...draft, start_at: draft?.start_at ?? null, duration_min: draft?.duration_min ?? settings.default_duration }, day)
+    if (!task)
+      return toForm({ reminders: settings.reminder_lead && draft?.start_at ? [settings.reminder_lead] : [], ...draft, start_at: draft?.start_at ?? null, duration_min: draft?.duration_min ?? settings.default_duration }, day)
     // an occurrence edits that day's instance of the series
-    const shown = occ && task.dtstart ? { ...task, start_at: isoAt(occ, minutesInDay(task.dtstart, dateKey(new Date(task.dtstart)))) } : task
+    const shown = occ && task.dtstart && !(task as { _override?: boolean })._override ? { ...task, start_at: occurrenceStart(task, occ) } : task
     return toForm(shown, day)
   })
   const [scope, setScope] = useState<Scope>('this')
@@ -125,7 +136,7 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
       if (!input.title) return close()
       await repo.createTask({ ...input, sort_key: Date.now(), ...(rrule ? { rrule, dtstart: input.start_at } : {}) })
     } else if (occ && task.rrule) {
-      await editOccurrence(task, occ, input, scope)
+      await editOccurrence(task.id, occ, input, scope)
     } else {
       const series = rrule ? { rrule, dtstart: input.start_at } : task.rrule ? { rrule: null, dtstart: null } : {}
       await patchItem({ task }, { ...input, ...series }, 'Saved')
