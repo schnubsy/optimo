@@ -67,9 +67,9 @@ export function Focus() {
       <p className="fk mono">FOCUS{task.start_at ? ` · ${fmtClock(new Date(task.start_at).getHours() * 60 + new Date(task.start_at).getMinutes(), settings.clock24)}` : ''}</p>
       <h1 id="focus-h">{task.title || 'Untitled'}</h1>
       <div className="timer mono" role="timer" aria-live="off" data-testid="focus-timer">
-        {mmss(elapsed)}
+        {left >= 0 ? mmss(left) : `+${mmss(-left)}`}
       </div>
-      <p className="left mono">{left >= 0 ? `${mmss(left)} left of ${Math.round(length / 60000)} min` : `${mmss(-left)} over`}</p>
+      <p className="left mono" data-testid="focus-sub">{left >= 0 ? `left · ${mmss(elapsed)} of ${Math.round(length / 60000)} min` : `over · ${mmss(elapsed)} of ${Math.round(length / 60000)} min`}</p>
       <div className="bar" aria-hidden="true">
         <span style={{ transform: `scaleX(${Math.min(1, elapsed / length)})` }} />
       </div>

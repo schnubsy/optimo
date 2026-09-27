@@ -44,7 +44,7 @@ export function PlacePicker() {
       <div className="sheet place-sheet" role="dialog" aria-modal="true" aria-labelledby="place-h" data-testid="place-picker">
         <header className="sheet-hd">
           <h2 id="place-h">Place: {task.title || 'Untitled'}</h2>
-          <span className="mono muted">{fmtDur(task.duration_min)}</span>
+          <span className="mono muted" data-testid="place-meta">{fmtDur(task.duration_min)}{task.priority ? `, P${4 - task.priority}` : ''}</span>
         </header>
         <p className="lbl">Free slots that fit{slots.length ? '' : ' — none left today or tomorrow'}</p>
         <ul className="slots">

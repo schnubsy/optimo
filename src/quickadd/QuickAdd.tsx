@@ -97,7 +97,7 @@ export function QuickAdd({ compact }: { compact?: boolean }) {
           </button>
         )}
       </div>
-      <div className="parse" id="parse-row" aria-live="polite" data-testid="parse-row">
+      <div className={`parse ${parsed ? '' : 'idle'}`} id="parse-row" aria-live="polite" data-testid="parse-row">
         {parsed ? (
           <>
             <span>parsed:</span>

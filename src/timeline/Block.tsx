@@ -4,7 +4,7 @@ import type { Category } from '../data/types'
 import { Icon } from '../icons/Icon'
 import { fmtClock, fmtDur } from '../lib/time'
 import type { Item } from './items'
-import { snap as snapTo } from './layout'
+import { resizeTo } from './layout'
 
 export interface BlockProps {
   item: Item
@@ -14,6 +14,7 @@ export interface BlockProps {
   cat?: Category
   selected: boolean
   running: boolean
+  late: boolean
   dim: boolean
   clock24: boolean
   snap: number
@@ -29,7 +30,9 @@ export const Block = memo(function Block(p: BlockProps) {
   const { item, hourPx } = p
   const t = item.task
   const [liveDur, setLiveDur] = useState<number | null>(null)
-  const resize = useRef<{ y: number; dur: number } | null>(null)
+  // the live value lives in a ref: pointerup can arrive before React renders the last move (a quick flick),
+  // so the commit must never read it from render state
+  const resize = useRef<{ y: number; dur: number; live: number } | null>(null)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `blk:${item.key}`,
     data: { type: 'block', item },
@@ -42,6 +45,7 @@ export const Block = memo(function Block(p: BlockProps) {
   const done = !!t.completed_at
   const color = p.cat?.color ?? 'errand'
   const timeText = `${fmtClock(item.start, p.clock24)}${tiny ? '' : `–${fmtClock(item.start + dur, p.clock24)}`}`
+  const pri = PRI[t.priority]
   const left = p.cols > 1 ? `calc(var(--blk-left) + (100% - var(--blk-left)) * ${p.col} / ${p.cols})` : undefined
   const width = p.cols > 1 ? `calc((100% - var(--blk-left)) / ${p.cols} - 2px)` : undefined
   const progress = p.running ? Math.min(1, Math.max(0, (p.now - item.start) / Math.max(1, t.duration_min))) : 0
@@ -49,19 +53,26 @@ export const Block = memo(function Block(p: BlockProps) {
   function onResizeDown(e: RPointerEvent<HTMLDivElement>) {
     e.stopPropagation()
     e.preventDefault()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    resize.current = { y: e.clientY, dur: t.duration_min }
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      /* synthetic or already-released pointer */
+    }
+    resize.current = { y: e.clientY, dur: t.duration_min, live: t.duration_min }
     setLiveDur(t.duration_min)
   }
   function onResizeMove(e: RPointerEvent<HTMLDivElement>) {
-    if (!resize.current) return
-    const d = resize.current.dur + ((e.clientY - resize.current.y) / hourPx) * 60
-    setLiveDur(Math.max(p.snap, snapTo(d, p.snap)))
+    const r = resize.current
+    if (!r) return
+    r.live = resizeTo(r.dur, e.clientY - r.y, hourPx, p.snap)
+    setLiveDur(r.live)
   }
-  function onResizeUp() {
-    if (!resize.current) return
-    const final = liveDur ?? t.duration_min
+  // commit on release only (never per move): duration from the release point, through the repo layer
+  function onResizeUp(e: RPointerEvent<HTMLDivElement>) {
+    const r = resize.current
+    if (!r) return
     resize.current = null
+    const final = e.type === 'pointercancel' ? r.live : resizeTo(r.dur, e.clientY - r.y, hourPx, p.snap)
     setLiveDur(null)
     p.onResize(item, final)
   }
@@ -70,7 +81,7 @@ export const Block = memo(function Block(p: BlockProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`blk cat-${color} ${done ? 'done' : ''} ${tiny ? 'tiny' : ''} ${p.selected ? 'sel' : ''} ${p.running ? 'run' : ''} ${isDragging ? 'grab' : ''} ${p.dim ? 'dim' : ''} pri-${t.priority}`}
+      className={`blk cat-${color} ${done ? 'done' : ''} ${tiny ? 'tiny' : ''} ${p.selected ? 'sel' : ''} ${p.running ? 'run' : ''} ${isDragging ? 'grab' : ''} ${p.dim ? 'dim' : ''} ${p.late ? 'late' : ''} pri-${t.priority}`}
       style={{
         top,
         height,
@@ -83,6 +94,7 @@ export const Block = memo(function Block(p: BlockProps) {
       data-key={item.key}
       data-start={item.start}
       data-duration={dur}
+      data-late={p.late || undefined}
     >
       <button
         type="button"
@@ -104,7 +116,7 @@ export const Block = memo(function Block(p: BlockProps) {
         {...attributes}
         {...listeners}
         aria-roledescription="draggable block"
-        aria-label={`${t.title || 'Untitled'}, ${timeText}${item.occurrence ? ', repeats' : ''}`}
+        aria-label={`${t.title || 'Untitled'}, ${timeText}${pri ? `, ${pri}` : ''}${p.late ? ', late' : ''}${item.occurrence ? ', repeats' : ''}`}
         aria-pressed={p.selected}
         onClick={(e) => {
           e.stopPropagation()
@@ -120,12 +132,12 @@ export const Block = memo(function Block(p: BlockProps) {
         </span>
         {!tiny && (
           <span className="sub">
-            {[p.cat?.name, PRI[t.priority], t.subtasks.length ? `${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}` : ''].filter(Boolean).join(', ')}
+            {[p.cat?.name, pri, t.subtasks.length ? `${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}` : ''].filter(Boolean).join(', ')}
           </span>
         )}
       </button>
       <span className="tm mono" aria-hidden="true">
-        <b>{timeText}</b>
+        <b>{timeText}{tiny && pri ? ` ${pri}` : ''}</b>
         {!tiny && fmtDur(dur)}
       </span>
       {p.running && <span className="prog" style={{ transform: `scaleX(${progress})` }} />}
@@ -139,6 +151,7 @@ export const Block = memo(function Block(p: BlockProps) {
           aria-valuenow={dur}
           aria-valuetext={fmtDur(dur)}
           tabIndex={-1}
+          data-active={p.selected || liveDur !== null || undefined}
           onPointerDown={onResizeDown}
           onPointerMove={onResizeMove}
           onPointerUp={onResizeUp}

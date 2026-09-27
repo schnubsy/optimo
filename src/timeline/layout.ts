@@ -50,6 +50,19 @@ export function snap(min: number, step: number): number {
   return Math.round(min / step) * step
 }
 
+/** Shortest block a resize can leave (spec §2.2; independent of the snap setting). */
+export const MIN_DURATION = 5
+
+/** Duration after dragging the bottom edge by `dyPx`: snapped to the setting, never below MIN_DURATION. */
+export function resizeTo(startDur: number, dyPx: number, hourPx: number, step: number): number {
+  return Math.max(MIN_DURATION, snap(startDur + (dyPx / hourPx) * 60, step))
+}
+
+/** Late = not done and already ended, measured against `now` (minutes into the day; null when not today). */
+export function isLate(end: number, done: boolean, now: number | null): boolean {
+  return now !== null && !done && end <= now
+}
+
 export function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n))
 }

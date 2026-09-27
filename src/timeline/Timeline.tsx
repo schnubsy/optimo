@@ -12,7 +12,7 @@ import { FreeRow } from './FreeRow'
 import { HourRail } from './HourRail'
 import { NowLine, useNow } from './NowLine'
 import type { Item } from './items'
-import { freeRows, isOutOfBounds, layoutColumns } from './layout'
+import { freeRows, isLate, isOutOfBounds, layoutColumns } from './layout'
 import { visibleWindow } from './virtual'
 
 /** Timeline inner elements by day — drop maths reads their live rect. */
@@ -151,6 +151,7 @@ export function Timeline({ day, items, cats, settings }: { day: string; items: I
               cat={cats.get(item.task.category_id ?? '')}
               selected={selectedKey === item.key}
               running={isToday && !item.task.completed_at && now >= item.start && now < item.end}
+              late={isLate(item.end, !!item.task.completed_at, isToday ? now : null)}
               dim={isOutOfBounds(item, settings.day_start, settings.day_end)}
               clock24={settings.clock24}
               snap={settings.snap}

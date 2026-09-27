@@ -9,6 +9,9 @@ import { Icon } from '../icons/Icon'
 import { ROW_H, filterInbox, inboxOrder, rowWindow } from '../inbox/virtual'
 
 const PRI = ['—', 'P3', 'P2', 'P1']
+// #3: a fixed short code per default category (a 58px column can't hold "Personal"); other names cut at 4
+const SHORT: Record<string, string> = { personal: 'Pers', errands: 'Err', work: 'Work', learning: 'Learn', meetings: 'Meet', family: 'Fam', health: 'Hlth', home: 'Home' }
+export const shortCat = (name: string) => SHORT[name.trim().toLowerCase()] ?? name.slice(0, 4)
 
 const Row = memo(function Row({ task, cat, top }: { task: Task; cat?: Category; top: number }) {
   const set = useUI((s) => s.set)
@@ -30,7 +33,7 @@ const Row = memo(function Row({ task, cat, top }: { task: Task; cat?: Category; 
           <span className="ic-cat" aria-hidden="true">
             <i />
             <Icon name={cat?.icon ?? 'dot'} size={12} />
-            {cat?.name.slice(0, 5) ?? ''}
+            <span data-testid="inbox-cat">{cat ? shortCat(cat.name) : ''}</span>
           </span>
           <span className="num mono" aria-hidden="true">{fmtDur(task.duration_min)}</span>
           <span className="pri mono" aria-hidden="true">{task.priority ? PRI[task.priority] : ''}</span>

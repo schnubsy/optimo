@@ -8,7 +8,7 @@ export function SyncBadge() {
   return (
     <span className={`sync-badge sync-${state}`} role="status" aria-live="polite" title={error ?? undefined} data-testid="sync-badge" data-state={state}>
       <i aria-hidden="true" />
-      {text}
+      <span className="sb-t">{text}</span>
     </span>
   )
 }

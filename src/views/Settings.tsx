@@ -8,10 +8,23 @@ import { fmtClock, todayKey } from '../lib/time'
 import { useUI } from '../state/ui'
 import '../categories/categories.css'
 
-const hh = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-const toMin = (v: string) => {
-  const [h, m] = v.split(':').map(Number)
-  return h * 60 + m
+// #12: day bounds are chosen from 15-min steps rendered in the user's clock (a native time field ignores it)
+const STEPS = Array.from({ length: 96 }, (_, i) => i * 15)
+
+function TimeSelect({ label, value, clock24, onChange, testid }: { label: string; value: number; clock24: boolean; onChange: (m: number) => void; testid: string }) {
+  const opts = STEPS.includes(value) ? STEPS : [...STEPS, value].sort((a, b) => a - b)
+  return (
+    <label className="set-row">
+      <span>{label}</span>
+      <select className="mono" value={value} onChange={(e) => onChange(Number(e.target.value))} data-testid={testid}>
+        {opts.map((m) => (
+          <option key={m} value={m}>
+            {fmtClock(m, clock24)}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 }
 
 function Seg<T extends string | number | boolean>({ label, value, options, onChange, name }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void; name: string }) {
@@ -45,14 +58,8 @@ export function Settings() {
       <Seg name="theme" label="Theme" value={s.theme} options={[['system', 'System'], ['dark', 'Dark'], ['light', 'Light']]} onChange={(v) => up({ theme: v })} />
 
       <div className="set-grid">
-        <label className="set-row">
-          <span>Day starts</span>
-          <input type="time" step={900} value={hh(s.day_start)} onChange={(e) => e.target.value && up({ day_start: toMin(e.target.value) })} />
-        </label>
-        <label className="set-row">
-          <span>Day ends</span>
-          <input type="time" step={900} value={hh(s.day_end)} onChange={(e) => e.target.value && up({ day_end: toMin(e.target.value) })} />
-        </label>
+        <TimeSelect label="Day starts" value={s.day_start} clock24={s.clock24} onChange={(m) => up({ day_start: m })} testid="set-day-start" />
+        <TimeSelect label="Day ends" value={s.day_end} clock24={s.clock24} onChange={(m) => up({ day_end: m })} testid="set-day-end" />
         <label className="set-row">
           <span>Default duration (min)</span>
           <input type="number" min={5} step={5} value={s.default_duration} onChange={(e) => up({ default_duration: Math.max(5, Number(e.target.value)) })} />

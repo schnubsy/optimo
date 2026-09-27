@@ -30,8 +30,9 @@ kbd {
 
 .sync-badge { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-12); color: var(--ink-2); white-space: nowrap; }
 .sync-badge i { width: 8px; height: 8px; background: var(--ink-3); }
-.sync-synced i { background: var(--signal); }
-.sync-pending i { background: var(--ink-2); }
+/* #5: the signal is reserved for now / running / held — resting "Synced" is quiet, pending is the brighter one */
+.sync-synced i { background: var(--ink-3); }
+.sync-pending i { background: var(--ink); }
 .sync-offline i { background: transparent; border: 1px solid var(--ink-2); }
 .sync-error { color: var(--ink); }
 .sync-error i { background: var(--cat-family); }

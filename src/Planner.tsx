@@ -41,7 +41,7 @@ import { keyBefore, inboxOrder } from './inbox/virtual'
 import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
 import { timelineEls } from './timeline/Timeline'
-import { clampStart, pxToMin, snap } from './timeline/layout'
+import { clampStart, MIN_DURATION, pxToMin, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
 import { addDays, fmtClock, fmtHours, formatDayTitle, fromKey, nowMinutes, todayKey } from './lib/time'
 import { useHourPx, useIsMobile } from './lib/useMedia'
@@ -223,7 +223,8 @@ export function Planner({ userId }: { userId: string }) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault()
         const d = e.key === 'ArrowUp' ? -step : step
-        if (e.shiftKey) void resizeItem(sel, Math.max(step, sel.task.duration_min + d))
+        // Shift+↑/↓ resizes by 5 min (never below the minimum); plain arrows nudge by the snap step
+        if (e.shiftKey) void resizeItem(sel, Math.max(MIN_DURATION, sel.task.duration_min + (e.key === 'ArrowUp' ? -5 : 5)))
         else void moveItem(sel, ui.date, clampStart(sel.start + d, sel.task.duration_min))
       } else if (e.key === 'Enter') {
         e.preventDefault()
@@ -286,10 +287,12 @@ export function Planner({ userId }: { userId: string }) {
               <span className="v">{stats.late}</span>
             </div>
           )}
-          <div className="cell">
-            <span className="k">Unplaced</span>
-            <span className="v" data-testid="stat-unplaced">{inboxCount}</span>
-          </div>
+          {!isMobile && (
+            <div className="cell">
+              <span className="k">Unplaced</span>
+              <span className="v" data-testid="stat-unplaced">{inboxCount}</span>
+            </div>
+          )}
           <div className="spacer" />
           {!isMobile && (
             <nav className="views" aria-label="Views">
@@ -336,7 +339,7 @@ export function Planner({ userId }: { userId: string }) {
             <span><kbd>N</kbd> new</span>
             <span><kbd>X</kbd> done</span>
             <span><kbd>↑</kbd><kbd>↓</kbd> move {settings.snap} min</span>
-            <span><kbd>⇧</kbd><kbd>↓</kbd> resize</span>
+            <span><kbd>⇧</kbd><kbd>↓</kbd> resize 5 min</span>
             <span><kbd>Enter</kbd> edit</span>
             <span><kbd>/</kbd> command line</span>
             <span><kbd>←</kbd><kbd>→</kbd> day</span>

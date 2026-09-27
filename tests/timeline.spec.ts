@@ -83,6 +83,77 @@ test.describe('day timeline', () => {
     expect(errors).toEqual([])
   })
 
+  test('resize persists: server row carries duration_min and survives reload', async ({ page, context }) => {
+    let ids: ReturnType<typeof seedDay>['ids']
+    const { server, errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    const px = await hourPx(page)
+    const plan = block(page, ids!.plan)
+    await plan.scrollIntoViewIfNeeded()
+    await plan.locator('.blk-main').click()
+    const handle = plan.getByTestId('resize-handle')
+    await expect(handle).toBeVisible()
+    const h = (await handle.boundingBox())!
+    const x = h.x + h.width / 2, y = h.y + h.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    for (let i = 1; i <= 6; i++) await page.mouse.move(x, y + (px / 2) * (i / 6))
+    await page.mouse.up()
+    await expect.poll(() => server.rows.planner_tasks.get(ids!.plan)?.duration_min).toBe(120)
+    await page.reload()
+    await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
+    await block(page, ids!.plan).scrollIntoViewIfNeeded()
+    await expect(block(page, ids!.plan)).toHaveAttribute('data-duration', '120')
+    expect(errors).toEqual([])
+  })
+
+  test('resize: a fast flick (move + release in one frame) still commits', async ({ page, context }) => {
+    let ids: ReturnType<typeof seedDay>['ids']
+    const { server } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    const px = await hourPx(page)
+    const plan = block(page, ids!.plan)
+    await plan.scrollIntoViewIfNeeded()
+    await plan.locator('.blk-main').click()
+    await expect(plan.getByTestId('resize-handle')).toBeVisible()
+    // touch-style: down, one move, up — dispatched synchronously, as a quick thumb flick delivers them
+    await plan.getByTestId('resize-handle').evaluate((el, dy) => {
+      const r = el.getBoundingClientRect()
+      const x = r.x + r.width / 2, y = r.y + r.height / 2
+      const ev = (type: string, cy: number) => new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: cy })
+      el.dispatchEvent(ev('pointerdown', y))
+      el.dispatchEvent(ev('pointermove', y + dy))
+      el.dispatchEvent(ev('pointerup', y + dy))
+    }, px / 2)
+    await expect.poll(async () => (await row(page, ids!.plan)).duration_min).toBe(120)
+    await expect.poll(() => server.rows.planner_tasks.get(ids!.plan)?.duration_min).toBe(120)
+  })
+
+  test('resize by keyboard: Shift+↓/↑ changes duration by 5 min, min 5 (desktop)', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'keyboard map is desktop')
+    let ids: ReturnType<typeof seedDay>['ids']
+    const { server } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    const d = block(page, ids!.dentist)
+    await d.scrollIntoViewIfNeeded()
+    await d.locator('.blk-main').click()
+    const start = (await row(page, ids!.dentist)).start_at
+    await page.keyboard.press('Shift+ArrowDown')
+    await expect.poll(async () => (await row(page, ids!.dentist)).duration_min).toBe(20)
+    for (const want of [15, 10, 5, 5]) {
+      await page.keyboard.press('Shift+ArrowUp')
+      await expect.poll(async () => (await row(page, ids!.dentist)).duration_min).toBe(want)
+    }
+    expect((await row(page, ids!.dentist)).start_at).toBe(start)
+    await expect.poll(() => server.rows.planner_tasks.get(ids!.dentist)?.duration_min).toBe(5)
+  })
+
+  test('an open editor reflects a duration changed outside it', async ({ page, context }) => {
+    let ids: ReturnType<typeof seedDay>['ids']
+    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
+    await expect(page.getByTestId('sheet-duration')).toHaveValue('90')
+    await page.evaluate((id) => (window as any).__optimo.repo.updateTask(id, { duration_min: 120 }), ids!.plan)
+    await expect(page.getByTestId('sheet-duration')).toHaveValue('120')
+  })
+
   test('complete toggles, with undo', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     const { errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
@@ -138,4 +209,29 @@ test.describe('day timeline', () => {
       await block(page, ids!.plan).locator('.blk-main').click()
       await page.screenshot({ path: `docs/evidence/arc1-slice-3-timeline-${info.project.name}-${theme}.png` })
     })
+
+  test('evidence: resize before/after (arc 2 slice 1)', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    let ids: ReturnType<typeof seedDay>['ids']
+    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), theme: 'light' })
+    const px = await hourPx(page)
+    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 12.5 * px)
+    const plan = block(page, ids!.plan)
+    await plan.locator('.blk-main').click()
+    await page.screenshot({ path: `docs/evidence/arc2-slice-1-resize-before-${info.project.name}.png` })
+    await plan.getByTestId('resize-handle').evaluate((el, dy) => {
+      const r = el.getBoundingClientRect()
+      const x = r.x + r.width / 2, y = r.y + r.height / 2
+      const ev = (type: string, cy: number) => new PointerEvent(type, { bubbles: true, pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: cy })
+      el.dispatchEvent(ev('pointerdown', y))
+      el.dispatchEvent(ev('pointermove', y + dy))
+      el.dispatchEvent(ev('pointerup', y + dy))
+    }, px / 2)
+    await expect(plan).toHaveAttribute('data-duration', '120')
+    await page.reload()
+    await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
+    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 12.5 * px)
+    await expect(block(page, ids!.plan)).toHaveAttribute('data-duration', '120')
+    await page.screenshot({ path: `docs/evidence/arc2-slice-1-resize-after-reload-${info.project.name}.png` })
+  })
 })

@@ -28,6 +28,7 @@
 .body.no-rail { grid-template-columns: 1fr; }
 .pane { display: grid; grid-template-rows: auto 1fr; min-height: 0; min-width: 0; }
 .pane > :only-child { grid-row: 1 / -1; }
+.is-mobile .pane { grid-template-rows: minmax(0, 1fr); }
 .foot { display: flex; align-items: center; gap: 18px; padding: 0 var(--sp-4); border-top: 1px solid var(--line); background: var(--panel); font-size: var(--fs-11); color: var(--ink-2); overflow: hidden; white-space: nowrap; }
 
 /* ---------- timeline ---------- */
@@ -42,8 +43,6 @@
 
 .blk { position: absolute; left: var(--blk-left); right: 0; background: var(--panel-2); border: 1px solid var(--line); border-left: var(--stripe) solid var(--c);
   border-radius: var(--r); display: grid; grid-template-columns: 28px 1fr auto; align-items: start; padding: 5px 8px 5px 0; column-gap: 6px; overflow: visible; z-index: 2; touch-action: manipulation; }
-.blk.pri-3 { box-shadow: inset 2px 0 0 0 var(--ink); }
-.blk.pri-2 { box-shadow: inset 2px 0 0 0 var(--ink-3); }
 .blk .chk { position: relative; width: 18px; height: 18px; margin: 1px 0 0 5px; padding: 0; border: 1.5px solid var(--ink-2); border-radius: var(--r); background: none; display: flex; align-items: center; justify-content: center; color: var(--bg); }
 .blk .chk::before { content: ''; position: absolute; inset: -13px; }
 .blk .chk .ic { display: none; }
@@ -70,13 +69,16 @@
 .blk.run .tm b { box-shadow: inset 0 -2px 0 var(--signal); }
 .blk .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--signal); transform-origin: left; }
 .blk.grab { border: var(--border-active) solid var(--signal); border-left: var(--stripe) solid var(--c); z-index: 20; box-shadow: var(--shadow-grab); background: var(--panel); cursor: grabbing; will-change: transform; }
-.blk .handle { position: absolute; left: 0; right: 0; bottom: -1px; height: 8px; background: var(--signal); display: flex; align-items: center; justify-content: center; gap: 3px; cursor: ns-resize; touch-action: none; z-index: 3; }
-.blk .handle::before { content: ''; position: absolute; left: 0; right: 0; top: -6px; bottom: -18px; }
-.blk.tiny .handle { bottom: -9px; }
-.blk.tiny .handle::before { top: -2px; }
-.blk .handle b { position: absolute; right: 6px; top: -22px; font-size: var(--fs-11); color: var(--on-signal); background: var(--signal); padding: 2px 6px; border-radius: var(--r); }
+/* resize: on a selected block, a 44px band centred on the bottom edge with a visible 32×5 grip */
+/* inside the block the band takes at most 30% of its height, so a tap on a short selected block still opens it */
+.blk .handle { position: absolute; left: 0; right: 0; bottom: -22px; height: calc(22px + min(22px, 30%)); display: flex; align-items: center; justify-content: center; cursor: ns-resize; touch-action: none; z-index: 3; }
+.blk .handle::after { content: ''; width: 32px; height: 5px; border-radius: 3px; background: var(--signal); }
+.blk .handle b { position: absolute; right: 6px; top: -6px; font-size: var(--fs-11); color: var(--on-signal); background: var(--signal); padding: 2px 6px; border-radius: var(--r); }
+/* #1: late is located, not just counted — a text cue plus an edge, never colour alone */
+.blk.late { border-right: var(--border-active) solid var(--line-strong); }
+.blk.late .tm b::after { content: ' late'; font-family: var(--font-mono); }
 
-.free { all: unset; box-sizing: border-box; position: absolute; left: var(--blk-left); right: 0; border: 1px dashed var(--line-strong); border-radius: var(--r); display: flex; align-items: center; padding: 0 10px; font-size: var(--fs-11); color: var(--ink-2); gap: 10px; cursor: copy; z-index: 1; }
+.free { all: unset; box-sizing: border-box; position: absolute; left: var(--blk-left); right: 0; border: 1px dashed var(--line-strong); border-radius: var(--r); display: flex; align-items: center; padding: 0 10px; font-size: var(--fs-11); color: var(--ink-2); gap: 10px; cursor: copy; z-index: 1; background: var(--bg); }
 .free.thin { padding: 0; }
 .free.thin span { display: none; }
 .free .plus { margin-left: auto; font-weight: var(--fw-bold); color: var(--ink); }
@@ -100,7 +102,9 @@
 .is-mobile .toast-wrap { bottom: 96px; width: calc(100% - 32px); }
 
 /* ---------- mobile ---------- */
-.is-mobile .strip { flex-wrap: wrap; padding-top: env(safe-area-inset-top); }
+.is-mobile .strip { flex-wrap: nowrap; padding-top: env(safe-area-inset-top); }
+/* #6: one 40px row — on mobile the sync state is the dot; its words stay for screen readers */
+.is-mobile .strip .sb-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .is-mobile .strip .cell { padding: 0 var(--sp-2); height: 40px; font-size: var(--fs-12); border-right: 0; }
 .is-mobile .strip .cell.sync { border-left: 0; }
 .is-mobile .strip h1 { font-size: var(--fs-14); }
@@ -138,6 +142,7 @@
 .irow .it { font-weight: var(--fw-bold); font-size: var(--fs-13); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .irow .ic-cat { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-11); color: var(--ink-2); overflow: hidden; }
 .irow .ic-cat i { display: none; }
+.irow .ic-cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .irow .ic-cat .ic { color: var(--c); flex: none; }
 .irow .num, .irow .pri { font-size: var(--fs-12); color: var(--ink-2); text-align: right; }
 .irow .pri { font-weight: var(--fw-bold); color: var(--ink); }
@@ -164,6 +169,11 @@
 .cmd.compact .in { padding: 0 var(--sp-3); }
 .cmd.compact .parse { padding: 4px var(--sp-3); }
 .cmd.compact .parse .muted { font-size: var(--fs-11); }
+/* #6: on mobile the parse row floats over the board instead of taking a row of chrome, and the empty-state
+   syntax hint shows only while the command line has focus — nothing below it moves on focus or blur */
+.cmd.compact { position: relative; z-index: 15; }
+.cmd.compact .parse { position: absolute; top: 100%; left: 0; right: 0; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-grab); pointer-events: none; }
+.cmd.compact:not(:focus-within) .parse.idle { display: none; }
 
 /* ---------- mobile tabs ---------- */
 .tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
@@ -215,6 +225,7 @@
 .wblk .wm { font-size: var(--fs-10); color: var(--ink-2); }
 .wblk.done { background: transparent; color: var(--ink-2); text-decoration: line-through; }
 .wblk.grab { z-index: 30; border: var(--border-active) solid var(--signal); border-left: 3px solid var(--c); box-shadow: var(--shadow-grab); will-change: transform; }
+.wfree { position: absolute; left: 2px; right: 2px; border: 1px dashed var(--line-strong); border-radius: var(--r); pointer-events: none; z-index: 1; }
 .wnow { position: absolute; left: 0; right: 0; height: 2px; background: var(--signal); z-index: 5; pointer-events: none; }
 .wblk .wt .tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* mobile: three days at a time, snapping, rail and header sticky inside one scroller */
@@ -236,7 +247,8 @@
 /* ---------- month ---------- */
 .month { padding: var(--sp-4); overflow: auto; }
 .mhead { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
-.mhead h2 { margin: 0; font-size: var(--fs-20); font-weight: var(--fw-black); min-width: 10ch; }
+.mhead { justify-content: flex-start; }
+.mhead h2 { margin: 0 auto 0 0; order: -1; font-size: var(--fs-20); font-weight: var(--fw-black); min-width: 0; }
 .mhead .nav { min-width: 44px; height: 44px; border: 1px solid var(--line-strong); background: none; border-radius: var(--r); font-size: 18px; }
 .mgrid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .mrow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
@@ -258,7 +270,7 @@
 .settings { display: grid; gap: var(--sp-4); align-content: start; }
 .settings .set-row { display: grid; gap: var(--sp-1); border: 0; padding: 0; margin: 0; }
 .settings .set-row > span, .settings legend { font-size: var(--fs-12); color: var(--ink-2); margin-bottom: var(--sp-1); padding: 0; }
-.settings input:not([type='file']) { min-height: var(--tap-min); padding: 0 var(--sp-2); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: var(--fs-14); max-width: 220px; }
+.settings select, .settings input:not([type='file']) { min-height: var(--tap-min); padding: 0 var(--sp-2); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: var(--fs-14); max-width: 220px; }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
 .settings .seg > div { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .settings .seg button { min-height: var(--tap-min); padding: 0 var(--sp-3); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-size: var(--fs-13); font-weight: var(--fw-bold); }

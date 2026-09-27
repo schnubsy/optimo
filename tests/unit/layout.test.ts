@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampStart, firstFit, freeRows, isOutOfBounds, layoutColumns, pushDown, snap } from '../../src/timeline/layout'
+import { clampStart, firstFit, freeRows, isLate, isOutOfBounds, layoutColumns, MIN_DURATION, pushDown, resizeTo, snap } from '../../src/timeline/layout'
 import { dayStats } from '../../src/views/stats'
 import { visibleWindow } from '../../src/timeline/virtual'
 
@@ -91,5 +91,25 @@ describe('visibleWindow', () => {
   it('covers the viewport ± one screen', () => {
     expect(visibleWindow(560, 560, 56)).toEqual({ from: 0, to: 1800 })
     expect(visibleWindow(0, 0, 56)).toEqual({ from: 0, to: 1440 })
+  })
+})
+
+describe('resizeTo', () => {
+  it('adds the dragged minutes, snapped to the setting', () => {
+    expect(resizeTo(90, 28, 56, 5)).toBe(120)
+    expect(resizeTo(30, 10, 60, 15)).toBe(45)
+  })
+  it('never goes below the 5-minute minimum, whatever the snap', () => {
+    expect(resizeTo(30, -500, 56, 15)).toBe(MIN_DURATION)
+    expect(resizeTo(10, -8, 60, 10)).toBe(MIN_DURATION)
+  })
+})
+
+describe('isLate (#1)', () => {
+  it('is late only when not done, ended and today', () => {
+    expect(isLate(600, false, 650)).toBe(true)
+    expect(isLate(600, true, 650)).toBe(false)
+    expect(isLate(700, false, 650)).toBe(false)
+    expect(isLate(600, false, null)).toBe(false)
   })
 })

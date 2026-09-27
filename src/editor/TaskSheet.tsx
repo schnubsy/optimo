@@ -111,6 +111,15 @@ function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
     const shown = occ && task.dtstart && !(task as { _override?: boolean })._override ? { ...task, start_at: occurrenceStart(task, occ) } : task
     return toForm(shown, day)
   })
+  // a duration changed outside the sheet (edge resize, Shift+↑/↓) shows here without reopening,
+  // unless the field was edited in the sheet
+  const seenDur = useRef(task?.duration_min)
+  useEffect(() => {
+    if (!task || task.duration_min === seenDur.current) return
+    const prev = seenDur.current
+    seenDur.current = task.duration_min
+    setForm((f) => (f.duration_min === prev ? { ...f, duration_min: task.duration_min } : f))
+  }, [task])
   const [scope, setScope] = useState<Scope>('this')
   const [newSub, setNewSub] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)

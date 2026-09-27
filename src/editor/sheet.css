@@ -17,7 +17,9 @@
 .sheet .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); align-items: end; }
 .sheet .row3 { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: var(--sp-2); }
 .sheet .chkrow { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--tap-min); font-size: var(--fs-13); }
-.sheet .chkrow input { width: 20px; height: 20px; accent-color: var(--signal); }
+.sheet .chkrow input { appearance: none; -webkit-appearance: none; margin: 0; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--ink-2); border-radius: var(--r); background: var(--bg); display: inline-grid; place-content: center; }
+.sheet .chkrow input:checked { background: var(--ink); border-color: var(--ink); }
+.sheet .chkrow input:checked::after { content: ''; width: 10px; height: 5px; border: 2px solid var(--bg); border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
 .sheet .seg > div, .sheet .chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .sheet .seg button, .sheet .chips button { min-height: 36px; min-width: 44px; padding: 0 var(--sp-2); background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r); font-size: var(--fs-12); font-weight: var(--fw-bold); position: relative; }
 .sheet .seg button::before, .sheet .chips button::before { content: ''; position: absolute; inset: -4px 0; }
