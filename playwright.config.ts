@@ -12,6 +12,9 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}/optimo/`,
     trace: 'retain-on-failure',
+    // Routing (the hermetic Supabase fake) cannot see requests from SW-controlled pages in WebKit, so SWs are off
+    // by default and allowed only where the SW is the subject (tests/offline.spec.ts, Chromium).
+    serviceWorkers: 'block',
     screenshot: 'only-on-failure',
   },
   projects: [

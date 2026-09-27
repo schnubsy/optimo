@@ -1,10 +1,10 @@
-import { formatDayTitle } from './lib/time'
+import { useSession } from './auth/session'
+import { SignIn } from './components/SignIn'
+import { Planner } from './Planner'
 
 export function App() {
-  return (
-    <main className="shell">
-      <h1>{formatDayTitle(new Date())}</h1>
-      <p>Day view</p>
-    </main>
-  )
+  const auth = useSession()
+  if (auth.status === 'loading') return <main className="boot" aria-busy="true" />
+  if (auth.status === 'signed-out') return <SignIn />
+  return <Planner userId={auth.session.user.id} />
 }
