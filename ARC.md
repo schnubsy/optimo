@@ -86,7 +86,7 @@ existing sign-in tests.
 Project-specific: not a marquee page — press PUBLISH is N/A; deploy = GitHub Pages on merge to main with the
 `<meta name="build">` ship proof.
 
-=== SLICE 1 — code entry on the sign-in screen ===
+=== SLICE 1 — code entry on the sign-in screen ===   Status: done 29a5cef
 Scope: two-step sign-in: email → "Enter the 6-digit code from your email" → verifyOtp. No press Auth changes.
 Files in play: src/auth/session.ts, src/components/SignIn.tsx, src/components/signin.css, tests/unit (auth
   state machine), tests/signin.spec.ts (new), tests/smoke.spec.ts (unchanged), docs/spec.md §4 auth row.
