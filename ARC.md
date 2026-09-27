@@ -203,6 +203,7 @@ Done-criteria: due.test.ts ≥ 12 cases (plain, series, exception-moved, skipped
   gauntlet GREEN · evidence: screenshots of Settings → Reminders + a captured notification.
 
 === SLICE 6 — family-wing launcher card on the press marquee ===
+Status: done d71fe04
 Scope: `optimo.html` in the press FAMILY space: gated by the family gate, shows one card ("optimo — one
   timeline for the day", the app's icon, "Open optimo" → https://schnubsy.github.io/optimo/). Marquee shell +
   tenant app source, per arc.md "Tenant-change arcs"; press is committed on branch `arc/optimo-card` in
