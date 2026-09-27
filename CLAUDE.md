@@ -26,8 +26,13 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-Kickoff / first arc. Scaffolded 2026-09-26 (control files, spec, gauntlet, smoke spec, DB migration
-`db/001_planner.sql`). Eye LITE round done — Switchboard adopted. No app code yet; arc 1 (v0.1) is in `ARC.md`.
+**v0.1 baseline shipped (arc 1, 2026-09-26)** — live at https://schnubsy.github.io/optimo/ (public repo schnubsy/optimo).
+Day timeline (drag/resize/free rows/undo/keyboard), inbox + NLP command line + Place, categories + 57 in-repo icons,
+recurrence with per-occurrence exceptions, week/month/focus/settings, in-app reminders, JSON export/import,
+Dexie outbox + field-level LWW sync over PostgREST/Realtime, magic-link auth, offline PWA, 5k-task perf budgets.
+Gauntlet: 73 unit + 56 Playwright (desktop + iPhone 15, axe) + Lighthouse 100/100 · 98/100. Tests are hermetic
+(`tests/support/fakeSupabase.ts`); `tests/sync.real.spec.ts` runs against press only with `.env.test.local`.
+Next: arc-2 checkpoint (calendar provider, web push, marquee link card); 🟡 design snags = GitHub issues #1–#12.
 
 ## Project rules
 
