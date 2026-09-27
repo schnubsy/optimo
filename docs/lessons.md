@@ -16,3 +16,6 @@ _Append-only. One line per lesson: `- YYYY-MM-DD [tag] lesson`. Tags: [git] [sup
 - 2026-09-26 [test] Sheet/dialog fade-in with opacity makes axe report blended contrast mid-animation; animate transform only.
 - 2026-09-26 [perf] Lighthouse 13 has no PWA category — prove installability with CDP `Page.getInstallabilityErrors` = [] instead.
 - 2026-09-26 [test] Evidence screenshots are opt-in (`EVIDENCE=1`) so gauntlet runs don't rewrite tracked PNGs; restore any a later run overwrote before committing.
+- 2026-09-27 [supabase] RULE: optimo shares press's Auth config (email template, SMTP, sign-ups OFF, Site URL = remit's page). Never change press Auth settings from an optimo arc; adapt optimo to them.
+- 2026-09-27 [supabase] A shared project's email template decides the sign-in UX: press sends a 6-digit `{{ .Token }}`, so clients must offer code entry (`verifyOtp({ email, token, type: 'email' })`). GoTrue answers wrong AND expired codes with 403 `otp_expired` — show one message for both. With sign-ups off, pass `shouldCreateUser: false`.
+- 2026-09-27 [test] Mirror server rate limits in the hermetic fake (press's 60 s OTP resend → 429 with the "only request this after N seconds" msg) and expose the clock knob (`lastOtpAt`) so the "after the window" path is testable without waiting.

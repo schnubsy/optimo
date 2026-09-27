@@ -26,13 +26,14 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**v0.1 baseline shipped (arc 1, 2026-09-26)** — live at https://schnubsy.github.io/optimo/ (public repo schnubsy/optimo).
-Day timeline (drag/resize/free rows/undo/keyboard), inbox + NLP command line + Place, categories + 57 in-repo icons,
-recurrence with per-occurrence exceptions, week/month/focus/settings, in-app reminders, JSON export/import,
-Dexie outbox + field-level LWW sync over PostgREST/Realtime, magic-link auth, offline PWA, 5k-task perf budgets.
-Gauntlet: 73 unit + 56 Playwright (desktop + iPhone 15, axe) + Lighthouse 100/100 · 98/100. Tests are hermetic
-(`tests/support/fakeSupabase.ts`); `tests/sync.real.spec.ts` runs against press only with `.env.test.local`.
-Next: arc-2 checkpoint (calendar provider, web push, marquee link card); 🟡 design snags = GitHub issues #1–#12.
+**v0.1 + hotfix-otp (2026-09-27)** — live at https://schnubsy.github.io/optimo/ (public repo schnubsy/optimo).
+Day timeline, inbox + NLP, categories/icons, recurrence, week/month/focus/settings, reminders, export/import,
+Dexie outbox + field-level LWW sync, offline PWA, 5k-task budgets. Sign-in is now a **6-digit emailed code**
+(press's shared template): email → code → `verifyOtp`; link-style sessions still land via onAuthStateChange.
+Gauntlet: 81 unit + 68 Playwright (desktop + iPhone 15, axe) + Lighthouse 100/100 · 98/100. Tests are hermetic
+(`tests/support/fakeSupabase.ts`, incl. `/verify` + 60 s resend window); `tests/sync.real.spec.ts` needs `.env.test.local`.
+Next: Mark signs in on the live URL and gives hands-on feedback → arc-2 checkpoint (calendar provider, web push,
+marquee link card); 🟡 design snags = GitHub issues #1–#12.
 
 ## Project rules
 
