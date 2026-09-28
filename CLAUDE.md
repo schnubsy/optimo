@@ -26,15 +26,14 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**v0.2 "Meadow" (arc 2, 2026-09-27)** — FINAL pastel design (tokens verbatim + measured a11y layer), chip-as-complete
-pills, floating tab bar + FAB, 76 in-repo glyphs + keyword auto-suggest, snags #1–#12 + resize persistence fixed.
-iCloud CalDAV (read-only) and web push are built and tested but **not live until Mark deploys**: secrets,
-`calendar-connect` / `calendar-sync` / `push-send`, `db/003_cron.sql`, `db/press/optimo_grant.sql` (HANDOFF steps).
-Family Wing launcher `optimo.html` publishes to press at close via `tools/release.js`.
-Gauntlet: 320 unit · 142 Playwright (desktop + iPhone 15, axe) · deno check/test · secret gate · Lighthouse
-100/100 · 98/100. Hermetic fakes: Supabase (`tests/support/fakeSupabase.ts`, runs the real function handlers) +
-CalDAV (`tests/fake/caldav.ts`). Next: Mark's manual steps, on-device check, then arc-3 checkpoint (AI planning,
-reserved Plan tab); 🟡 snags = GitHub issues #15–#27.
+**v0.2 "Meadow" LIVE (arc 2 merged 20d3c4c, 2026-09-27; Pages build 20d3c4c).** Pastel design, chip-as-complete pills,
+floating tab bar + FAB, 76 in-repo glyphs + auto-suggest, snags #1–#12 + resize persistence. **Server side LIVE
+(close-out 2026-09-27):** 5 secrets set · `calendar-connect` / `calendar-sync` / `push-send` deployed · vault
+`planner_cron_secret` + `db/003_cron.sql` applied (first push-send tick → 200) · `optimo_grant.sql` applied (1 active
+grant) · council snag-registry row (tenants-check 46 pass / 0 fail). Launcher `press/optimo.html` published.
+**Not yet verified by Mark:** iCloud connect (HANDOFF step 6) and the on-device iPhone checks (step 7).
+Gauntlet: 320 unit · 142 Playwright (desktop + iPhone 15, axe) · deno check/test · Lighthouse 100/100 · 98/100.
+Next: arc-3 checkpoint (AI planning behind the reserved Plan tab); 🟡 snags = issues #15–#27.
 
 ## Project rules
 

@@ -32,3 +32,7 @@ _Append-only. One line per lesson: `- YYYY-MM-DD [tag] lesson`. Tags: [git] [sup
 - 2026-09-27 [test] A secret gate needs a fixture that can't collide: `abcd-efgh-ijkl-mnop` matched a base64 alphabet inside supabase-js.
 - 2026-09-27 [pwa] Keep secondary artefacts (the press launcher) out of `npm run build` when Pages deploys `dist/` — build them in the gauntlet / release instead.
 - 2026-09-27 [press] RULE: press is written only in the tenant arc's press slice (branch) and published only at close AFTER the tenant merge + reconcile (one writer on press). tenants-check T1 (pages.json) is pending until release.js runs; T8 needs a council snag-registry row (a third repo — Mark's step).
+- 2026-09-27 [git] A `!` inside a double-quoted command pasted into zsh aborts the whole line ("event not found") — write `===false` instead of `!`, or prefix `setopt nohistexpand`.
+- 2026-09-27 [git] A 0-byte stale `.git/HEAD.lock` blocks every commit; when no git process is running, `rm -f` it and retry. The Cowork VM's git also leaves `tmp_obj_*` files under `.git/objects` when deletion isn't permitted — clean them once deletion is allowed.
+- 2026-09-27 [supabase] `supabase functions deploy` honours `supabase/config.toml` `verify_jwt` per function; the "Docker is not running" warning is harmless for remote deploys.
+- 2026-09-27 [supabase] Prove a pg_cron → Edge Function pipeline from `net._http_response` (status + body of the last call), never from `cron.job` existence alone.

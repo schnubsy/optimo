@@ -26,3 +26,6 @@ docs/evidence/*-lighthouse-*.json
 
 # Edge Function secrets (scripts/secrets.mjs, scripts/vapid.mjs) — never committed
 .secrets/
+
+# supabase cli scratch
+supabase/.temp/
