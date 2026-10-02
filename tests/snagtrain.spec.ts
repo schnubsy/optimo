@@ -253,4 +253,34 @@ test.describe('snag train 2026-10', () => {
     await expect(page.getByTestId('parse-icon')).toBeVisible()
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-9-quickadd-iphone-15.png' })
   })
+
+  // === slice 10 (Fixes #24) — evidence gap: post-chrome captures ===
+  // A2-P1-10 noted there were no post-slice-3 iPhone captures of Week / Inbox / Month / the editor, and no
+  // desktop dark Day capture. This slice extends the capture list, shot against the current (post-slice-9) build.
+  for (const theme of ['light', 'dark'] as const)
+    test(`#24 evidence (${theme}): week / inbox / month / editor on iPhone-15`, async ({ page, context }, info) => {
+      test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+      test.skip(info.project.name !== 'iphone-15', 'post-chrome mobile captures')
+      const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+      let ids: ReturnType<typeof seedDay>['ids']
+      await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), theme })
+      await setView('week')
+      await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-week-iphone-15-${theme}.png` })
+      await page.evaluate(() => (window as any).__optimo.ui.getState().set({ mobileTab: 'backlog' }))
+      await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-inbox-iphone-15-${theme}.png` })
+      await page.evaluate(() => (window as any).__optimo.ui.getState().set({ mobileTab: 'board' }))
+      await setView('month')
+      await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-month-iphone-15-${theme}.png` })
+      await setView('day')
+      await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
+      await expect(page.getByRole('dialog')).toBeVisible()
+      await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-editor-iphone-15-${theme}.png` })
+    })
+
+  test('#24 evidence: Day view, desktop dark', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    test.skip(info.project.name !== 'desktop', 'desktop dark capture')
+    await openApp(page, context, { seed: seedDay, theme: 'dark' })
+    await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-10-day-desktop-dark.png' })
+  })
 })
