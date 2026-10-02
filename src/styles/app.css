@@ -287,6 +287,10 @@
 .is-mobile .month { padding: var(--sp-2); }
 
 /* ---------- settings ---------- */
+/* #21: .page (Settings, icon set, categories) had the bottom scroll pad (line below) but no scroll of its own,
+   so content taller than the pane was simply clipped by .app's overflow:hidden — the last row never reached
+   view, not even behind the floating tab bar. */
+.page { overflow-y: auto; min-height: 0; }
 .settings { display: grid; gap: var(--sp-4); align-content: start; }
 .settings .set-row { display: grid; gap: var(--sp-1); border: 0; padding: var(--sp-3) var(--sp-4); margin: 0; background: var(--panel); border-radius: var(--r-lg); min-width: 0; }
 /* #20: h3 + aria-labelledby replaces <legend> (WebKit mobile straddled the legend across the card's top edge) */

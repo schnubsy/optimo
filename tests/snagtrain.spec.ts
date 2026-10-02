@@ -175,4 +175,28 @@ test.describe('snag train 2026-10', () => {
     await setView('settings')
     await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-6-settings-${info.project.name}.png`, fullPage: true })
   })
+
+  // === slice 7 (Fixes #21) — the settings scroller clears the floating tab bar ===
+  test('#21 the build-number row scrolls fully clear of the floating tab bar on iPhone', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the floating tab bar is mobile-only')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context)
+    await setView('settings')
+    expect(await page.locator('.page.settings').evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto')
+    const build = page.locator('.settings .build')
+    await build.scrollIntoViewIfNeeded()
+    const buildBox = (await build.boundingBox())!
+    const barBox = (await page.locator('.tabbar').boundingBox())!
+    expect(buildBox.y + buildBox.height).toBeLessThanOrEqual(barBox.y)
+  })
+
+  test('#21 evidence: settings scrolled to the build row, clear of the tab bar (iPhone-15)', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    test.skip(info.project.name !== 'iphone-15', 'the floating tab bar is mobile-only')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context)
+    await setView('settings')
+    await page.locator('.settings .build').scrollIntoViewIfNeeded()
+    await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-7-settings-bottom-iphone-15.png' })
+  })
 })
