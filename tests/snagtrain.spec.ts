@@ -96,4 +96,56 @@ test.describe('snag train 2026-10', () => {
     await ev.scrollIntoViewIfNeeded()
     await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-4-timeline-${info.project.name}.png` })
   })
+
+  // === slice 5 (Fixes #19) — event details on iPhone are a read-only bottom sheet ===
+  test('#19 event details: bottom sheet on iPhone (scrim + Esc close it), popover stays on desktop', async ({ page, context }, info) => {
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('settings')
+    const form = page.getByTestId('calendar-connect')
+    await form.getByLabel('Apple ID').fill(FAKE_USER)
+    await form.getByLabel('App-specific password').fill(FAKE_PASSWORD)
+    await form.getByRole('button', { name: 'Connect iCloud' }).click()
+    await expect(page.getByTestId('calendar-account')).toBeVisible()
+    await setView('day')
+    const ev = page.getByTestId('timeline').getByTestId('event').filter({ hasText: 'Dentist check-up' })
+    await ev.scrollIntoViewIfNeeded()
+    await ev.getByRole('button', { name: /Dentist check-up/ }).click()
+    const details = page.getByTestId('event-details')
+    await expect(details).toBeVisible()
+    if (info.project.name === 'iphone-15') {
+      await expect(details).toHaveClass(/evt-sheet/)
+      await expect(page.locator('.sheet-wrap .grabber')).toBeVisible()
+      // Esc closes it
+      await page.keyboard.press('Escape')
+      await expect(details).toHaveCount(0)
+      await ev.getByRole('button', { name: /Dentist check-up/ }).click()
+      await expect(page.getByTestId('event-details')).toBeVisible()
+      // scrim-tap closes it
+      await page.locator('.sheet-wrap').click({ position: { x: 5, y: 5 } })
+      await expect(page.getByTestId('event-details')).toHaveCount(0)
+    } else {
+      await expect(details).toHaveClass(/evt-pop/)
+      await expect(page.locator('.sheet-wrap')).toHaveCount(0)
+    }
+  })
+
+  test('#19 evidence: event details sheet on iPhone-15', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    test.skip(info.project.name !== 'iphone-15', 'the bottom sheet is mobile-only')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('settings')
+    const form = page.getByTestId('calendar-connect')
+    await form.getByLabel('Apple ID').fill(FAKE_USER)
+    await form.getByLabel('App-specific password').fill(FAKE_PASSWORD)
+    await form.getByRole('button', { name: 'Connect iCloud' }).click()
+    await expect(page.getByTestId('calendar-account')).toBeVisible()
+    await setView('day')
+    const ev = page.getByTestId('timeline').getByTestId('event').filter({ hasText: 'Dentist check-up' })
+    await ev.scrollIntoViewIfNeeded()
+    await ev.getByRole('button', { name: /Dentist check-up/ }).click()
+    await expect(page.getByTestId('event-details')).toBeVisible()
+    await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-5-event-sheet-iphone-15.png' })
+  })
 })
