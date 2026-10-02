@@ -70,7 +70,7 @@ Implementation: food-plate → widen the plate disc to 16px, taper knife blade +
 Done-criteria: re-run `scripts/icon-sheet.ts`; regenerated `icons.png` at 13px shows none of the four
   glyphs reading as text or blobbing into an unrelated shape.
 
-=== SLICE 4 — calendar events need their own glyph + ring colour (Fixes #18) ===
+=== SLICE 4 — calendar events need their own glyph + ring colour (Fixes #18) === Status: done a98c299
 Scope: `src/icons/set.ts`, `EventBlock.tsx`. A2-P1-4, 🟡 P1.
 Implementation: add `ui-calendar` chrome glyph (calendar frame, one date-cell counter-cut). iCloud event
   chip uses it instead of the week/III glyph. Ring colour = the iCloud calendar's own colour if
