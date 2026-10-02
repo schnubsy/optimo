@@ -106,7 +106,7 @@ Implementation: day scroller — `scroll-snap-type:x mandatory; scroll-padding-i
 Done-criteria: iPhone-15 Week evidence shows no stray sliver of the adjacent day after a snap scroll;
   desktop Week evidence shows the Sun column clear of the window edge.
 
-=== SLICE 9 — quick-add parse chips below the 44px target (Fixes #23) ===
+=== SLICE 9 — quick-add parse chips below the 44px target (Fixes #23) === Status: done ea84308
 Scope: app.css, quick-add sheet. A2-P1-9, 🟡 P1.
 Implementation: `.qa-sheet .parse button{min-height:44px}`, or keep visual size and pad the hit area
   with `::before{content:'';position:absolute;inset:-8px}` (matching the existing pill-chip pattern).
