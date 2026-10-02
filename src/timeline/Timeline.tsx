@@ -186,7 +186,7 @@ export function Timeline({ day, items, events = [], cats, settings }: { day: str
         onClick={onBackground}
         role="presentation"
       >
-        <HourRail hourPx={hourPx} dayStart={settings.day_start} dayEnd={settings.day_end} clock24={settings.clock24} />
+        <HourRail hourPx={hourPx} dayStart={settings.day_start} dayEnd={settings.day_end} clock24={settings.clock24} now={isToday ? now : null} />
         {free.map((r) => (
           <FreeGap key={`${r.start}`} gap={r} day={day} hourPx={hourPx} clock24={settings.clock24} defaultDuration={settings.default_duration} onAdd={createAt} />
         ))}
