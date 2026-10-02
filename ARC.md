@@ -85,7 +85,7 @@ Implementation: below 900px, render event details as a read-only bottom sheet wi
 Done-criteria: iPhone-15 evidence shows the sheet with scrim, no longer covering neighbouring pills;
   desktop popover behaviour unchanged.
 
-=== SLICE 6 — settings group labels straddle the card edge on iPhone (Fixes #20) ===
+=== SLICE 6 — settings group labels straddle the card edge on iPhone (Fixes #20) === Status: done ba16a41
 Scope: app.css:292 area; `src/views/Settings.tsx`. A2-P1-6, 🟡 P1.
 Implementation: `.settings legend{float:left;width:100%}` applied inside the mobile `.page` wrapper too,
   OR render the group label as an `<h3>` inside the card with `aria-labelledby` on the fieldset.
