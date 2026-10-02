@@ -138,7 +138,7 @@ Implementation: invert the ground — blush canvas `oklch(0.975 0.012 30)` squir
 Done-criteria: brand-mark evidence no longer reads as a toggle switch or as the same register as
   Structured's icon; regenerated PWA icon set committed.
 
-=== SLICE 13 — elapsed sweep should have a flat trailing edge (Fixes #27) ===
+=== SLICE 13 — elapsed sweep should have a flat trailing edge (Fixes #27) === Status: done 15976be
 Scope: app.css `.pill .elapsed`. A2-P1-13, 🟡 P1.
 Implementation: `.pill .elapsed{border-radius:inherit;border-start-end-radius:0;
   border-end-end-radius:0}`.
