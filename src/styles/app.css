@@ -53,7 +53,8 @@
 .pill.done .tt { text-decoration: line-through; }
 /* out of day bounds: surface fill, no opacity (a faded pill fails text contrast) */
 .pill.dim { background: var(--surface); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
-.pill .elapsed { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--elapsed-overlay); pointer-events: none; transition: width 300ms linear; }
+/* #27: the trailing edge stays flat (a tone-sweep), not rounded like a nested second block */
+.pill .elapsed { position: absolute; inset: 0 auto 0 0; border-radius: inherit; border-start-end-radius: 0; border-end-end-radius: 0; background: var(--elapsed-overlay); pointer-events: none; transition: width 300ms linear; }
 .blk-main { all: unset; box-sizing: border-box; flex: 1; min-width: 0; align-self: stretch; cursor: grab; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
 .blk-main:focus-visible { box-shadow: none; }
 .pill:has(.blk-main:focus-visible) { box-shadow: var(--focus-ring), var(--pill-ring); }

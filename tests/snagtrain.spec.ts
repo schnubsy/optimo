@@ -352,4 +352,39 @@ test.describe('snag train 2026-10', () => {
     </body>`)
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-12-brand-mark.png' })
   })
+
+  // === slice 13 (Fixes #27) — running pill's elapsed sweep has a flat trailing edge ===
+  test('#27 the elapsed sweep has a flat trailing edge, not a nested rounded block', async ({ page, context }) => {
+    const now = new Date()
+    now.setHours(14, 30, 0, 0) // inside the 14:00-15:30 "Write the migration plan" block
+    await page.clock.install({ time: now })
+    await openApp(page, context, {
+      seed: (s) => seedTask(s, { title: 'Write the migration plan', start_at: at('14:00'), duration_min: 90, category_id: CAT.work }),
+    })
+    const pill = page.locator('[data-testid="block"][data-running="true"]')
+    await pill.scrollIntoViewIfNeeded()
+    const elapsed = pill.locator('.elapsed')
+    await expect(elapsed).toBeVisible()
+    const radii = await elapsed.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { tl: s.borderTopLeftRadius, tr: s.borderTopRightRadius, bl: s.borderBottomLeftRadius, br: s.borderBottomRightRadius }
+    })
+    expect(radii.tr).toBe('0px')
+    expect(radii.br).toBe('0px')
+    expect(radii.tl).not.toBe('0px') // the leading edge keeps the pill's own radius
+    expect(radii.bl).not.toBe('0px')
+  })
+
+  test('#27 evidence: running pill with a flat-edged elapsed sweep (Day view)', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    const now = new Date()
+    now.setHours(14, 30, 0, 0)
+    await page.clock.install({ time: now })
+    await openApp(page, context, {
+      seed: (s) => seedTask(s, { title: 'Write the migration plan', start_at: at('14:00'), duration_min: 90, category_id: CAT.work }),
+    })
+    const pill = page.locator('[data-testid="block"][data-running="true"]')
+    await pill.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-13-running-pill-${info.project.name}.png` })
+  })
 })
