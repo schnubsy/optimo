@@ -199,4 +199,34 @@ test.describe('snag train 2026-10', () => {
     await page.locator('.settings .build').scrollIntoViewIfNeeded()
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-7-settings-bottom-iphone-15.png' })
   })
+
+  // === slice 8 (Fixes #22) — Week view edges: no sliver on iPhone, no flush-right on desktop ===
+  test('#22 Week: mobile 3-day columns exactly fill the space the sticky rail leaves (no sliver)', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the 3-day mobile week is mobile-only')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('week')
+    const railWidth = (await page.locator('.week.m .wrail').boundingBox())!.width
+    const colWidth = (await page.locator('.week.m .wcol').first().boundingBox())!.width
+    const viewport = page.viewportSize()!.width
+    // the rail + 3 columns must account for the full viewport — within 1px of rounding, so there is no
+    // unfilled sliver of a 4th day left over after a snap scroll (the old 42px constant left ~10px spare)
+    expect(Math.abs(railWidth + 3 * colWidth - viewport)).toBeLessThan(1)
+  })
+
+  test('#22 Week: desktop Sun column stays clear of the window edge', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'desktop-only layout')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('week')
+    expect(await page.locator('.wbody').evaluate((el) => getComputedStyle(el).paddingRight)).not.toBe('0px')
+  })
+
+  test('#22 evidence: Week view edges, desktop + iPhone-15', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('week')
+    await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-8-week-${info.project.name}.png` })
+  })
 })

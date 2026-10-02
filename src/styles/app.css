@@ -229,6 +229,8 @@
 .wday.today b { color: var(--accent-ink); }
 .wday.sel { background: var(--surface); }
 .wbody { flex: 1; overflow: auto; min-height: 0; }
+/* #22: desktop — keep the Sun column clear of the window edge instead of flush against it */
+.is-desktop .wbody { padding-right: var(--sp-4); }
 .wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
 .wrail { position: relative; }
 .wrail .hour { position: absolute; left: 0; right: 0; }
@@ -250,7 +252,9 @@
 .wfree { position: absolute; left: 50%; border-left: var(--free-dot) dotted var(--free-line); pointer-events: none; z-index: 1; }
 .wnow { position: absolute; left: 0; right: 0; height: 0; border-top: var(--now-line-w) solid var(--now-line); z-index: 5; pointer-events: none; }
 /* mobile: three days at a time, snapping, rail and header sticky inside one scroller */
-.week.m { --wcol: calc((100vw - 42px) / 3); }
+/* #22: 32px must match the sticky rail's own width below — a stale 42px left a ~10px sliver of the
+   adjacent day visible after every snap scroll (3 columns under-filled the space the rail actually leaves) */
+.week.m { --wcol: calc((100vw - 32px) / 3); }
 .week.m .whead { display: none; }
 .wbar { display: flex; align-items: center; justify-content: space-between; background: var(--canvas); }
 .wbar .nav { min-width: 44px; height: 44px; border: 0; background: none; font-size: 20px; color: var(--ink-2); }
