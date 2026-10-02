@@ -148,4 +148,31 @@ test.describe('snag train 2026-10', () => {
     await expect(page.getByTestId('event-details')).toBeVisible()
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-5-event-sheet-iphone-15.png' })
   })
+
+  // === slice 6 (Fixes #20) — settings group labels fully inside the card on iPhone ===
+  test('#20 settings group labels sit fully inside their card, not straddling the top edge', async ({ page, context }) => {
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context)
+    await setView('settings')
+    for (const testid of ['set-theme', 'set-snap', 'set-push', 'set-week', 'set-clock']) {
+      const card = page.getByTestId(testid)
+      const label = card.locator('h3')
+      const cardBox = (await card.boundingBox())!
+      const labelBox = (await label.boundingBox())!
+      expect(labelBox.y).toBeGreaterThanOrEqual(cardBox.y - 1)
+    }
+    // Organise / Data fieldsets use the same h3 + aria-labelledby pattern
+    const organise = page.getByRole('group', { name: 'Organise' })
+    await expect(organise).toBeVisible()
+    const data = page.getByRole('group', { name: 'Data' })
+    await expect(data).toBeVisible()
+  })
+
+  test('#20 evidence: Settings on iPhone-15', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context)
+    await setView('settings')
+    await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-6-settings-${info.project.name}.png`, fullPage: true })
+  })
 })

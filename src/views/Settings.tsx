@@ -30,10 +30,13 @@ function TimeSelect({ label, value, clock24, onChange, testid }: { label: string
   )
 }
 
+// #20: an <h3> + aria-labelledby, not a native <legend> — WebKit on iOS straddles a legend across the card edge
+// (float:left;width:100% doesn't fully override the UA's special legend layout box on every mobile engine).
 function Seg<T extends string | number | boolean>({ label, value, options, onChange, name }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void; name: string }) {
+  const labelId = `set-${name}-label`
   return (
-    <fieldset className="set-row seg" data-testid={`set-${name}`}>
-      <legend>{label}</legend>
+    <fieldset className="set-row seg" aria-labelledby={labelId} data-testid={`set-${name}`}>
+      <h3 id={labelId}>{label}</h3>
       <div>
         {options.map(([v, l]) => (
           <button key={String(v)} type="button" aria-pressed={value === v} onClick={() => onChange(v)}>
@@ -85,8 +88,8 @@ export function Settings() {
 
       <PushSettings />
 
-      <fieldset className="set-row">
-        <legend>Organise</legend>
+      <fieldset className="set-row" aria-labelledby="set-organise-label">
+        <h3 id="set-organise-label">Organise</h3>
         <div className="set-actions">
           <button type="button" className="ghost-btn" onClick={() => set({ view: 'categories' })}>
             Categories
@@ -100,8 +103,8 @@ export function Settings() {
         </div>
       </fieldset>
 
-      <fieldset className="set-row">
-        <legend>Data</legend>
+      <fieldset className="set-row" aria-labelledby="set-data-label">
+        <h3 id="set-data-label">Data</h3>
         <div className="set-actions">
           <button type="button" className="ghost-btn" onClick={async () => downloadJson(await exportAll(), `optimo-${todayKey()}.json`)} data-testid="export">
             Export JSON
