@@ -78,7 +78,7 @@ Implementation: add `ui-calendar` chrome glyph (calendar frame, one date-cell co
 Done-criteria: Timeline evidence (desktop + iPhone-15) shows iCloud events with the new glyph and a ring
   that never matches a category colour.
 
-=== SLICE 5 — event details on iPhone should be a bottom sheet (Fixes #19) ===
+=== SLICE 5 — event details on iPhone should be a bottom sheet (Fixes #19) === Status: done 817dddc
 Scope: event-details component; reuse `.sheet` from `src/editor/sheet.css`. A2-P1-5, 🟡 P1.
 Implementation: below 900px, render event details as a read-only bottom sheet with close button +
   grabber; Esc / scrim-tap closes it. Desktop keeps the popover.
