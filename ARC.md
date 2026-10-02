@@ -53,7 +53,7 @@ Implementation: hour label `opacity:0` when `|now − hour| < 12min`, OR `.now-f
 Done-criteria: Day view desktop + iPhone-15 evidence shows the hour numeral never visible under the
   now-pill within a 12-minute window of the hour.
 
-=== SLICE 2 — Week/Timeline tab glyphs misread (Fixes #16) ===
+=== SLICE 2 — Week/Timeline tab glyphs misread (Fixes #16) === Status: done cad9419
 Scope: `src/icons/set.ts`. A2-P1-2, 🟡 P1.
 Implementation: ui-week → a rounded calendar frame, solid header band, 3 column counter-cuts joined by
   the band (not three loose capsules). ui-timeline → two offset stacked pills with a small left chip,
