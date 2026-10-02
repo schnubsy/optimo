@@ -45,7 +45,7 @@ Each slice below cites its evidence source: `docs/evidence/arc2-slice-7-design-c
 LITE review that raised all 13). Icon slices touch `src/icons/set.ts`; re-run `scripts/icon-sheet.ts`
 after any icon-sheet change so `icons.png` evidence regenerates.
 
-=== SLICE 1 — now-pill hides the hour numeral (Fixes #15) ===
+=== SLICE 1 — now-pill hides the hour numeral (Fixes #15) === Status: done 838ec66
 Scope: `src/timeline/HourRail.tsx` (or app.css). A2-P1-1, 🟡 P1.
 Implementation: hour label `opacity:0` when `|now − hour| < 12min`, OR `.now-flag{box-shadow:0 0 0 4px
   var(--canvas)}` so the flag cleanly masks the numeral. Either is acceptable — pick the one that
