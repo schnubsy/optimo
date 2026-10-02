@@ -391,6 +391,8 @@
 /* A2-P0-4: the sheet rides above the on-screen keyboard (visualViewport → --kb-inset) and scrolls, never clips */
 .is-mobile .sheet-wrap.qa-wrap { padding-bottom: var(--kb-inset, 0px); }
 .is-mobile .qa-sheet { max-height: calc(100dvh - var(--kb-inset, 0px) - 24px); overflow-y: auto; }
+/* #23: the glyph chip was the only real `button` in the parse row, at 36px — spec §5.10 wants 44px */
+.qa-sheet .parse button { min-height: 44px; min-width: 44px; }
 .qa-sheet .cmd { padding: 0; background: none; }
 .qa-sheet .cmd .parse { position: static; box-shadow: none; background: none; padding: var(--sp-2) 0 0; pointer-events: auto; }
 .glyph-picker { display: grid; gap: var(--sp-2); max-height: 40dvh; overflow: auto; padding: var(--sp-2); background: var(--surface); border-radius: var(--r-lg); pointer-events: auto; }

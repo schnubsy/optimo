@@ -229,4 +229,28 @@ test.describe('snag train 2026-10', () => {
     await setView('week')
     await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-8-week-${info.project.name}.png` })
   })
+
+  // === slice 9 (Fixes #23) — quick-add glyph chip meets the 44px hit target on iPhone ===
+  test('#23 the quick-add glyph chip is at least 44x44 inside the mobile sheet', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the FAB bottom sheet is mobile-only')
+    await openApp(page, context)
+    await page.getByTestId('fab').click()
+    const field = page.getByTestId('quickadd')
+    await field.fill('Lunch with Sam at 1pm')
+    const chip = page.getByTestId('parse-icon')
+    await expect(chip).toBeVisible()
+    const box = (await chip.boundingBox())!
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+  })
+
+  test('#23 evidence: quick-add sheet with the 44px glyph chip (iPhone-15)', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    test.skip(info.project.name !== 'iphone-15', 'the FAB bottom sheet is mobile-only')
+    await openApp(page, context)
+    await page.getByTestId('fab').click()
+    await page.getByTestId('quickadd').fill('Lunch with Sam at 1pm')
+    await expect(page.getByTestId('parse-icon')).toBeVisible()
+    await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-9-quickadd-iphone-15.png' })
+  })
 })
