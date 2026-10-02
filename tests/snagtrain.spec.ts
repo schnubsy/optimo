@@ -1,7 +1,7 @@
 // snag train 2026-10 — Issues #15-#27 (label `snag`), raised by the arc-2 slice-7 Eye LITE critique
 // (docs/evidence/arc2-slice-7-design-critique.md). One behavioural case per slice; evidence captures are
 // gated on EVIDENCE=1 (same convention as design2.spec.ts).
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page, type BrowserContext } from '@playwright/test'
 import { CAT, at, openApp, seedDay, seedTask } from './support/app'
 import { ACTIVITY, CHROME } from '../src/icons/set'
 import { FAKE_PASSWORD, FAKE_USER } from './fake/caldav'
@@ -283,4 +283,57 @@ test.describe('snag train 2026-10', () => {
     await openApp(page, context, { seed: seedDay, theme: 'dark' })
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-10-day-desktop-dark.png' })
   })
+
+  // === slice 11 (Fixes #25) — launcher card: rounded type + a working dark variant ===
+  async function wing(context: BrowserContext) {
+    await context.route(/\/optimo\/spaces\.json$/, (r) => r.fulfill({ json: { v: 2, personal: [], family: ['optimo.html'] } }))
+    await context.route(/https:\/\/eepjhpyziczrxvirczio\.supabase\.co\//, (r) => {
+      const u = new URL(r.request().url())
+      const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }
+      if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: cors })
+      if (u.pathname === '/rest/v1/press_access_apps') return r.fulfill({ headers: cors, json: [{ page: 'optimo.html', gated: true }] })
+      if (u.pathname === '/rest/v1/rpc/press_access_has') return r.fulfill({ headers: cors, json: true })
+      if (u.pathname === '/rest/v1/rpc/press_access_touch') return r.fulfill({ status: 204, headers: cors })
+      return r.fulfill({ status: 404, headers: cors, json: {} })
+    })
+    await context.addInitScript((s) => localStorage.setItem('press:family:v1', JSON.stringify(s)), {
+      access_token: 'fake.jwt.token',
+      refresh_token: 'fake-refresh',
+      expires_at: Date.now() + 3600_000,
+      email: 'mark@family.example',
+      name: 'Mark',
+    })
+  }
+
+  test('#25 the launcher card heading uses the rounded voice, not the heavy system face', async ({ page, context }) => {
+    await wing(context)
+    await page.goto('./optimo.html')
+    const h1 = page.getByTestId('optimo-card').getByRole('heading')
+    await expect(h1).toBeVisible()
+    expect(await h1.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/ui-rounded/)
+  })
+
+  test('#25 the launcher card has a working dark variant', async ({ page, context }) => {
+    await wing(context)
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await page.goto('./optimo.html')
+    const card = page.getByTestId('optimo-card')
+    await expect(card).toBeVisible()
+    const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+    await page.emulateMedia({ colorScheme: 'light' })
+    await page.reload()
+    await expect(card).toBeVisible()
+    const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+    expect(bg).not.toBe(lightBg)
+  })
+
+  for (const theme of ['light', 'dark'] as const)
+    test(`#25 evidence (${theme}): launcher card`, async ({ page, context }, info) => {
+      test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+      await wing(context)
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto('./optimo.html')
+      await expect(page.getByTestId('optimo-card')).toBeVisible()
+      await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-11-launcher-card-${info.project.name}-${theme}.png` })
+    })
 })
