@@ -92,7 +92,7 @@ Implementation: `.settings legend{float:left;width:100%}` applied inside the mob
 Done-criteria: iPhone-15 Settings evidence shows "Reminders"/"Organise"/"Data" fully inside their cards,
   matching desktop placement.
 
-=== SLICE 7 — settings last row sits under the tab bar (Fixes #21) ===
+=== SLICE 7 — settings last row sits under the tab bar (Fixes #21) === Status: done f0bfa2a
 Scope: app.css:330 area; the Settings scroll container. A2-P1-7, 🟡 P1.
 Implementation: add the Settings scroller to the `.is-mobile` list that gets
   `padding-bottom:var(--scroll-pad-bottom)`.
