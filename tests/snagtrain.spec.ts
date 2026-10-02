@@ -3,7 +3,7 @@
 // gated on EVIDENCE=1 (same convention as design2.spec.ts).
 import { test, expect, type Page } from '@playwright/test'
 import { CAT, at, openApp, seedTask } from './support/app'
-import { CHROME } from '../src/icons/set'
+import { ACTIVITY, CHROME } from '../src/icons/set'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
@@ -49,5 +49,15 @@ test.describe('snag train 2026-10', () => {
     test.skip(info.project.name !== 'iphone-15', 'floating tab bar is mobile-only')
     await openApp(page, context)
     await page.locator('.tabbar').screenshot({ path: `docs/evidence/snag-train-2026-10-slice-2-tabbar-${info.project.name}.png` })
+  })
+
+  // === slice 3 (Fixes #17) — activity glyphs illegible at 13px ===
+  test('#17 food-plate, care-mirror, meeting-handshake, family-heart-people are redrawn', () => {
+    expect(ACTIVITY['food-plate']).not.toContain('rect x="1.8" y="4"') // the old plain bars ("IOI")
+    expect(ACTIVITY['care-mirror']).not.toContain('a3.5 3.5 0 0 0-1 2.5') // the old lollipop stick
+    expect(ACTIVITY['meeting-handshake']).toContain('fill-rule="evenodd"') // keeps one counter-cut
+    expect(ACTIVITY['family-heart-people']).not.toMatch(/circle cx="17" cy="5.5"/) // the old small heart head is gone
+    // care-mirror must stay visually distinct from errand-pin (both read as "circle on a stem" otherwise)
+    expect(ACTIVITY['care-mirror']).not.toBe(ACTIVITY['errand-pin'])
   })
 })
