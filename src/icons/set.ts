@@ -106,6 +106,8 @@ export const CHROME = {
   'ui-close': '<path d="M5.4 5.4a1.5 1.5 0 0 1 2.1 0L12 9.9l4.5-4.5a1.5 1.5 0 0 1 2.1 2.1L14.1 12l4.5 4.5a1.5 1.5 0 0 1-2.1 2.1L12 14.1l-4.5 4.5a1.5 1.5 0 0 1-2.1-2.1L9.9 12 5.4 7.5a1.5 1.5 0 0 1 0-2.1z"/>',
   'ui-drag-handle': '<circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/>',
   'ui-search': '<path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 0 1 6 12l4.2 4.2a1.3 1.3 0 0 1-1.8 1.8l-4.2-4.2A7.5 7.5 0 1 1 10.5 3zm0 2.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/>',
+  // #18: a calendar-frame chrome glyph for iCloud events (was reusing ui-week, which now reads as a different thing)
+  'ui-calendar': '<rect x="5" y="2.3" width="2" height="4" rx="1"/><rect x="15" y="2.3" width="2" height="4" rx="1"/><path fill-rule="evenodd" d="M4.5 4.5h15A2.5 2.5 0 0 1 22 7v11.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5V7a2.5 2.5 0 0 1 2.5-2.5zm4 7.3h3v3h-3v-3z"/>',
 } as const
 
 export type ActivityName = keyof typeof ACTIVITY

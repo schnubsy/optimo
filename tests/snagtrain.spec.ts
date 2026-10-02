@@ -2,8 +2,9 @@
 // (docs/evidence/arc2-slice-7-design-critique.md). One behavioural case per slice; evidence captures are
 // gated on EVIDENCE=1 (same convention as design2.spec.ts).
 import { test, expect, type Page } from '@playwright/test'
-import { CAT, at, openApp, seedTask } from './support/app'
+import { CAT, at, openApp, seedDay, seedTask } from './support/app'
 import { ACTIVITY, CHROME } from '../src/icons/set'
+import { FAKE_PASSWORD, FAKE_USER } from './fake/caldav'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
@@ -59,5 +60,40 @@ test.describe('snag train 2026-10', () => {
     expect(ACTIVITY['family-heart-people']).not.toMatch(/circle cx="17" cy="5.5"/) // the old small heart head is gone
     // care-mirror must stay visually distinct from errand-pin (both read as "circle on a stem" otherwise)
     expect(ACTIVITY['care-mirror']).not.toBe(ACTIVITY['errand-pin'])
+  })
+
+  // === slice 4 (Fixes #18) — calendar events get their own glyph + a ring that is never a category hue ===
+  test('#18 iCloud events use the ui-calendar glyph with the calendar\'s own ring colour', async ({ page, context }) => {
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('settings')
+    const form = page.getByTestId('calendar-connect')
+    await form.getByLabel('Apple ID').fill(FAKE_USER)
+    await form.getByLabel('App-specific password').fill(FAKE_PASSWORD)
+    await form.getByRole('button', { name: 'Connect iCloud' }).click()
+    await expect(page.getByTestId('calendar-account')).toBeVisible()
+    await setView('day')
+    const ev = page.getByTestId('timeline').getByTestId('event').filter({ hasText: 'Dentist check-up' })
+    await ev.scrollIntoViewIfNeeded()
+    const chip = ev.locator('.evt-chip')
+    await expect(chip.locator('svg')).toHaveAttribute('data-icon', 'ui-calendar')
+    // the fake CalDAV server's "Home" calendar is #5B8DEF — the chip ring must read that colour, not a category hue
+    expect(await chip.evaluate((el) => getComputedStyle(el).boxShadow)).toContain('91, 141, 239')
+  })
+
+  test('#18 evidence: Day view timeline with an iCloud event (desktop + iPhone-15)', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('settings')
+    const form = page.getByTestId('calendar-connect')
+    await form.getByLabel('Apple ID').fill(FAKE_USER)
+    await form.getByLabel('App-specific password').fill(FAKE_PASSWORD)
+    await form.getByRole('button', { name: 'Connect iCloud' }).click()
+    await expect(page.getByTestId('calendar-account')).toBeVisible()
+    await setView('day')
+    const ev = page.getByTestId('timeline').getByTestId('event').filter({ hasText: 'Dentist check-up' })
+    await ev.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-4-timeline-${info.project.name}.png` })
   })
 })

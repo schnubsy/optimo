@@ -30,7 +30,7 @@ export const EventBlock = memo(function EventBlock({ item, col, cols, hourPx, cl
       onClick={(ev) => ev.stopPropagation()}
     >
       <button type="button" className="evt-main" aria-expanded={open} aria-label={`${e.title || 'Busy'}, ${time}, calendar event`} onClick={() => setOpen(!open)}>
-        <span className="evt-chip" aria-hidden="true"><Icon name="ui-week" size={12} /></span>
+        <span className="evt-chip" aria-hidden="true"><Icon name="ui-calendar" size={12} /></span>
         <span className="evt-title">{e.title || 'Busy'}</span>
         <span className="evt-time tnum">{thin ? fmtClock(item.start, clock24) : time}</span>
       </button>
