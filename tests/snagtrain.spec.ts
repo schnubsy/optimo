@@ -3,6 +3,7 @@
 // gated on EVIDENCE=1 (same convention as design2.spec.ts).
 import { test, expect, type Page } from '@playwright/test'
 import { CAT, at, openApp, seedTask } from './support/app'
+import { CHROME } from '../src/icons/set'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
@@ -34,5 +35,19 @@ test.describe('snag train 2026-10', () => {
     const px = (await isMobile(page)) ? 66 : 72
     await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 14 * px)
     await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-1-day-${info.project.name}.png` })
+  })
+
+  // === slice 2 (Fixes #16) — Week/Timeline tab glyphs redrawn so they no longer misread ===
+  test('#16 ui-week and ui-timeline glyphs are redrawn and distinct from each other', () => {
+    expect(CHROME['ui-week']).not.toContain('rx="1.5"/><rect x="9.75"') // the old three-loose-capsules shape
+    expect(CHROME['ui-timeline']).not.toContain('M5.5 4h13A2.5') // the old note/message-card shape
+    expect(CHROME['ui-week']).not.toBe(CHROME['ui-timeline'])
+  })
+
+  test('#16 evidence: Day view tab bar shows the redrawn Week and Timeline glyphs', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    test.skip(info.project.name !== 'iphone-15', 'floating tab bar is mobile-only')
+    await openApp(page, context)
+    await page.locator('.tabbar').screenshot({ path: `docs/evidence/snag-train-2026-10-slice-2-tabbar-${info.project.name}.png` })
   })
 })

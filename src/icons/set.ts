@@ -88,8 +88,10 @@ export const ACTIVITY = {
 /** Chrome glyphs: filled (active) and outline (inactive, 1.75px stroke of the same silhouette). */
 export const CHROME = {
   'ui-inbox': '<path fill-rule="evenodd" d="M4 4h16a1 1 0 0 1 1 1v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1zm1 9v5h14v-5h-3.5a3.5 3.5 0 0 1-7 0H5z"/>',
-  'ui-timeline': '<path fill-rule="evenodd" d="M5.5 4h13A2.5 2.5 0 0 1 21 6.5v12a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-12A2.5 2.5 0 0 1 5.5 4zM7 9v2h10V9H7zm0 4v2h6v-2H7z"/>',
-  'ui-week': '<rect x="3" y="5" width="4.5" height="14" rx="1.5"/><rect x="9.75" y="5" width="4.5" height="14" rx="1.5"/><rect x="16.5" y="5" width="4.5" height="14" rx="1.5"/>',
+  // #16: two offset stacked pills with a small left chip, echoing the brand mark (was a note/message card)
+  'ui-timeline': '<circle cx="5" cy="9" r="2.3"/><rect x="8.5" y="6.5" width="12.5" height="5.5" rx="2.75"/><rect x="10.5" y="14.5" width="10" height="5.5" rx="2.75"/>',
+  // #16: a calendar frame with a solid header band joining 3 column counter-cuts (was three loose capsules)
+  'ui-week': '<rect x="3" y="4" width="18" height="5" rx="2"/><rect x="3" y="8" width="5" height="12" rx="1.5"/><rect x="9.5" y="8" width="5" height="12" rx="1.5"/><rect x="16" y="8" width="5" height="12" rx="1.5"/>',
   'ui-settings': '<path fill-rule="evenodd" d="M10.3 2.5h3.4l.5 2.3 1.9.8 2-1.3 2.4 2.4-1.3 2 .8 1.9 2.3.5v3.4l-2.3.5-.8 1.9 1.3 2-2.4 2.4-2-1.3-1.9.8-.5 2.3h-3.4l-.5-2.3-1.9-.8-2 1.3-2.4-2.4 1.3-2-.8-1.9-2.3-.5v-3.4l2.3-.5.8-1.9-1.3-2 2.4-2.4 2 1.3 1.9-.8.5-2.3zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/>',
   'ui-plan': '<path d="M11 2.5a1 1 0 0 1 2 0c.4 3.9 2.6 6.1 6.5 6.5a1 1 0 0 1 0 2c-3.9.4-6.1 2.6-6.5 6.5a1 1 0 0 1-2 0c-.4-3.9-2.6-6.1-6.5-6.5a1 1 0 0 1 0-2c3.9-.4 6.1-2.6 6.5-6.5z"/><path d="M18.5 15.5a.7.7 0 0 1 1.4 0c.2 1.6 1 2.4 2.6 2.6a.7.7 0 0 1 0 1.4c-1.6.2-2.4 1-2.6 2.6a.7.7 0 0 1-1.4 0c-.2-1.6-1-2.4-2.6-2.6a.7.7 0 0 1 0-1.4c1.6-.2 2.4-1 2.6-2.6z"/>',
   'ui-plus': '<path d="M12 3.5a1.5 1.5 0 0 1 1.5 1.5v5.5H19a1.5 1.5 0 0 1 0 3h-5.5V19a1.5 1.5 0 0 1-3 0v-5.5H5a1.5 1.5 0 0 1 0-3h5.5V5A1.5 1.5 0 0 1 12 3.5z"/>',
