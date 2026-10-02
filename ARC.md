@@ -121,7 +121,7 @@ Implementation: extend the capture list with `{week,inbox,month,editor}-iphone-1
 Done-criteria: all listed captures present under `docs/evidence/snag-train-2026-10-slice-10-*` for both
   light and dark where specified.
 
-=== SLICE 11 — launcher card: rounded type + dark variant (Fixes #25) ===
+=== SLICE 11 — launcher card: rounded type + dark variant (Fixes #25) === Status: done eaacfa0
 Scope: `src-press/optimo.html`. A2-P1-11, 🟡 P1.
 Implementation: heading `font-family:ui-rounded,"SF Pro Rounded","Nunito Sans",system-ui,sans-serif;
   font-weight:800` (no network font load). Add `@media (prefers-color-scheme:dark)` using the dark
