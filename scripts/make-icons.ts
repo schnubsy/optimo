@@ -21,8 +21,10 @@ const page = await browser.newPage()
 for (const v of variants) {
   const inner = Math.round(v.size * (1 - 2 * v.pad))
   await page.setViewportSize({ width: v.size, height: v.size })
+  // #26: the maskable safe-zone border shows this colour around the inset mark — must match brand.svg's own
+  // canvas (blush, not the old solid coral) so the icon doesn't show a mismatched ring at the OS mask edge.
   await page.setContent(
-    `<html><body style="margin:0;background:#b54c3d;display:grid;place-items:center;width:${v.size}px;height:${v.size}px">
+    `<html><body style="margin:0;background:#fff4f2;display:grid;place-items:center;width:${v.size}px;height:${v.size}px">
       <div style="width:${inner}px;height:${inner}px">${svg.replace('<svg ', `<svg width="${inner}" height="${inner}" `)}</div></body></html>`,
   )
   await page.screenshot({ path: `${out}/${v.name}`, omitBackground: false })

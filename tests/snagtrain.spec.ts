@@ -336,4 +336,20 @@ test.describe('snag train 2026-10', () => {
       await expect(page.getByTestId('optimo-card')).toBeVisible()
       await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-11-launcher-card-${info.project.name}-${theme}.png` })
     })
+
+  // === slice 12 (Fixes #26) — brand mark: off the red-squircle/toggle register ===
+  test('#26 evidence: the regenerated brand mark + PWA icons', async ({ page }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    test.skip(info.project.name !== 'desktop', 'one static capture is enough')
+    const { readFileSync } = await import('node:fs')
+    const svg = readFileSync('src/icons/brand.svg', 'utf8')
+    const b64 = (p: string) => `data:image/png;base64,${readFileSync(p).toString('base64')}`
+    await page.setContent(`<body style="margin:0;display:flex;gap:12px;padding:12px;background:#ddd">
+      <div style="width:192px;height:192px">${svg}</div>
+      <img src="${b64('public/icons/icon-192.png')}" width="96" height="96">
+      <img src="${b64('public/icons/maskable-512.png')}" width="96" height="96">
+      <img src="${b64('public/icons/apple-touch-icon.png')}" width="96" height="96">
+    </body>`)
+    await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-12-brand-mark.png' })
+  })
 })
