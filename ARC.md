@@ -61,7 +61,7 @@ Implementation: ui-week → a rounded calendar frame, solid header band, 3 colum
 Done-criteria: regenerated `icons.png` (desktop) shows both glyphs legible and distinct from each other
   and from the note/message-card misread noted in the issue.
 
-=== SLICE 3 — activity glyphs illegible at 13px (Fixes #17) ===
+=== SLICE 3 — activity glyphs illegible at 13px (Fixes #17) === Status: done 69623d0
 Scope: `src/icons/set.ts` + `scripts/icon-sheet.ts`. A2-P1-3, 🟡 P1.
 Implementation: food-plate → widen the plate disc to 16px, taper knife blade + fork tines so they stop
   reading as bars/letters. care-mirror → rectangular/oval mirror on a short stand (not a lollipop,
