@@ -113,7 +113,7 @@ Implementation: `.qa-sheet .parse button{min-height:44px}`, or keep visual size 
 Done-criteria: iPhone-15 quick-add evidence + a Playwright/axe hit-target assertion ≥44px for parse
   chips and the glyph chip.
 
-=== SLICE 10 — evidence gap: post-chrome captures (Fixes #24) ===
+=== SLICE 10 — evidence gap: post-chrome captures (Fixes #24) === Status: done 6df94a9
 Scope: the evidence-capture spec/script used by the design-review process (follow whatever slice 7 of
   arc-2 used to generate `docs/evidence/arc2-slice-*` captures).
 Implementation: extend the capture list with `{week,inbox,month,editor}-iphone-15-{light,dark}` and
