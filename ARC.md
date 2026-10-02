@@ -129,7 +129,7 @@ Implementation: heading `font-family:ui-rounded,"SF Pro Rounded","Nunito Sans",s
 Done-criteria: launcher-card evidence (desktop + iPhone-15, light + dark) shows the rounded heading face
   and a working dark variant.
 
-=== SLICE 12 — brand mark: move off the red-squircle/toggle register (Fixes #26) ===
+=== SLICE 12 — brand mark: move off the red-squircle/toggle register (Fixes #26) === Status: done 1d0e39b
 Scope: `src/icons/brand.svg`, `scripts/make-icons.ts`. A2-P1-12, 🟡 P1. Originality concern: too close to
   Structured.app's icon register — treat as higher priority than its P1 label suggests.
 Implementation: invert the ground — blush canvas `oklch(0.975 0.012 30)` squircle, coral pill carrying a
