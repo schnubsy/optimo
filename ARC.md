@@ -99,7 +99,7 @@ Implementation: add the Settings scroller to the `.is-mobile` list that gets
 Done-criteria: iPhone-15 Settings evidence shows the build-number row fully clear of the floating tab
   bar.
 
-=== SLICE 8 — Week view edges: sliver on iPhone, flush right on desktop (Fixes #22) ===
+=== SLICE 8 — Week view edges: sliver on iPhone, flush right on desktop (Fixes #22) === Status: done 5687c39
 Scope: `src/views/Week.tsx` + app.css. A2-P1-8, 🟡 P1.
 Implementation: day scroller — `scroll-snap-type:x mandatory; scroll-padding-inline-start:var(--gutter)`;
   columns `scroll-snap-align:start`. Desktop `.wbody{padding-right:var(--sp-4)}`.
