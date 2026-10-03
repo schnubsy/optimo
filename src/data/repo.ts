@@ -6,6 +6,7 @@ import { deviceId, newId, stamp } from './ids'
 import { changedFields } from '../sync/merge'
 import {
   DEFAULT_SETTINGS,
+  type AiPlan,
   type Category,
   type Exception,
   type OutboxRow,
@@ -214,6 +215,35 @@ export async function seedCategory(row: Omit<Category, 'field_ts' | 'device_id' 
     if (await db.categories.get(row.id)) return
     await db.categories.put(full)
     await enqueue('categories', full)
+  })
+  notify()
+}
+
+// ---------- AI plans + profile (arc 3, db/004_ai.sql) ----------
+// Plans are created server-side by plan-day (and land locally via applyRemote); the device only changes their status
+// and the tasks they produced. The profile is distilled server-side; the device can only reset it (tombstone).
+
+export async function updateAiPlan(id: string, patch: Partial<Pick<AiPlan, 'status' | 'accepted_task_ids' | 'deleted_at'>>) {
+  await db.transaction('rw', db.aiPlans, db.outbox, async () => {
+    const before = await db.aiPlans.get(id)
+    if (!before) return
+    const next = { ...before, ...patch }
+    if (changedFields(before as never, next as never).length === 0) return
+    const after = stampRow(before, next)
+    await db.aiPlans.put(after)
+    await enqueue('aiPlans', after)
+  })
+  notify()
+}
+
+/** Settings → Planning → Reset: tombstone the learned profile (plan-day starts a fresh one on the next accept). */
+export async function resetAiProfile() {
+  await db.transaction('rw', db.aiProfile, db.outbox, async () => {
+    for (const before of await db.aiProfile.filter((p) => !p.deleted_at).toArray()) {
+      const after = stampRow(before, { ...before, deleted_at: new Date().toISOString() })
+      await db.aiProfile.put(after)
+      await enqueue('aiProfile', after)
+    }
   })
   notify()
 }

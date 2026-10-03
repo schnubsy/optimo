@@ -94,9 +94,20 @@ a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtu
   rest; clients pull them through `planner_sync_log` like any row (server-owned: replace, no merge). The app
   refreshes on open and every 15 min while visible. Events render as outlined, fixed pills (tap = details),
   share overlap columns with tasks, and count against free time. Two-way is later.
-- **Arc 3 — AI planning.** Intent paragraphs → structured plan proposal (Claude via Edge Function,
-  same key as the marquee agents); learns tone/structure from accepted plans (`planner_ai_profile`);
-  challenge-style prompting (Ear register), never just agreeing. Optional web research.
+- **Arc 3 — AI planning (Plan tab).** The Plan tab takes written intent for a day (today / tomorrow / a date), a mode
+  (**Propose**, the default, or **Auto**) and an optional web-research switch, and posts them to the `plan-day` Edge
+  Function (user JWT, `verify_jwt`; every read/write under the caller's JWT so RLS applies). `propose` loads that
+  day's tasks, events, categories, settings and the learned profile — titles, times, durations, categories and
+  priorities only — and asks Claude (`PLANNER_MODEL`, default `claude-sonnet-5-5`; `ANTHROPIC_API_KEY` server-side)
+  for a plan through one strict tool (`submit_plan`: blocks with a one-line *why*, ≤ 3 questions, candid notes —
+  Ear register: flag overcommitment, missing buffers and conflicts, never just agree). Research adds the server web
+  search tool (≤ 3 uses); cited sources are returned with the plan. The result is a `planner_ai_plans` row
+  (`status: draft`). Propose renders ghost blocks on the day with conflicts marked; accept all / tick some / edit
+  then accept / reject. Accepted blocks become ordinary tasks through the outbox; Auto writes them at once with a
+  one-tap Undo that tombstones exactly those tasks. `learn` distils what was kept and changed into
+  `planner_ai_profile.data` with a small model. Guards: 30 plans/user/day (429), one retry, intent never logged.
+  Until `db/004_ai.sql` and the function are live the tab says "Planner isn't connected yet" and AI outbox rows
+  park without blocking the core sync.
 - **Later.** Web push (installed-PWA only on iPhone), marquee portal link card, iOS/Watch clients.
 
 ## 4. Technical design
@@ -130,6 +141,14 @@ server-side (Edge Function secrets) in later arcs.
 - `planner_settings` (user_id PK, data jsonb, …sync cols)
 - `planner_sync_log` (seq bigserial PK, user_id, table_name, row_id, op, at) — the pull cursor source
   (trigger-maintained).
+- `planner_ai_plans` (arc 3, `db/004_ai.sql`: id uuid v7, user_id, plan_date date, intent, mode propose|auto,
+  status draft|accepted|rejected|applied|failed, proposal jsonb `{blocks, questions, notes}`, research jsonb
+  `[{query,url,title,snippet}]`, model, accepted_task_ids uuid[], …sync cols) — written by `plan-day`; clients change
+  only status / accepted_task_ids.
+- `planner_ai_profile` (arc 3: id, user_id unique, data jsonb `{tone, day_shape, preferred_block_min, buffers,
+  habits[], avoid[]}`, accepted_count, …sync cols) — distilled server-side; clients only reset it (tombstone).
+  Both are optional tables for a client: a push answered with PGRST205 / 42P01 (not applied yet) parks those
+  outbox rows and retries every cycle; the core tables never wait on them.
 
 **Sync cols on every row:** `version bigint` (server-incremented by trigger), `updated_at timestamptz`,
 `deleted_at timestamptz null` (tombstone; hard-purged after 30 days), `field_ts jsonb`
