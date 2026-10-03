@@ -50,7 +50,7 @@ Scope: `supabase/functions/plan-day/` as a `Request → Response` handler over a
 Guards: 30 calls/user/day (count today's plans) → 429 with a friendly message; timeout + one retry; never log intent text.
 Done: deno unit tests for both actions with a fake Anthropic port (incl. research on/off, 429, malformed model output);
 the hermetic Playwright fake runs the same handler in-process; secret gate green.
-Status:
+Status: done 6fd6148
 
 ### Slice 13 — Plan tab
 Scope: replace `RESERVED_AI_TAB` (`src/chrome/TabBar.tsx`) with the Plan view: intent box, day picker (today /
