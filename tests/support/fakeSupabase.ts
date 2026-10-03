@@ -77,6 +77,9 @@ export class FakeSupabase {
   otpCode = '424242'
   otpSends: string[] = []
   lastOtpAt = 0
+  /** ms the page's pinned clock (openApp `at`) sits from the wall clock; the in-process handlers use `now()` */
+  clockOffset = 0
+  now = () => new Date(Date.now() + this.clockOffset)
   private sockets = new Set<{ ws: WebSocketRoute; topic: string; id: number }>()
   private nextBindingId = 1000
 
@@ -223,7 +226,7 @@ export class FakeSupabase {
         const hex = Date.now().toString(16).padStart(12, '0')
         return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-7${crypto.randomUUID().slice(15)}`
       },
-      now: () => new Date(),
+      now: this.now,
       userFromJwt: async (jwt) => {
         try {
           return JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString()).sub ?? null

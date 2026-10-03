@@ -19,7 +19,7 @@ Deno.test('connect stores ciphertext only; sync expands the recurring fixture; r
   assert(!acc.secret_enc.includes(FAKE_PASSWORD), 'plaintext stored')
   assert((await decryptSecret(acc.secret_enc, await importKek(TEST_KEK))) === FAKE_PASSWORD, 'round trip')
   const s1 = await (await handleSync(post({}), p)).json()
-  assert(s1.accounts[0].upserted === 11, `upserted ${s1.accounts[0].upserted}`)
+  assert(s1.accounts[0].upserted === 12, `upserted ${s1.accounts[0].upserted}`)
   const s2 = await (await handleSync(post({}), p)).json()
   assert(s2.accounts[0].upserted === 0 && s2.accounts[0].removed === 0, 'resync not idempotent')
   assert(!p.logs.join(' ').includes(FAKE_PASSWORD), 'password in logs')
@@ -36,4 +36,12 @@ Deno.test('due: a daily 09:00 series fires at 08:50 local (npm:rrule in the Edge
   const s = zoned(2026, 9, 1, 9, 0, tz).toISOString()
   const d = dueReminders([{ id: 's', title: 'x', start_at: s, dtstart: s, rrule: 'FREQ=DAILY', reminders: [10], completed_at: null, deleted_at: null }], [], new Set(), zoned(2026, 9, 28, 8, 50, tz), tz)
   assert(d.length === 1 && d[0].occurrence_date === '2026-09-28', JSON.stringify(d))
+})
+
+import { CalDav } from './caldav.ts'
+Deno.test('arc 4 regression: iCloud single-quoted component sets keep own + shared event calendars, drop the rest', async () => {
+  const dav = new CalDav('https://caldav.icloud.com/', CalDav.basic(FAKE_USER, FAKE_PASSWORD), fakeCalDav().fetch)
+  const cals = await dav.calendars(await dav.homeSet(await dav.principal()))
+  const got = cals.map((c) => `${c.name}|${c.color}|shared=${c.shared}|writable=${c.writable}`).join(', ')
+  assert(got === 'Home|#5B8DEF|shared=false|writable=true, optimo|#3FA66B|shared=false|writable=true, Family|#E0745A|shared=true|writable=false', got)
 })

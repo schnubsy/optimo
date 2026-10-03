@@ -38,8 +38,9 @@ test.describe('iCloud calendar (read-only)', () => {
     const acc = page.getByTestId('calendar-account')
     await expect(acc).toBeVisible()
     await expect(acc).toContainText(FAKE_USER)
-    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(1) // Home (VEVENT); the VTODO list is skipped
-    await expect(acc.getByTestId('calendar-toggle')).toHaveAttribute('aria-checked', 'true')
+    // Home + optimo + the shared Family calendar (iCloud-shaped, single-quoted replies); Reminders / inbox / outbox skipped
+    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(3)
+    for (const t of await acc.getByTestId('calendar-toggle').all()) await expect(t).toHaveAttribute('aria-checked', 'true')
     await expect(page.getByTestId('calendar-connect')).toHaveCount(0)
     expect(server.functionCalls.map((c) => `${c.name}:${c.status}`)).toEqual(['calendar-connect:200', 'calendar-sync:200'])
 
@@ -55,12 +56,15 @@ test.describe('iCloud calendar (read-only)', () => {
     await expect(page.getByTestId('event-details')).toContainText('Harbour St Dental')
     expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
 
-    // calendar off → the server tombstones its events → the pull removes them
+    // calendars off → the server tombstones their events → the pull removes them
     await setView(page, 'settings')
-    await page.getByTestId('calendar-toggle').click()
-    await expect(page.getByTestId('calendar-toggle')).toHaveAttribute('aria-checked', 'false')
+    for (const name of ['Home', 'Family']) {
+      const t = page.getByTestId('calendar-toggle').filter({ hasText: name })
+      await t.click()
+      await expect(t).toHaveAttribute('aria-checked', 'false')
+    }
     await expect.poll(() => page.evaluate(() => (window as any).__optimo.db.events.count())).toBe(0)
-    await page.getByTestId('calendar-toggle').click()
+    await page.getByTestId('calendar-toggle').filter({ hasText: 'Home' }).click()
     await expect.poll(() => page.evaluate(() => (window as any).__optimo.db.events.count())).toBeGreaterThan(0)
 
     // disconnect removes the account and every event on this device
