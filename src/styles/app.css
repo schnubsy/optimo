@@ -237,6 +237,8 @@
 .wbody { flex: 1; overflow: auto; min-height: 0; }
 /* #22: desktop — keep the Sun column clear of the window edge instead of flush against it */
 .is-desktop .wbody { padding-right: var(--sp-4); }
+/* #35: the day-header row takes the body's right pad, so Sun's header ends where its column does */
+.is-desktop .whead { padding-right: var(--sp-4); }
 .wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
 .wrail { position: relative; }
 .wrail .hour { position: absolute; left: 0; right: 0; }

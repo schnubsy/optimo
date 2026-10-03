@@ -87,4 +87,19 @@ test.describe('snags #29–#37 (arc 3)', () => {
     for (const b of boxes) expect(b.bottom).toBeLessThanOrEqual(vh)
     if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-6-quickadd-iphone-15.png' })
   })
+
+  test('#35 Week (desktop): the last day header ends over its own column, not at the window edge', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'desktop week grid')
+    await openApp(page, context, { seed: (s) => seedDay(s) })
+    await page.evaluate(() => (window as any).__optimo.ui.getState().set({ view: 'week' }))
+    const r = await page.evaluate(() => {
+      const heads = [...document.querySelectorAll('.whead > *')]
+      const last = heads[heads.length - 1].getBoundingClientRect()
+      const cols = [...document.querySelectorAll('[data-testid="week-col"]')]
+      const col = cols[cols.length - 1].getBoundingClientRect()
+      return { headRight: last.right, colRight: col.right, pad: getComputedStyle(document.querySelector('.whead')!).paddingRight, bodyPad: getComputedStyle(document.querySelector('.wbody')!).paddingRight }
+    })
+    expect(r.pad).toBe(r.bodyPad)
+    expect(Math.abs(r.headRight - r.colRight)).toBeLessThanOrEqual(2)
+  })
 })
