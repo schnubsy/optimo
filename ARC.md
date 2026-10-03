@@ -35,7 +35,7 @@ Status: done — 2 #29 875e12d · 3 #30 7933f86 · 4 #31 f755cd9 · 5 #32 3a5bb7
 Scope: commit `db/004_ai.sql` unchanged; add `planner_ai_plans` + `planner_ai_profile` to the Dexie schema, types and
 the outbox/pull sync (same field-level merge as every other table, spec §5). Spec §3/§5 updated for both tables.
 Done: unit tests cover round-trip + merge for both tables; 5k-task perf budget unchanged.
-Status:
+Status: done 8a32373
 
 ### Slice 12 — Edge Function `plan-day`
 Scope: `supabase/functions/plan-day/` as a `Request → Response` handler over a ports interface (lessons 2026-09-27),
