@@ -154,3 +154,107 @@ describe('VEVENT shape', () => {
     expect(icsToFields(ics, 'UTC')).toMatchObject({ duration_min: 0 })
   })
 })
+
+describe('slice 5 — pull back: iCloud edits → optimo', () => {
+  const stampOf = (iso: string) => iso.replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  const moveTo = (start: string, end: string) => (ics: string) => ics.replace(/^DTSTART:.*$/m, `DTSTART:${stampOf(start)}`).replace(/^DTEND:.*$/m, `DTEND:${stampOf(end)}`)
+
+  async function pushed() {
+    const s = await setup()
+    s.p.clientWrite(TASK, { title: 'Dentist prep', start_at: hour(9), duration_min: 30 })
+    await s.sync()
+    return s
+  }
+
+  it('a move in iCloud moves the task (start + length), as calendar-sync with field_ts now', async () => {
+    const { dav, p, sync } = await pushed()
+    dav.editInICloud(CAL.optimo, UID, moveTo(hour(15), hour(16)))
+    const before = Date.now()
+    const r = await sync()
+    expect(r.twoWay.pulledBack).toBe(1)
+    const t = p.tasks.get(TASK)!
+    expect(t).toMatchObject({ start_at: hour(15), duration_min: 60, device_id: 'calendar-sync' })
+    expect(t.field_ts.start_at).toBeGreaterThanOrEqual(before)
+    expect(p.serverWrites.at(-1)!.fields).toEqual({ start_at: hour(15), duration_min: 60 }) // only what changed
+  })
+
+  it('a rename in iCloud renames the task', async () => {
+    const { dav, p, sync } = await pushed()
+    dav.editInICloud(CAL.optimo, UID, (ics) => ics.replace(/SUMMARY:.*/, 'SUMMARY:Dentist prep (bring forms)'))
+    await sync()
+    expect(p.tasks.get(TASK)!.title).toBe('Dentist prep (bring forms)')
+  })
+
+  it('a delete in iCloud tombstones the task and drops the link', async () => {
+    const { dav, p, sync } = await pushed()
+    dav.deleteInICloud(CAL.optimo, UID)
+    const r = await sync()
+    expect(r.twoWay.tombstoned).toBe(1)
+    expect(p.tasks.get(TASK)!.deleted_at).toBeTruthy()
+    expect(p.calLinks.has(TASK)).toBe(false)
+    await sync() // nothing to push back or delete
+    expect(dav.state.requests.filter((q) => q.method === 'PUT' || q.method === 'DELETE')).toHaveLength(1)
+  })
+
+  it('no ping-pong: after an iCloud edit, three more syncs neither PUT nor write the task', async () => {
+    const { dav, p, sync, puts } = await pushed()
+    dav.editInICloud(CAL.optimo, UID, moveTo(hour(11), hour(12)))
+    await sync()
+    const n = puts().length
+    const writes = p.serverWrites.length
+    const version = p.tasks.get(TASK)!.version
+    for (let i = 0; i < 3; i++) expect((await sync()).twoWay).toMatchObject({ pushed: 0, pulledBack: 0, tombstoned: 0 })
+    expect(puts()).toHaveLength(n)
+    expect(p.serverWrites).toHaveLength(writes)
+    expect(p.tasks.get(TASK)!.version).toBe(version)
+    expect(p.calLinks.get(TASK)!.pushed_version).toBe(version) // echo guard
+  })
+
+  it('moved far out in iCloud (beyond the REPORT window) is found by multiget and applied, not tombstoned', async () => {
+    const { dav, p, sync } = await pushed()
+    dav.editInICloud(CAL.optimo, UID, moveTo(hour(9, 90), hour(10, 90)))
+    const r = await sync()
+    expect(r.twoWay).toMatchObject({ pulledBack: 1, tombstoned: 0 })
+    expect(p.tasks.get(TASK)!.start_at).toBe(hour(9, 90))
+    expect(dav.state.requests.some((q) => q.method === 'REPORT' && q.body.includes('calendar-multiget'))).toBe(true)
+  })
+
+  it('edits in the write calendar come back even with its events toggled off; optimo edits after that push again', async () => {
+    const { dav, p, acc, sync, inOptimo } = await pushed()
+    acc.calendars.find((c) => c.name === 'optimo')!.enabled = false
+    dav.editInICloud(CAL.optimo, UID, (ics) => ics.replace(/SUMMARY:.*/, 'SUMMARY:Renamed on the Mac'))
+    await sync()
+    expect(p.tasks.get(TASK)!.title).toBe('Renamed on the Mac')
+    p.clientWrite(TASK, { title: 'Renamed in optimo' })
+    expect((await sync()).twoWay.pushed).toBe(1)
+    expect(icsToFields(inOptimo()[0].ics, 'UTC')!.title).toBe('Renamed in optimo')
+  })
+
+  it('an iCloud edit and an optimo edit to different fields both survive (field-level LWW)', async () => {
+    const { dav, p, sync } = await pushed()
+    p.clientWrite(TASK, { notes: 'bring the insurance card' } as never) // optimo-only field
+    dav.editInICloud(CAL.optimo, UID, moveTo(hour(13), hour(13, 0).replace('T13', 'T14')))
+    await sync()
+    expect(p.tasks.get(TASK)).toMatchObject({ start_at: hour(13), notes: 'bring the insurance card' })
+  })
+
+  it('reads iCloud’s own rewrite of the object (TZID + VTIMEZONE, SEQUENCE, X-APPLE props) after a move on the iPhone', async () => {
+    const { dav, p, sync } = await pushed()
+    dav.editInICloud(CAL.optimo, UID, () =>
+      [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Apple Inc.//iPhone OS 26.0//EN', 'CALSCALE:GREGORIAN',
+        'BEGIN:VTIMEZONE', 'TZID:America/Chicago',
+        'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0600', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'DTSTART:20070311T020000', 'TZNAME:CDT', 'TZOFFSETTO:-0500', 'END:DAYLIGHT',
+        'BEGIN:STANDARD', 'TZOFFSETFROM:-0500', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'DTSTART:20071104T020000', 'TZNAME:CST', 'TZOFFSETTO:-0600', 'END:STANDARD',
+        'END:VTIMEZONE',
+        'BEGIN:VEVENT', 'CREATED:20261003T120000Z', 'DTEND;TZID=America/Chicago:20261007T113000', `UID:${UID}`, 'DTSTAMP:20261003T160000Z',
+        'SEQUENCE:1', 'SUMMARY:Dentist prep', 'LAST-MODIFIED:20261003T160000Z', 'DTSTART;TZID=America/Chicago:20261007T104500',
+        `X-OPTIMO-TASK-ID:${TASK}`, 'X-APPLE-TRAVEL-ADVISORY-BEHAVIOR:AUTOMATIC', 'END:VEVENT', 'END:VCALENDAR', '',
+      ].join('\r\n'),
+    )
+    await sync()
+    // 10:45 CDT on 7 Oct = 15:45Z; 45 minutes long
+    expect(p.tasks.get(TASK)).toMatchObject({ start_at: '2026-10-07T15:45:00.000Z', duration_min: 45, title: 'Dentist prep' })
+  })
+})
+

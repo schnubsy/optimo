@@ -45,4 +45,38 @@ test.describe('iCloud two-way (arc 4)', () => {
     expect(server.calLinks.size).toBe(0)
     expect(errors).toEqual([])
   })
+
+  test('pull back: a move + rename made in iCloud lands on the task; a delete in iCloud removes it; no ping-pong', async ({ page, context }) => {
+    test.setTimeout(60_000)
+    const { server, errors } = await openApp(page, context)
+    await connect(page)
+    const id = await page.evaluate(async (start) => (await (window as any).__optimo.repo.createTask({ title: 'Call the plumber', start_at: start, duration_min: 30 })).id, at(9))
+    await expect.poll(() => inICloud(server, id).length, { timeout: 15_000 }).toBe(1)
+    const z = (iso: string) => iso.replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    // on the iPhone: moved to 16:00–17:00 and renamed
+    server.caldav.editInICloud(CAL.optimo, `optimo-${id}@optimo`, (ics) =>
+      ics.replace(/^DTSTART:.*$/m, `DTSTART:${z(at(16))}`).replace(/^DTEND:.*$/m, `DTEND:${z(at(17))}`).replace(/^SUMMARY:.*$/m, 'SUMMARY:Call the plumber (re: boiler)'),
+    )
+    const puts = () => server.caldav.state.requests.filter((r) => r.method === 'PUT').length
+    const putsBefore = puts()
+    await page.getByTestId('calendar-sync').click()
+    const task = () => page.evaluate((i) => (window as any).__optimo.db.tasks.get(i), id)
+    await expect.poll(async () => (await task())?.title).toBe('Call the plumber (re: boiler)')
+    expect(await task()).toMatchObject({ start_at: at(16), duration_min: 60 })
+    expect(server.task(id)).toMatchObject({ device_id: 'calendar-sync' })
+    // the pulled-back change must not bounce back to iCloud (it reached the client through the sync log, not the outbox)
+    for (let i = 0; i < 2; i++) {
+      await page.getByTestId('calendar-sync').click()
+      await expect(page.getByTestId('calendar-sync')).toBeEnabled()
+    }
+    await page.waitForTimeout(6_000) // past the push debounce
+    expect(puts()).toBe(putsBefore)
+
+    server.caldav.deleteInICloud(CAL.optimo, `optimo-${id}@optimo`)
+    await page.getByTestId('calendar-sync').click()
+    await expect.poll(async () => (await task())?.deleted_at ?? null).not.toBeNull()
+    expect(server.calLinks.has(id)).toBe(false)
+    expect(errors).toEqual([])
+  })
 })
+

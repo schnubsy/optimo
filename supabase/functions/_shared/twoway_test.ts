@@ -59,3 +59,25 @@ Deno.test('slice 4 push: a 412 applies the iCloud edit instead of overwriting it
   assert(p.tasks.get(TASK)!.title === 'Forecast (iPhone)', p.tasks.get(TASK)!.title)
   assert(icsToFields(dav.objects(CAL.optimo)[0].ics, 'UTC')!.title === 'Forecast (iPhone)', 'overwritten')
 })
+
+Deno.test('slice 5 pull back: move → task moves; rename → title; delete → tombstoned; no ping-pong over 3 syncs', async () => {
+  const { dav, p, sync, puts } = await setup()
+  const z = (iso: string) => iso.replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  p.clientWrite(TASK, { title: 'Prep', start_at: at(9), duration_min: 30 })
+  await sync()
+  dav.editInICloud(CAL.optimo, UID, (ics) => ics.replace(/^DTSTART:.*$/m, `DTSTART:${z(at(15))}`).replace(/^DTEND:.*$/m, `DTEND:${z(at(16))}`))
+  await sync()
+  let t = p.tasks.get(TASK)!
+  assert(t.start_at === at(15) && t.duration_min === 60 && t.device_id === 'calendar-sync', JSON.stringify(t))
+  dav.editInICloud(CAL.optimo, UID, (ics) => ics.replace(/SUMMARY:.*/, 'SUMMARY:Prep (forms)'))
+  await sync()
+  assert(p.tasks.get(TASK)!.title === 'Prep (forms)', 'rename')
+  const n = puts()
+  const v = p.tasks.get(TASK)!.version
+  for (let i = 0; i < 3; i++) await sync()
+  assert(puts() === n && p.tasks.get(TASK)!.version === v, `ping-pong: puts ${puts()} vs ${n}, version ${p.tasks.get(TASK)!.version} vs ${v}`)
+  dav.deleteInICloud(CAL.optimo, UID)
+  const r = await sync()
+  t = p.tasks.get(TASK)!
+  assert(r.twoWay.tombstoned === 1 && !!t.deleted_at && !p.calLinks.has(TASK), JSON.stringify(r.twoWay))
+})
