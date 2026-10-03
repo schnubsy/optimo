@@ -115,4 +115,24 @@ test.describe('snags #29–#37 (arc 3)', () => {
     expect(await page.locator('.mhead .nav').first().evaluate((e) => getComputedStyle(e).boxShadow)).toMatch(/inset/)
     if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-9-month-iphone-15-light.png' })
   })
+
+  test('#37 a toast sits above the tab bar but under an open sheet', async ({ page, context }) => {
+    let ids: ReturnType<typeof seedDay>['ids']
+    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.evaluate(() => (window as any).__optimo.ui.getState().notify({ text: 'iCloud calendar connected.' }))
+    await expect(page.getByTestId('toast')).toBeVisible()
+    const z = (sel: string) => page.locator(sel).first().evaluate((e) => Number(getComputedStyle(e).zIndex))
+    const toast = await z('.toast-wrap')
+    expect(toast).toBeLessThan(await z('.sheet-wrap'))
+    if (await page.getByTestId('tabbar').isVisible()) expect(toast).toBeGreaterThan(await z('.tabbar'))
+    // the sheet's close control is what a tap there hits
+    const close = page.getByRole('dialog').getByRole('button', { name: 'Close' })
+    const hit = await close.evaluate((b) => {
+      const r = b.getBoundingClientRect()
+      return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === b || b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))
+    })
+    expect(hit).toBe(true)
+  })
 })

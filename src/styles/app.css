@@ -138,7 +138,8 @@
 .allday-t.done { background: var(--done-fill); color: var(--done-ink); text-decoration: line-through; }
 
 /* ---------- toast ---------- */
-.toast-wrap { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); z-index: 60; pointer-events: none; }
+/* #37: z 35 — above the tab bar (30), under sheets (40), so a toast never covers a sheet's close control */
+.toast-wrap { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); z-index: 35; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-2) 0 var(--sp-5); min-height: 48px; background: var(--ink); color: var(--canvas); border-radius: var(--r-pill); font-size: var(--fs-14); font-weight: var(--fw-semibold); box-shadow: var(--shadow-float); }
 .toast button { height: 36px; padding: 0 var(--sp-4); background: color-mix(in oklch, var(--canvas) 16%, transparent); border: 0; border-radius: var(--r-pill); font-weight: var(--fw-bold); color: inherit; }
 .is-mobile .toast-wrap { bottom: 96px; width: calc(100% - 32px); }
