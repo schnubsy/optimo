@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { todayKey } from '../lib/time'
 
-export type View = 'day' | 'week' | 'month' | 'focus' | 'settings' | 'categories' | 'icons'
+export type View = 'day' | 'week' | 'month' | 'focus' | 'settings' | 'categories' | 'icons' | 'plan'
 export type MobileTab = 'board' | 'backlog' | 'week'
 
 import type { TaskInput } from '../data/repo'

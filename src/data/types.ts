@@ -71,6 +71,9 @@ export interface SettingsData {
   iconOverrides?: Record<string, string>
   /** IANA zone, written when push is enabled — push-send expands series in the user's wall-clock time. */
   tz?: string
+  /** arc 3: the Plan tab's default mode and research switch (Settings → Planning) */
+  plan_mode?: 'propose' | 'auto'
+  plan_research?: boolean
 }
 
 export const DEFAULT_SETTINGS: SettingsData = {

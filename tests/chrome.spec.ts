@@ -24,7 +24,7 @@ test.describe('iPhone chrome', () => {
       expect(box.width).toBeGreaterThanOrEqual(44)
       expect(box.height).toBeGreaterThanOrEqual(44)
     }
-    await expect(bar.getByRole('tab')).toHaveCount(4) // Inbox · Timeline · Week · Settings (Plan reserved, hidden)
+    await expect(bar.getByRole('tab')).toHaveCount(5) // Inbox · Timeline · Week · Plan · Settings (arc 3 shows the reserved Plan column)
     const hdr = page.getByTestId('header')
     expect(await hdr.evaluate((el) => getComputedStyle(el).borderBottomWidth)).toBe('0px')
     expect(await hdr.evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none')
@@ -70,6 +70,9 @@ test.describe('iPhone chrome', () => {
     await page.getByTestId('tab-settings').click()
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
     await page.getByTestId('tab-settings').focus()
+    await page.keyboard.press('ArrowLeft')
+    await expect(page.getByTestId('tab-plan')).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByTestId('plan')).toBeVisible()
     await page.keyboard.press('ArrowLeft')
     await expect(page.getByTestId('tab-week')).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByTestId('tab-week')).toBeFocused()

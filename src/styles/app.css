@@ -381,7 +381,8 @@
 .hdr-now { flex: none; margin-left: var(--sp-1); padding: 2px 8px; border-radius: var(--r-pill); background: var(--now-flag-bg); color: var(--now-flag-fg); font-size: var(--fs-11); font-weight: var(--fw-black); }
 .pane-hdr .hdr-stats { flex: 1 1 0; min-width: 160px; flex-wrap: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pane-hdr .hdr-stats span { flex: none; }
-.pane-qa { flex: 0 1 280px; min-width: 180px; max-width: 520px; margin-left: auto; position: relative; }
+/* arc 3: the Plan button joins the gear — quick-add gives up 40px of its floor so the sync badge stays on screen */
+.pane-qa { flex: 0 1 280px; min-width: 140px; max-width: 520px; margin-left: auto; position: relative; }
 /* desktop header: the sync state is its dot (words kept for screen readers, full text in the tooltip) */
 .pane-hdr .sb-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .pane-qa .cmd { padding: 0; background: none; }

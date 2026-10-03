@@ -36,6 +36,7 @@ import { IconSheet } from './icons/IconSheet'
 import { Week, WEEK_HOUR_PX } from './views/Week'
 import { Month } from './views/Month'
 import { Settings } from './views/Settings'
+import { Plan } from './plan/Plan'
 import { Focus } from './focus/Focus'
 import { startReminders } from './reminders/scheduler'
 import { applyTheme } from './lib/theme'
@@ -264,10 +265,10 @@ export function Planner({ userId }: { userId: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [settings.snap, settings.default_duration])
 
-  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'week' ? 'week' : view === 'settings' ? 'settings' : 'timeline'
+  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'week' ? 'week' : view === 'settings' ? 'settings' : view === 'plan' ? 'plan' : 'timeline'
   const onTab = (t: TabId) => {
     if (t === 'inbox') set({ mobileTab: 'backlog' })
-    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t === 'week' ? 'week' : 'settings' })
+    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t === 'week' ? 'week' : t === 'plan' ? 'plan' : 'settings' })
   }
   const hdr = { date, view, stats, inboxCount, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
   return (
@@ -322,6 +323,7 @@ function ViewSwitch({ view, date, items, events, catMap, settings }: { view: str
   if (view === 'categories') return <Categories />
   if (view === 'icons') return <IconSheet />
   if (view === 'settings') return <Settings />
+  if (view === 'plan') return <Plan cats={catMap} settings={settings} />
   if (view === 'week') return <Week date={date} cats={catMap} settings={settings} />
   if (view === 'month') return <Month date={date} cats={catMap} settings={settings} />
   return <Day day={date} items={items} events={events} cats={catMap} settings={settings} />

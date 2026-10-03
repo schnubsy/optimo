@@ -120,6 +120,9 @@ export function PaneHeader({ date, view, stats, inboxCount, now, clock24 }: Prop
       <div className="pane-qa">
         <QuickAdd />
       </div>
+      <button type="button" className={`gear ${view === 'plan' ? 'on' : ''}`} aria-label="Plan" aria-pressed={view === 'plan'} onClick={() => set({ view: view === 'plan' ? 'day' : 'plan' })} data-testid="hdr-plan">
+        <Icon name="ui-plan" size={20} filled={view === 'plan'} />
+      </button>
       <button type="button" className={`gear ${view === 'settings' ? 'on' : ''}`} aria-label="Settings" aria-pressed={view === 'settings'} onClick={() => set({ view: view === 'settings' ? 'day' : 'settings' })}>
         <Icon name="ui-settings" size={20} filled={view === 'settings'} />
       </button>

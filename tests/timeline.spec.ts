@@ -49,7 +49,8 @@ test.describe('day timeline', () => {
 
   test('drag reschedules by the dragged delta and keeps duration', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
-    const { errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    // pinned: in the small hours the timeline opens near 03:00 and a 13:00 pill sits on the auto-scroll edge
+    const { errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), at: '12:00' })
     const px = await hourPx(page)
     const lunch = block(page, ids!.lunch)
     await lunch.scrollIntoViewIfNeeded()
