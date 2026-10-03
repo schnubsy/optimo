@@ -34,4 +34,11 @@ describe('optimo glyph set', () => {
     }
     expect(resolveIcon('no-such-glyph')).toBe('work-document')
   })
+  it('#34 meeting-handshake is a tilted clasp with exactly one finger counter-cut (no bow-tie band)', () => {
+    const g = ACTIVITY['meeting-handshake']
+    expect(g).not.toContain('h6.3l2.2 3h1l2.2-3') // the old two-lobes-and-a-band outline
+    expect(g).toContain('rotate(-20')
+    const clasp = /<path fill-rule="evenodd"[^>]*d="([^"]+)"/.exec(g)![1]
+    expect(clasp.match(/M/g)).toHaveLength(2) // outline + one counter-cut
+  })
 })
