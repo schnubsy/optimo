@@ -1,10 +1,12 @@
 # HANDOFF — optimo
 
 ## Current state
-Arc 4 — **iCloud two-way sync + calendar picker** is complete on `arc/icloud-two-way` (slices 1–7 ticked, gauntlet +
-sentry GREEN, Lighthouse 100/100 · 98/100). This close runs PR → merge → main-checkout reconcile → Pages ship proof;
-the post-merge proofs are recorded below once they exist. **The live Edge Functions are still the arc-2 v1 code**
-(read-only, the discovery bug that found 0 calendars) until Cowork runs manual step 1.
+Arc 4 — **iCloud two-way sync + calendar picker** is **merged and live on Pages**: PR #66 merged at `2727643`
+(2026-10-03). Main checkout reconciled (HEAD = `2727643`). Pages ship proof: live `<meta name="build">` = **`2727643`**
+(was `10866d1`), and the live bundle `assets/index-B2s7eOzV.js` contains "Put optimo tasks in", "No calendars found"
+and the new helper copy. Gauntlet + sentry were GREEN (Lighthouse 100/100 · 98/100). **The live Edge Functions are
+still the arc-2 v1 code** (read-only; the discovery bug that found 0 calendars) until Cowork runs manual step 1 — until
+then the new picker shows whatever the old function stored.
 
 ## Shipped this arc (on the branch)
 1. Discovery reads `name='VEVENT'` and `name="VEVENT"` alike; calendars carry `shared` / `writable`. Every CalDAV
@@ -21,7 +23,11 @@ the post-merge proofs are recorded below once they exist. **The live Edge Functi
 Also: Plan specs' time-of-day failure fixed (fake server clock follows the pinned page clock); eslint ignores `.claude/`.
 
 ## Open / blockers (close-out manifest)
-- push · PR · merge · reconcile main · Pages ship proof: run in this close (proofs appended here after the merge).
+- push · PR #66 · merge `2727643` · reconcile main (HEAD = `2727643`) · Pages ship proof (build `10866d1` → `2727643`):
+  **DONE**, proofs in Current state. Inbox cleanup: none needed — ARC.md, db/005 and the arc-3 verify doc lived in the
+  main checkout (no worktree) and are now tracked (db/005 `455dd4ce…` unchanged; ARC.md truncated by the close).
+- The slice-3 sub-agent's worktree `.claude/worktrees/agent-ab8537edaafdcce5a` (branch `worktree-agent-ab8537edaafdcce5a`,
+  its commit c0bd968 is merged) was left in place — worktrees are never removed inside an order; remove it at will.
 - **migrations — DONE by Cowork** before the order: `db/005_calendar_twoway.sql` applied, committed unchanged
   (`git hash-object` = `455dd4ce41f2af0561bc3d69602e030d5ce98011`).
 - **deploy (Edge: calendar-connect, calendar-sync) — BLOCKED → manual step 1 (Cowork).**
