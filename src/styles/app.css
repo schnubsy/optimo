@@ -53,7 +53,8 @@
 .pill.done .tt { text-decoration: line-through; }
 /* out of day bounds: surface fill, no opacity (a faded pill fails text contrast) */
 .pill.dim { background: var(--surface); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
-.pill .elapsed { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--elapsed-overlay); pointer-events: none; transition: width 300ms linear; }
+/* #27: the trailing edge stays flat (a tone-sweep), not rounded like a nested second block */
+.pill .elapsed { position: absolute; inset: 0 auto 0 0; border-radius: inherit; border-start-end-radius: 0; border-end-end-radius: 0; background: var(--elapsed-overlay); pointer-events: none; transition: width 300ms linear; }
 .blk-main { all: unset; box-sizing: border-box; flex: 1; min-width: 0; align-self: stretch; cursor: grab; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
 .blk-main:focus-visible { box-shadow: none; }
 .pill:has(.blk-main:focus-visible) { box-shadow: var(--focus-ring), var(--pill-ring); }
@@ -229,6 +230,8 @@
 .wday.today b { color: var(--accent-ink); }
 .wday.sel { background: var(--surface); }
 .wbody { flex: 1; overflow: auto; min-height: 0; }
+/* #22: desktop — keep the Sun column clear of the window edge instead of flush against it */
+.is-desktop .wbody { padding-right: var(--sp-4); }
 .wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
 .wrail { position: relative; }
 .wrail .hour { position: absolute; left: 0; right: 0; }
@@ -250,7 +253,9 @@
 .wfree { position: absolute; left: 50%; border-left: var(--free-dot) dotted var(--free-line); pointer-events: none; z-index: 1; }
 .wnow { position: absolute; left: 0; right: 0; height: 0; border-top: var(--now-line-w) solid var(--now-line); z-index: 5; pointer-events: none; }
 /* mobile: three days at a time, snapping, rail and header sticky inside one scroller */
-.week.m { --wcol: calc((100vw - 42px) / 3); }
+/* #22: 32px must match the sticky rail's own width below — a stale 42px left a ~10px sliver of the
+   adjacent day visible after every snap scroll (3 columns under-filled the space the rail actually leaves) */
+.week.m { --wcol: calc((100vw - 32px) / 3); }
 .week.m .whead { display: none; }
 .wbar { display: flex; align-items: center; justify-content: space-between; background: var(--canvas); }
 .wbar .nav { min-width: 44px; height: 44px; border: 0; background: none; font-size: 20px; color: var(--ink-2); }
@@ -287,9 +292,14 @@
 .is-mobile .month { padding: var(--sp-2); }
 
 /* ---------- settings ---------- */
+/* #21: .page (Settings, icon set, categories) had the bottom scroll pad (line below) but no scroll of its own,
+   so content taller than the pane was simply clipped by .app's overflow:hidden — the last row never reached
+   view, not even behind the floating tab bar. */
+.page { overflow-y: auto; min-height: 0; }
 .settings { display: grid; gap: var(--sp-4); align-content: start; }
 .settings .set-row { display: grid; gap: var(--sp-1); border: 0; padding: var(--sp-3) var(--sp-4); margin: 0; background: var(--panel); border-radius: var(--r-lg); min-width: 0; }
-.settings .set-row > span, .settings legend { float: left; width: 100%; font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--ink-2); margin-bottom: var(--sp-1); padding: 0; }
+/* #20: h3 + aria-labelledby replaces <legend> (WebKit mobile straddled the legend across the card's top edge) */
+.settings .set-row > span, .settings legend, .settings h3 { float: left; width: 100%; margin: 0 0 var(--sp-1); padding: 0; font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--ink-2); }
 .settings select, .settings input:not([type='file']) { min-height: 48px; padding: 0 var(--sp-3); background: var(--surface); border: 0; border-radius: var(--r-sm); box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-15); font-variant-numeric: tabular-nums; max-width: 240px; color: var(--ink); }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
 .settings .seg > div { display: flex; flex-wrap: wrap; gap: var(--sp-1); clear: both; }
@@ -382,6 +392,8 @@
 /* A2-P0-4: the sheet rides above the on-screen keyboard (visualViewport → --kb-inset) and scrolls, never clips */
 .is-mobile .sheet-wrap.qa-wrap { padding-bottom: var(--kb-inset, 0px); }
 .is-mobile .qa-sheet { max-height: calc(100dvh - var(--kb-inset, 0px) - 24px); overflow-y: auto; }
+/* #23: the glyph chip was the only real `button` in the parse row, at 36px — spec §5.10 wants 44px */
+.qa-sheet .parse button { min-height: 44px; min-width: 44px; }
 .qa-sheet .cmd { padding: 0; background: none; }
 .qa-sheet .cmd .parse { position: static; box-shadow: none; background: none; padding: var(--sp-2) 0 0; pointer-events: auto; }
 .glyph-picker { display: grid; gap: var(--sp-2); max-height: 40dvh; overflow: auto; padding: var(--sp-2); background: var(--surface); border-radius: var(--r-lg); pointer-events: auto; }
@@ -405,6 +417,10 @@
 .evt:not(.is-thin) .evt-main { align-items: flex-start; padding-top: 6px; }
 .evt-pop { position: absolute; right: 0; top: calc(100% + 6px); min-width: 220px; max-width: min(320px, 86vw); display: grid; gap: 2px; padding: var(--sp-3) var(--sp-4); background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-float); font-size: var(--fs-13); }
 .evt-pop b { font-size: var(--fs-15); }
+/* #19: below 900px, event details are a read-only bottom sheet (reuses .sheet) instead of a floating popover */
+.evt-sheet { gap: 2px; font-size: var(--fs-13); }
+.evt-sheet b { font-size: var(--fs-17); }
+.evt-sheet .sheet-hd { min-height: 0; }
 .allday-evt { display: inline-flex; align-items: center; background: var(--canvas); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
 
 /* settings → calendars */

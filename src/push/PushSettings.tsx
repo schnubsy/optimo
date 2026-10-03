@@ -30,8 +30,8 @@ export function PushSettings() {
   }
   if (!state) return null
   return (
-    <fieldset className="set-row" data-testid="reminders" data-state={state}>
-      <legend>Reminders</legend>
+    <fieldset className="set-row" aria-labelledby="set-reminders-label" data-testid="reminders" data-state={state}>
+      <h3 id="set-reminders-label">Reminders</h3>
       <p className="muted">{COPY[state]}</p>
       <div className="set-actions">
         {state === 'off' && (

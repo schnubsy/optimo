@@ -26,14 +26,12 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**v0.2 "Meadow" LIVE (arc 2 merged 20d3c4c, 2026-09-27; Pages build 20d3c4c).** Pastel design, chip-as-complete pills,
-floating tab bar + FAB, 76 in-repo glyphs + auto-suggest, snags #1–#12 + resize persistence. **Server side LIVE
-(close-out 2026-09-27):** 5 secrets set · `calendar-connect` / `calendar-sync` / `push-send` deployed · vault
-`planner_cron_secret` + `db/003_cron.sql` applied (first push-send tick → 200) · `optimo_grant.sql` applied (1 active
-grant) · council snag-registry row (tenants-check 46 pass / 0 fail). Launcher `press/optimo.html` published.
-**Not yet verified by Mark:** iCloud connect (HANDOFF step 6) and the on-device iPhone checks (step 7).
-Gauntlet: 320 unit · 142 Playwright (desktop + iPhone 15, axe) · deno check/test · Lighthouse 100/100 · 98/100.
-Next: arc-3 checkpoint (AI planning behind the reserved Plan tab); 🟡 snags = issues #15–#27.
+**v0.2 "Meadow" LIVE (Pages build 636a4ce). Snag train 2026-10 (shadow) — PR open, awaiting Mark's merge** on
+`arc/snag-train-2026-10`: Issues #15–#27 fixed (slices 1–13), Eye LITE review (slice 14: 2 P0 fixed, 9 new snags #29–#37,
+no brand-mark originality concern left vs Structured), Lighthouse at baseline 100/100 · 98/100, page-diff gate green.
+Gauntlet: unit · Playwright desktop + iPhone 15 (axe) · deno · Lighthouse — all green. Server side LIVE since 2026-09-27.
+**Not yet verified by Mark:** iCloud connect + on-device iPhone checks (HANDOFF steps). After merge: Pages ship proof +
+press launcher republish (new brand mark). Next: arc-3 checkpoint (AI planning behind the reserved Plan tab).
 
 ## Project rules
 

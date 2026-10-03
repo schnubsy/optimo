@@ -5,9 +5,9 @@ import { ACTIVITY, CHROME, ICON_GROUPS, LEGACY, resolveIcon } from '../../src/ic
 import { ICONS, ICON_NAMES } from '../../src/icons'
 
 describe('optimo glyph set', () => {
-  it('has the 64 activity + 12 chrome glyphs named in spec §6.2', () => {
+  it('has the 64 activity + 13 chrome glyphs named in spec §6.2 (+ ui-calendar, #18)', () => {
     expect(Object.keys(ACTIVITY)).toHaveLength(64)
-    expect(Object.keys(CHROME)).toHaveLength(12)
+    expect(Object.keys(CHROME)).toHaveLength(13)
     expect(ICON_GROUPS.flatMap((g) => g.icons).sort()).toEqual(Object.keys(ACTIVITY).sort())
   })
   it.each(ICON_NAMES)('%s renders on a 24×24 viewBox with no external references', (n) => {
