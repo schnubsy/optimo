@@ -1,10 +1,13 @@
 # HANDOFF — optimo
 
 ## Current state
-Arc 5a — **Family Wing sign-in · sync feedback · calendar roles · paint a block · people schema** is complete on
-`arc/family-wing-people`. Gauntlet + sentry are GREEN (Lighthouse 100/100 · 98/100); Eye LITE found no P0. The PR, merge,
-reconcile, Pages ship proof and launcher publish run now as this order's close. Their proofs are recorded in the
-post-merge HANDOFF commit on `main`.
+Arc 5a — **Family Wing sign-in · sync feedback · calendar roles · paint a block · people schema** is **merged and live**.
+- **PR:** [schnubsy/optimo#80](https://github.com/schnubsy/optimo/pull/80), merged at `227d2d7` (2026-10-03). The main checkout is reconciled (HEAD = `227d2d7`).
+- **Pages ship proof:** the live `<meta name="build">` changed `2727643` → **`227d2d7`**. The live bundle `assets/index-Bq6XwBfR.js` contains `press:family:v1`, "isn't switched on for you yet", "Sync again" and "Untitled block added".
+- **Launcher published:** press `5334dd1`. The live https://schnubsy.github.io/press/optimo.html sha256 changed `82ddc9d2…` → **`90bd883b2d2dd58b6eb24a96d120d93faaa5bd92bb98e5185d7407e515fe9272`**, which equals release.js's dist hash. It carries the `?return=` bounce.
+- #56 and #58 closed by the merge.
+- **Gates:** gauntlet + sentry were GREEN; Eye LITE found no P0.
+- **Still owed:** db/006 is not applied and the Edge redeploy is outstanding (manual steps 1–2).
 
 ## Shipped this arc
 1. **Family Wing is the only sign-in** (eda449d).
@@ -18,12 +21,12 @@ post-merge HANDOFF commit on `main`.
 5. **`db/006_people.sql`** (4c9a0d4), written but NOT applied (`git hash-object` = `d9261803e1f4f718b9d01a14dbdb1040c3a36a0d`). Scratch-proven 3× (39 PASS). Spec §5.3 / §5.4 People.
 
 ## Open / blockers (close-out manifest)
-- **push · PR · merge · reconcile main · Pages ship proof:** run in this close; the proofs go in the post-merge HANDOFF commit.
-- **publish (press launcher):** the card changed (`?return=` bounce), so release.js publishes it after merge + reconcile. Launcher ship proof (sha256 of press/optimo.html == dist) goes in the same post-merge commit.
+- **push · PR #80 · merge `227d2d7` · reconcile main (HEAD = `227d2d7`) · Pages ship proof (`2727643` → `227d2d7`): DONE.**
+- **publish (press launcher): DONE.** press `5334dd1`; the live sha256 equals the dist sha256 `90bd883b…` (was `82ddc9d2…`).
 - **migrations — BLOCKED → manual step 1 (Cowork applies db/006).** Until then, nothing in 5a depends on it.
 - **deploy (Edge: calendar-sync, calendar-connect) — BLOCKED → manual step 2.**
   - Until it's deployed, the live function returns no top-level counts. The client sums `accounts[]` instead, so the button still reads "Synced · N events · N sent to iCloud".
-- **Inbox cleanup:** none needed. The main checkout is not a worktree, and the three inbox files were committed in slice 1.
+- **Inbox cleanup: N/A.** The main checkout is not a worktree. The three inbox files (ARC.md, the feedback backlog, verify-2026-10-03-2) were committed in slice 1, so no uncommitted copies remain.
 - **Agent worktrees left in place** (worktrees are never removed inside an order; all three commits are merged): `.claude/worktrees/agent-a370c47dae060ce82`, `agent-ab7dd340f3765ec38`, `agent-a07ccb21bbff20c5d`.
 - **Snags:** #67–#79 (Eye 5a: P1 #79, #67–#70; P2 #71–#78), plus #57, #59–#65 and #39–#54 carried.
 
