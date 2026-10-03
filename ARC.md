@@ -14,15 +14,15 @@ Status: done eda449d
 Done: optimo reuses the marquee's supabase-js session (same origin, same project, same storage key — confirm by reading press/src); no session → redirect to the Family Wing sign-in with a return-to back to optimo; press_access_has('optimo') false → "ask Mark" page; src/auth OTP screen removed; `git worktree remove .claude/worktrees/agent-ab8537edaafdcce5a`. Playwright covers all three paths.
 
 ### Slice 2 — Sync button feedback (B5)
-Status: open
+Status: done fbe6526
 Done: press → spinner + "Syncing…" (disabled) → "Synced · N events · N sent to iCloud" for a few seconds → or red reason + Retry. Same feedback on automatic syncs. calendar-sync returns the counts it needs.
 
 ### Slice 3 — One clear role per calendar (B4)
-Status: open
+Status: done ff78c31
 Done: each calendar row shows Off · Show in optimo · Two-way with one-line helper text; exactly one Two-way (picking one demotes the old to Show); "Put optimo tasks in" select gone; maps onto calendars[].enabled + write_calendar_href (no DDL). Snag #56 (target-change side effects) and #58 (empty state) fixed here with `Fixes #n`.
 
 ### Slice 4 — Paint a block by dragging (B3)
-Status: open
+Status: done 8545bfa
 Done: press-drag on empty timeline (long-press on touch, never fights scroll) shows a grid-snapped ghost block; release creates the task; tap opens the detail editor. Keyboard path for a11y. 60 fps budget held (transforms only).
 
 ### Slice 5 — People schema draft (B2, not applied)
