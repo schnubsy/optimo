@@ -27,7 +27,7 @@ iCloud-shaped multistatus (own calendar, shared calendar, VTODO-only Reminders l
 collections) → exactly the event calendars, names and colours right. Also confirm shared calendars appear in the
 home-set listing; if iCloud lists them elsewhere, discover there too.
 Done: the new test fails on the old code and passes on the new; existing deno tests green.
-Status:
+Status: done 4839d6e
 
 ### Slice 2 — rediscover on every sync + honest status
 Scope: `syncAccount` re-runs discovery each time and merges into `calendars` (keep each calendar's `enabled`; new
