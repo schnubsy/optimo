@@ -170,7 +170,7 @@ test.describe('day timeline', () => {
   test('keyboard: select, nudge 5 min, edit with Enter (desktop)', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'desktop', 'keyboard map is desktop')
     let ids: ReturnType<typeof seedDay>['ids']
-    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), at: '12:00' })
     const one = block(page, ids!.guitar)
     await one.scrollIntoViewIfNeeded()
     await one.locator('.blk-main').click()

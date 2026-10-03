@@ -55,7 +55,15 @@ export function seedDay(server: FakeSupabase) {
   return { ids, inbox }
 }
 
-export async function openApp(page: Page, context: BrowserContext, opts: { seed?: (s: FakeSupabase) => void; theme?: 'dark' | 'light' } = {}) {
+export async function openApp(page: Page, context: BrowserContext, opts: { seed?: (s: FakeSupabase) => void; theme?: 'dark' | 'light'; at?: string } = {}) {
+  // `at: 'HH:MM'` pins today's clock (lessons 2026-10-02 [test]): late at night the timeline sits at "now" and
+  // virtualises evening blocks away, so specs that reach for a 19:30 pill must not depend on the wall clock.
+  if (opts.at) {
+    const [h, m] = opts.at.split(':').map(Number)
+    const now = new Date()
+    now.setHours(h, m, 0, 0)
+    await page.clock.install({ time: now })
+  }
   const server = new FakeSupabase()
   opts.seed?.(server)
   await server.attach(context)

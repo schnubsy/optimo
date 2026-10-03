@@ -112,7 +112,7 @@ test.describe('inbox & quick-add', () => {
 
   test('unschedule from the editor (mobile path)', async ({ page, context }) => {
     let s: ReturnType<typeof seedDay>
-    await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
+    await openApp(page, context, { seed: (x) => (s = seedDay(x)), at: '12:00' })
     const b = page.locator(`[data-testid="block"][data-id="${s!.ids.guitar}"] .blk-main`)
     await b.scrollIntoViewIfNeeded()
     await b.click()

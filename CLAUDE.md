@@ -26,12 +26,12 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**v0.2 "Meadow" LIVE (Pages build 636a4ce). Snag train 2026-10 (shadow) — PR open, awaiting Mark's merge** on
-`arc/snag-train-2026-10`: Issues #15–#27 fixed (slices 1–13), Eye LITE review (slice 14: 2 P0 fixed, 9 new snags #29–#37,
-no brand-mark originality concern left vs Structured), Lighthouse at baseline 100/100 · 98/100, page-diff gate green.
-Gauntlet: unit · Playwright desktop + iPhone 15 (axe) · deno · Lighthouse — all green. Server side LIVE since 2026-09-27.
-**Not yet verified by Mark:** iCloud connect + on-device iPhone checks (HANDOFF steps). After merge: Pages ship proof +
-press launcher republish (new brand mark). Next: arc-3 checkpoint (AI planning behind the reserved Plan tab).
+**v0.2 "Meadow" + snag train 2026-10 LIVE** — PR #38 merged `e17b434` (2026-10-02), Pages build ship-proofed,
+launcher republished, Issues #15–#27 closed. Gauntlet: unit · Playwright desktop + iPhone 15 (axe) · deno · secret gate ·
+Lighthouse 100/100 · 98/100. Server side LIVE since 2026-09-27.
+**Arc 3 — AI planner (Plan tab) in progress** on `arc/ai-planner` (ARC.md "2026-10-03 — arc 3"): housekeeping, snags
+#29–#37, `planner_ai_*` data layer, `plan-day` Edge Function, Plan tab, learning + settings.
+**Not yet verified by Mark:** iCloud connect + on-device iPhone checks (HANDOFF steps).
 
 ## Project rules
 
