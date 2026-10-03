@@ -130,6 +130,29 @@
 .now { position: absolute; top: 0; left: calc(-1 * var(--gutter)); right: 0; height: 0; border-top: var(--now-line-w) solid var(--now-line); z-index: 6; pointer-events: none; transition: transform var(--dur-reflow) var(--ease-standard); }
 .now b { position: absolute; left: 4px; top: -10px; height: 18px; padding: 0 6px; border-radius: var(--r-pill); background: var(--now-flag-bg); color: var(--now-flag-fg); font-size: var(--fs-10); font-weight: var(--fw-black); line-height: 18px; font-variant-numeric: tabular-nums; }
 .ghost { position: absolute; top: 0; left: 0; right: 0; border: 2px dotted var(--accent); border-radius: var(--r-md); background: color-mix(in oklch, var(--accent-tint) 50%, transparent); z-index: 8; pointer-events: none; }
+/* paint a block (arc 5a slice 4): JS writes only transforms — the wrapper's translateY is the start, the one-hour
+   fill scales to the length, the end cap translates; no top/height per frame */
+.tl-inner { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.tl-inner.painting, .tl-inner.painting * { cursor: ns-resize; }
+.paint { position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 8; pointer-events: none; visibility: hidden; will-change: transform; }
+.paint[data-on] { visibility: visible; }
+.paint-cue { position: absolute; inset: 0; }
+.paint[data-on] .paint-cue { animation: paint-cue var(--dur-base) var(--ease-emph-decel); }
+@keyframes paint-cue { from { transform: scaleX(0.96); } }
+.paint-fill { position: absolute; top: 0; left: 0; right: 0; height: var(--hour); transform-origin: 0 0; border-radius: 2px;
+  background: color-mix(in oklch, var(--accent-tint) 70%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+.paint-cap { position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 8px, transparent 8px 13px); }
+.paint-label { position: absolute; top: 6px; right: 8px; height: 22px; padding: 0 var(--sp-2); border-radius: var(--r-pill); display: inline-flex; align-items: center;
+  background: var(--surface); color: var(--accent-ink); box-shadow: 0 0 0 1px var(--accent); font-size: var(--fs-12); font-weight: var(--fw-bold); white-space: nowrap; }
+/* keyboard slot cursor: invisible until focused from the keyboard */
+.tl-slot { position: absolute; top: 0; left: 0; right: 0; min-height: 4px; z-index: 9; pointer-events: none; opacity: 0; border-radius: 2px; }
+.tl-slot:focus-visible { opacity: 1; background: color-mix(in oklch, var(--accent-tint) 60%, transparent); box-shadow: var(--focus-ring); }
+.tl-slot.painting:focus-visible { background: none; box-shadow: none; height: 0 !important; min-height: 0; }
+.tl-slot-time { position: absolute; left: calc(-1 * var(--gutter)); top: -9px; width: calc(var(--gutter) - 10px); text-align: right; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--accent-ink); background: var(--canvas); }
+.tl-slot.painting .tl-slot-time { display: none; }
+.pill .tt.untitled { font-style: italic; font-weight: var(--fw-semibold); }
+@media (prefers-reduced-motion: reduce) { .paint[data-on] .paint-cue { animation: none; } }
 .ghost i { position: absolute; left: calc(-1 * var(--gutter)); top: -9px; width: calc(var(--gutter) - 10px); text-align: right; font-style: normal; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--accent-ink); }
 
 .allday { position: sticky; top: 0; z-index: 9; display: flex; flex-wrap: wrap; gap: var(--sp-1); align-items: center; padding: var(--sp-2) 0 var(--sp-2) var(--gutter); background: var(--canvas); }

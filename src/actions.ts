@@ -104,3 +104,12 @@ export async function schedule(task: Task, day: string, startMin: number) {
   await repo.updateTask(task.id, { start_at: isoAt(day, startMin), all_day: false })
   if (before) notify({ text: `Placed at ${fromKey(day).toDateString() === new Date().toDateString() ? '' : day + ' '}${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`, undo: () => repo.restoreTask(before).then(() => undefined) })
 }
+
+/** Paint a block (arc 5a slice 4): an untitled task over exactly the painted span, selected so one tap edits it. */
+export async function paintBlock(day: string, startMin: number, len: number): Promise<Task> {
+  const settings = await getSettings()
+  const row = await repo.createTask({ title: '', start_at: isoAt(day, startMin), duration_min: len, sort_key: Date.now(), reminders: settings.reminder_lead ? [settings.reminder_lead] : [] })
+  useUI.getState().set({ selectedId: row.id, editingId: null, draft: null })
+  notify({ text: 'Untitled block added', undo: () => repo.deleteTask(row.id).then(() => undefined) })
+  return row
+}

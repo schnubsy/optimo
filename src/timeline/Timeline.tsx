@@ -5,7 +5,7 @@ import { fmtClock, isoAt, todayKey } from '../lib/time'
 import { useHourPx } from '../lib/useMedia'
 import { useDrag } from '../state/drag'
 import { useUI } from '../state/ui'
-import { patchItem, resizeItem, toggleComplete } from '../actions'
+import { paintBlock, patchItem, resizeItem, toggleComplete } from '../actions'
 import { AllDayStrip } from './AllDayStrip'
 import { Block, pillHeight } from './Block'
 import { FreeGap } from './FreeGap'
@@ -17,6 +17,8 @@ import { visibleWindow } from './virtual'
 import { taskIcon } from '../quickadd/suggest'
 import { EventBlock } from './EventBlock'
 import type { EventItem } from '../calendar/events'
+import { PaintGhost, PaintSlot } from './PaintLayer'
+import { usePaint } from './usePaint'
 
 /** Timeline inner elements by day — drop maths reads their live rect. */
 export const timelineEls = new Map<string, HTMLElement>()
@@ -163,6 +165,32 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
   const onResize = useCallback((item: Item, d: number) => void resizeItem(item, d), [])
   const onCategory = useCallback((item: Item, category_id: string) => void patchItem(item, { category_id }, 'Category changed'), [])
 
+  // paint a block (arc 5a slice 4): press-drag on empty space; the keyboard slot shares the ghost and the commit
+  const ghostRef = useRef<HTMLDivElement>(null)
+  const onPaint = useCallback((start: number, len: number) => void paintBlock(day, start, len), [day])
+  usePaint(innerRef, scrollRef, ghostRef, { day, hourPx, snap: settings.snap, clock24: settings.clock24, onCommit: onPaint })
+  const onSlotPaint = useCallback(
+    async (start: number, len: number) => {
+      const row = await paintBlock(day, start, len)
+      // hand focus to the new block so Enter opens its editor
+      for (let i = 0; i < 30; i++) {
+        const btn = innerRef.current?.querySelector<HTMLElement>(`[data-id="${row.id}"] .blk-main`)
+        if (btn) return btn.focus()
+        await new Promise((r) => requestAnimationFrame(r))
+      }
+    },
+    [day],
+  )
+  const busyAt = useCallback(
+    (min: number) => {
+      const hit = timed.find((i) => i.start <= min && min < i.end) ?? timedEvents.find((e) => e.start <= min && min < e.end)
+      if (!hit) return null
+      return 'task' in hit ? hit.task.title || 'Untitled' : hit.event.title || 'an event'
+    },
+    [timed, timedEvents],
+  )
+  const slotStart = useCallback(() => (isToday ? now : Math.max(settings.day_start, ((scrollRef.current?.scrollTop ?? 0) / hourPx) * 60)), [isToday, now, settings.day_start, hourPx])
+
   function createAt(min: number, len = settings.default_duration) {
     set({ draft: { start_at: isoAt(day, min), duration_min: len }, selectedId: null })
   }
@@ -186,6 +214,7 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
         onClick={onBackground}
         role="presentation"
       >
+        <PaintSlot hourPx={hourPx} snap={settings.snap} clock24={settings.clock24} startAt={slotStart} ghostRef={ghostRef} busy={busyAt} onCommit={onSlotPaint} />
         <HourRail hourPx={hourPx} dayStart={settings.day_start} dayEnd={settings.day_end} clock24={settings.clock24} now={isToday ? now : null} />
         {free.map((r) => (
           <FreeGap key={`${r.start}`} gap={r} day={day} hourPx={hourPx} clock24={settings.clock24} defaultDuration={settings.default_duration} onAdd={createAt} />
@@ -226,6 +255,7 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
         })}
         {isToday && <NowLine now={now} hourPx={hourPx} clock24={settings.clock24} />}
         <DropGhost day={day} hourPx={hourPx} clock24={settings.clock24} />
+        <PaintGhost ref={ghostRef} />
         {overlay?.(hourPx)}
       </div>
     </div>

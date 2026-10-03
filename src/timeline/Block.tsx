@@ -172,7 +172,7 @@ export const Block = memo(function Block(p: BlockProps) {
         }}
       >
         <span className="title">
-          <span className="tt">{title}</span>
+          <span className={t.title ? 'tt' : 'tt untitled'}>{title}</span>
           {item.occurrence && <span className="rep" aria-hidden="true">↻</span>}
         </span>
         <span className="time tnum" aria-hidden="true">
