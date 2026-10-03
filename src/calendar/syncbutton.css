@@ -1,0 +1,15 @@
+/* arc 5a slice 2 — sync button feedback (Settings → Calendars) */
+.sync-btn:disabled { color: var(--ink-2); cursor: progress; }
+.sync-btn[data-state='done'] { color: var(--accent-ink); }
+.sync-spin {
+  flex: none; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid color-mix(in oklch, currentColor 25%, transparent); border-top-color: currentColor;
+  animation: sync-spin 0.8s linear infinite;
+}
+@keyframes sync-spin { to { transform: rotate(1turn); } }
+/* reduced motion: a still ring (the "Syncing…" label carries the state) */
+@media (prefers-reduced-motion: reduce) { .sync-spin { animation: none; } }
+/* the status line sits under the action buttons (last in the wrapping .set-actions row) */
+.sync-fb { order: 10; margin: 0; font-size: var(--fs-13); }
+.sync-fb:has(.sync-fb-err) { flex-basis: 100%; }
+.sync-fb-err { color: var(--danger-ink); font-weight: var(--fw-semibold); }

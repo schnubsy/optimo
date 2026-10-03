@@ -135,7 +135,7 @@ export function Settings() {
             }}
           />
           <button type="button" className="ghost-btn" onClick={() => signOut()}>
-            Sign out
+            Sign out of the Family Wing
           </button>
         </div>
       </fieldset>

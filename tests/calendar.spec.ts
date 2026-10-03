@@ -14,6 +14,9 @@ async function shot(page: Page, name: string) {
   await page.screenshot({ path: `docs/evidence/${name}.png` })
 }
 const events = (page: Page) => page.getByTestId('timeline').getByTestId('event')
+/** A calendar's role group / row by its name (arc 5a slice 3: one role per calendar — Off · Show in optimo · Two-way). */
+const group = (page: Page, name: string) => page.getByRole('radiogroup', { name, exact: true })
+const calRow = (page: Page, name: string) => page.getByTestId('calendar-row').filter({ has: group(page, name) })
 
 async function connect(page: Page, password = FAKE_PASSWORD) {
   await setView(page, 'settings')
@@ -35,7 +38,7 @@ async function everything(page: Page, server: FakeSupabase, consoleLines: string
 }
 
 test.describe('iCloud calendar (read-only)', () => {
-  test('connect → calendars listed → events on today → details → toggle off → disconnect; password never kept', async ({ page, context }) => {
+  test('connect → calendars listed → events on today → details → turn off → disconnect; password never kept', async ({ page, context }) => {
     const consoleLines: string[] = []
     page.on('console', (m) => consoleLines.push(m.text()))
     const { server, errors } = await openApp(page, context, { seed: seedDay })
@@ -44,8 +47,8 @@ test.describe('iCloud calendar (read-only)', () => {
     await expect(acc).toBeVisible()
     await expect(acc).toContainText(FAKE_USER)
     // Home + optimo + the shared Family calendar (iCloud-shaped, single-quoted replies); Reminders / inbox / outbox skipped
-    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(3)
-    for (const t of await acc.getByTestId('calendar-toggle').all()) await expect(t).toHaveAttribute('aria-checked', 'true')
+    await expect(acc.getByTestId('calendar-row')).toHaveCount(3)
+    for (const r of await acc.getByTestId('calendar-row').all()) await expect(r).not.toHaveAttribute('data-role', 'off')
     await expect(page.getByTestId('calendar-connect')).toHaveCount(0)
     expect(server.functionCalls.map((c) => `${c.name}:${c.status}`)).toEqual(['calendar-connect:200', 'calendar-sync:200'])
 
@@ -64,12 +67,11 @@ test.describe('iCloud calendar (read-only)', () => {
     // calendars off → the server tombstones their events → the pull removes them
     await setView(page, 'settings')
     for (const name of ['Home', 'Family']) {
-      const t = page.getByTestId('calendar-toggle').filter({ hasText: name })
-      await t.click()
-      await expect(t).toHaveAttribute('aria-checked', 'false')
+      await group(page, name).getByRole('radio', { name: 'Off', exact: true }).click()
+      await expect(calRow(page, name)).toHaveAttribute('data-role', 'off')
     }
     await expect.poll(() => page.evaluate(() => (window as any).__optimo.db.events.count())).toBe(0)
-    await page.getByTestId('calendar-toggle').filter({ hasText: 'Home' }).click()
+    await group(page, 'Home').getByRole('radio', { name: 'Show in optimo', exact: true }).click()
     await expect.poll(() => page.evaluate(() => (window as any).__optimo.db.events.count())).toBeGreaterThan(0)
 
     // disconnect removes the account and every event on this device
@@ -110,70 +112,33 @@ test.describe('iCloud calendar (read-only)', () => {
     void server
   })
 
-  test('honest status: "Found 3 calendars" + "synced HH:MM · N events"; an empty Apple ID says "No calendars found"', async ({ page, context }, info) => {
-    const { server } = await openApp(page, context)
+  test('honest status: "Found 3 calendars" + "synced HH:MM · N events" (the empty Apple ID: calroles.spec.ts)', async ({ page, context }, info) => {
+    await openApp(page, context)
     await connect(page)
     const status = page.getByTestId('calendar-status')
     await expect(status.getByTestId('calendar-found')).toHaveText('Found 3 calendars')
     await expect(status.getByTestId('calendar-synced')).toHaveText(/^synced \d{2}:\d{2} · 12 events$/) // the app's 24 h clock, not the locale's
     await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveCount(0)
     if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-found-${info.project.name}`)
-
-    // the same account after iCloud stops listing any event calendar: the status and the error both say so
-    server.caldav.state.emptyHome = true
-    await page.getByTestId('calendar-sync').click()
-    await expect(status.getByTestId('calendar-none')).toHaveText('No calendars found')
-    await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveText('No calendars found on this Apple ID')
-    await expect(status.getByTestId('calendar-synced')).toHaveText(/· 0 events$/)
-    await expect(page.getByTestId('toast')).toContainText('No calendars found on this Apple ID') // never "synced." over nothing
-    expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
-    if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-empty-${info.project.name}`)
   })
 
-  test('picker: colour dot + Shared badge per calendar; read toggles; "Put optimo tasks in" writes write_calendar_href and syncs', async ({ page, context }) => {
-    const { server } = await openApp(page, context)
+  test('picker: colour dot + Shared badge per calendar; the server-picked "optimo" calendar starts Two-way; 44 px; axe both themes', async ({ page, context }) => {
+    await openApp(page, context)
     await connect(page)
     const acc = page.getByTestId('calendar-account')
-    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(3)
-    const row = () => [...server.rows.planner_calendar_accounts.values()][0] as any
-    const hrefOf = (name: string) => (row().calendars as { href: string; name: string }[]).find((c) => c.name === name)!.href
+    await expect(acc.getByTestId('calendar-row')).toHaveCount(3)
 
     // every calendar listed with its iCloud colour; only the shared one carries the badge
     await expect(acc.getByTestId('calendar-shared')).toHaveCount(1)
-    await expect(acc.getByTestId('calendar-toggle').filter({ hasText: 'Family' }).getByTestId('calendar-shared')).toHaveText('Shared')
-    await expect(acc.getByTestId('calendar-toggle').filter({ hasText: 'optimo' }).locator('.cal-dot')).toHaveCSS('background-color', 'rgb(63, 166, 107)')
-
-    // the write target: defaults to the "optimo" calendar (set by the server on discovery); None + writable calendars only
-    const select = acc.getByLabel('Put optimo tasks in')
-    await expect(select).toHaveValue(hrefOf('optimo'))
-    await expect(select.locator('option')).toHaveText(['None — don’t write', 'Home', 'optimo'])
-    await expect(acc).toContainText('Scheduled tasks (not repeating ones) appear in this calendar. Moving, renaming or deleting one there changes it here — deleting it there deletes the task.')
-
-    // read toggle → stored + a sync
-    const syncs = () => server.functionCalls.filter((c) => c.name === 'calendar-sync').length
-    let before = syncs()
-    const home = acc.getByTestId('calendar-toggle').filter({ hasText: 'Home' })
-    await home.click()
-    await expect(home).toHaveAttribute('aria-checked', 'false')
-    await expect.poll(() => (row().calendars as { name: string; enabled: boolean }[]).find((c) => c.name === 'Home')!.enabled).toBe(false)
-    await expect.poll(syncs).toBeGreaterThan(before)
-
-    // write target → stored + a sync; None stores null
-    before = syncs()
-    await select.selectOption({ label: 'Home' })
-    await expect.poll(() => row().write_calendar_href).toBe(hrefOf('Home'))
-    await expect.poll(syncs).toBeGreaterThan(before)
-    await expect(select).toHaveValue(hrefOf('Home'))
-    await select.selectOption({ label: 'None — don’t write' })
-    await expect.poll(() => row().write_calendar_href).toBeNull()
-    await expect(select).toHaveValue('')
-    await select.selectOption({ label: 'optimo' })
-    await expect.poll(() => row().write_calendar_href).toBe(hrefOf('optimo'))
-    await expect(select).toBeEnabled()
+    await expect(calRow(page, 'Family').getByTestId('calendar-shared')).toHaveText('Shared')
+    await expect(calRow(page, 'optimo').locator('.cal-dot')).toHaveCSS('background-color', 'rgb(63, 166, 107)')
+    // the write target set by the server on discovery is the one Two-way calendar (role changes: calroles.spec.ts)
+    await expect(calRow(page, 'optimo')).toHaveAttribute('data-role', 'twoway')
+    await expect(acc.getByRole('radio', { name: 'Two-way', checked: true })).toHaveCount(1)
 
     // ≥ 44px targets, axe clean in both themes
-    for (const t of [...(await acc.getByTestId('calendar-toggle').all()), select, acc.getByTestId('calendar-sync'), acc.getByTestId('calendar-disconnect')])
-      expect((await t.boundingBox())!.height, `${await t.getAttribute('data-testid')} height`).toBeGreaterThanOrEqual(44)
+    for (const t of [...(await acc.getByRole('radio').all()), acc.getByTestId('calendar-sync'), acc.getByTestId('calendar-disconnect')])
+      expect((await t.boundingBox())!.height, `${await t.textContent()} height`).toBeGreaterThanOrEqual(44)
     for (const theme of ['light', 'dark'] as const) {
       await page.evaluate((t) => (window as any).__optimo.repo.updateSettings({ theme: t }), theme)
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
@@ -186,7 +151,7 @@ test.describe('iCloud calendar (read-only)', () => {
     await openApp(page, context, { theme: 'light' })
     await connect(page)
     await expect(page.getByTestId('calendar-found')).toBeVisible()
-    await expect(page.getByTestId('calendar-write')).toBeEnabled()
+    await expect(page.getByTestId('calendar-row')).toHaveCount(3)
     await expect(page.getByTestId('toast')).toHaveCount(0, { timeout: 15_000 }) // the "connected" toast would cover the actions
     for (const theme of ['light', 'dark'] as const) {
       await page.evaluate((t) => (window as any).__optimo.repo.updateSettings({ theme: t }), theme)

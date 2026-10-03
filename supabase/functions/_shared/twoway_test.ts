@@ -81,3 +81,15 @@ Deno.test('slice 5 pull back: move → task moves; rename → title; delete → 
   t = p.tasks.get(TASK)!
   assert(r.twoWay.tombstoned === 1 && !!t.deleted_at && !p.calLinks.has(TASK), JSON.stringify(r.twoWay))
 })
+
+Deno.test('arc 5a slice 2: calendar-sync reports top-level events + pushed totals (accounts[] kept)', async () => {
+  const { p } = await setup()
+  p.clientWrite(TASK, { title: 'Swim', start_at: at(18), duration_min: 60 })
+  p.clientWrite('0190b000-0000-7000-8000-00000000b002', { title: 'Read', start_at: at(20), duration_min: 30 })
+  const r = await (await handleSync(post(), p)).json()
+  const events = r.accounts.reduce((n: number, a: { events: number }) => n + a.events, 0)
+  assert(r.pushed === 2 && r.accounts[0].twoWay.pushed === 2, JSON.stringify(r))
+  assert(typeof r.events === 'number' && r.events === events && r.events > 0, JSON.stringify(r))
+  const again = await (await handleSync(post(), p)).json()
+  assert(again.pushed === 0 && again.events === r.events, JSON.stringify(again))
+})

@@ -137,7 +137,7 @@ a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtu
 | State | Dexie live queries + small zustand store for UI | no global re-render on drag |
 | PWA | `vite-plugin-pwa` (Workbox), offline-first shell | installable on iPhone |
 | Backend | Supabase project `press` (`eepjhpyziczrxvirczio`), tables prefixed `planner_`, RLS | already paid for, shared with marquee apps |
-| Auth | Supabase Auth, email one-time code (shared press template), single user | holds calendar tokens later; iOS clients reuse |
+| Auth | The Family Wing session only (arc 5a): press's gate keeps one Supabase Auth session at localStorage `press:family:v1`; optimo's supabase-js reads/rotates it through a storage adapter (`src/auth/pressSession.ts`). No session → `press/optimo.html?return=<optimo URL>` (optimo's launcher runs the unchanged Family Wing sign-in, then bounces back to a same-origin `/optimo/` URL). Access = `press_access_has('optimo.html')`; false → "ask Mark" page | one sign-in for every family tool; iOS clients reuse the same Supabase Auth |
 | Hosting | GitHub Pages `https://schnubsy.github.io/optimo/` via Actions on `main` (`base: '/optimo/'`) | own origin ⇒ own service worker + manifest |
 | Tests | vitest · Playwright (desktop + iPhone 15) · @axe-core/playwright · Lighthouse | per `testing.md` |
 | NLP | `chrono-node` + `rrule` | on-device |
@@ -187,6 +187,49 @@ server-side (Edge Function secrets) in later arcs.
 
 ### 5.3 RLS
 All `planner_*`: `user_id = auth.uid()` for select/insert/update/delete. `planner_sync_log` select only.
+From `db/006_people.sql`: a `*_family` policy beside each `*_own` one — `person_id is not null and
+planner_family_access()` (= `planner_flags.family_access` AND `press_access_has('optimo.html')`); server-owned tables
+(events, calendar_links, reminder_sent, sync_log) select only. The flag is **off** until arc 5b's person-scoped
+client ships (the arc-5a client pulls the sync log and lists calendar accounts without a user filter).
+
+### 5.4 People (B2 — schema in arc 5a `db/006_people.sql`, UI + sync in arc 5b)
+Ratified by Mark 2026-10-03. Several family members use optimo inside the one Family Wing sign-in, with no extra
+security between them.
+- **Table** `planner_people (id, name, color, sort_key, created_by, created_at, deleted_at)`. Everyone with optimo
+  access sees every person and anyone signed in can add one (policy `planner_people_family`, live from db/006).
+  "Mark" has the fixed id `5eed0000-0000-4000-8000-00000000a4c0`.
+- **Everything is per person.** `person_id` is on tasks, categories, settings, ai_profile, ai_plans, exceptions,
+  calendar_accounts, calendar_links, events, push_subscriptions, reminder_sent and sync_log. Data, config, AI
+  profile and reminders all belong to the picked person, not to the signed-in account.
+- **Today's data → Mark.** db/006 backfills every row of Mark's account to Mark without firing merge/log triggers.
+  Another account's rows stay unassigned until that person is picked in 5b.
+- **Writes without a person** (the arc-5a client, Edge Functions) get one from a BEFORE INSERT trigger: the first
+  person created by the row's user. Arc-5b clients always send `person_id`.
+- **Picker.** On open, a list of people plus "Add someone" (name + colour). The pick is the active person.
+  - The **last-picked person is remembered per device** (localStorage `optimo.person`).
+  - The pick can be changed from the header at any time.
+  - With one person, the picker is skipped.
+- **Sync scoped by person.**
+  - Outbox rows carry `person_id`.
+  - The pull reads `planner_sync_log where person_id = :active and seq > :cursor`, with one cursor per person per device.
+  - Realtime filters on `person_id=eq.<active>`.
+  - Switching person swaps the local view; Dexie keeps each person's rows, and the outbox is never dropped.
+- **One-row-per-person keys.**
+  - `planner_settings` keeps its `user_id` PK for now. db/006 adds `unique (person_id)` beside it, and 5b clients
+    upsert with `on_conflict=person_id`.
+  - `planner_ai_profile` gets the same treatment (beside `unique (user_id)`).
+  - A later migration drops the user_id keys once no client upserts on them.
+- **iCloud per person.** Each person links their own Apple ID (`planner_calendar_accounts.person_id`). Mark keeps
+  today's link.
+  - calendar-connect and calendar-sync take the person from the request, and the cron path iterates accounts by
+    person.
+  - Events and links carry the account's person.
+  - Calendar roles (Off · Show in optimo · Two-way) are per account, so per person.
+- **Switch-over (5b).**
+  - Ship the person-scoped client and Edge.
+  - Cowork sets `update planner_flags set value = true where key = 'family_access'` (guarded: precondition is that
+    the live build includes the person picker).
+  - Then family-wide read/write is live.
 
 ## 6. Design system
 Tokens and the hero direction live in `docs/design/2026-09-26-lite/` (Eye LITE, 2026-09-26).

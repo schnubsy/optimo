@@ -76,27 +76,27 @@ export class FakeSupabase {
   log: { seq: number; user_id: string; table_name: string; row_id: string; op: string; at: string }[] = []
   unexpected: string[] = []
   requests = 0
-  /** The code the fake "emails"; /verify accepts only this. */
-  otpCode = '424242'
-  otpSends: string[] = []
-  lastOtpAt = 0
+  /** press_access_has('optimo.html') — the Family Wing grant optimo checks after sign-in (arc 5a) */
+  access = true
+  accessChecks: string[] = []
   /** ms the page's pinned clock (openApp `at`) sits from the wall clock; the in-process handlers use `now()` */
   clockOffset = 0
   now = () => new Date(Date.now() + this.clockOffset)
   private sockets = new Set<{ ws: WebSocketRoute; topic: string; id: number }>()
   private nextBindingId = 1000
 
-  /** Route a context (all its pages) through the fake and seed a signed-in session. */
+  /** Route a context (all its pages) through the fake and seed a signed-in Family Wing session (press:family:v1, the
+   *  press gate's own shape — optimo reads it through src/auth/pressSession.ts). */
   async attach(context: BrowserContext, opts: { signedIn?: boolean; pollMs?: number } = {}) {
-    const session = fakeSession()
+    const s = fakeSession()
+    const press = { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at * 1000, email: TEST_USER.email, name: null }
     await context.addInitScript(
-      ([s, host, signedIn, pollMs]) => {
+      ([session, signedIn, pollMs]) => {
         localStorage.setItem('optimo.test', '1')
         if (pollMs) localStorage.setItem('optimo.pollMs', String(pollMs))
-        if (signedIn && !localStorage.getItem(`sb-${host.split('.')[0]}-auth-token`))
-          localStorage.setItem(`sb-${host.split('.')[0]}-auth-token`, JSON.stringify(s))
+        if (signedIn && !localStorage.getItem('press:family:v1')) localStorage.setItem('press:family:v1', JSON.stringify(session))
       },
-      [session, SUPABASE_HOST, opts.signedIn ?? true, opts.pollMs ?? 0] as const,
+      [press, opts.signedIn ?? true, opts.pollMs ?? 0] as const,
     )
     await context.route(/https:\/\/[^/]*supabase\.co\//, (route) => this.handle(route))
     await context.routeWebSocket(/wss:\/\/[^/]*supabase\.co\//, (ws) => this.socket(ws))
@@ -125,22 +125,12 @@ export class FakeSupabase {
     const p = url.pathname
     if (p.startsWith('/auth/v1/')) {
       if (p === '/auth/v1/user') return json(200, fakeSession().user)
-      if (p === '/auth/v1/otp') {
-        // press enforces a 60 s per-address resend window; mirror its 429 + message
-        const wait = 60 - Math.floor((Date.now() - this.lastOtpAt) / 1000)
-        if (this.lastOtpAt && wait > 0)
-          return json(429, { code: 429, error_code: 'over_email_send_rate_limit', msg: `For security purposes, you can only request this after ${wait} seconds.` })
-        this.lastOtpAt = Date.now()
-        this.otpSends.push(JSON.parse(req.postData() ?? '{}').email)
-        return json(200, {})
-      }
-      if (p === '/auth/v1/verify') {
-        const body = JSON.parse(req.postData() ?? '{}')
-        if (body.type === 'email' && body.token === this.otpCode) return json(200, fakeSession())
-        return json(403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' })
-      }
       if (p === '/auth/v1/logout') return route.fulfill({ status: 204, headers: cors })
       if (p === '/auth/v1/token') return json(200, fakeSession())
+    }
+    if (p === '/rest/v1/rpc/press_access_has' && method === 'POST') {
+      this.accessChecks.push(String(JSON.parse(req.postData() ?? '{}').page))
+      return json(200, this.access)
     }
     const fn = p.match(/^\/functions\/v1\/(calendar-connect|calendar-sync)$/)
     if (fn && method === 'POST') {

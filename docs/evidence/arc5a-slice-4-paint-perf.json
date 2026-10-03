@@ -1,0 +1,24 @@
+{
+  "spec": "tests/paint.spec.ts › perf",
+  "at": "2026-10-03T18:42:10.022Z",
+  "library": "5 000 tasks + 200 series",
+  "pointer_moves": 60,
+  "raf_frames": 61,
+  "frame_ms": {
+    "p50": 16,
+    "p95": 18,
+    "max": 20
+  },
+  "long_tasks_over_50ms": 0,
+  "timeline_dom_insertions_while_painting": 0,
+  "ghost_style": {
+    "transform": "translate3d(0px, 1512px, 0px)",
+    "top": "",
+    "height": "",
+    "fill": "transform: scaleY(1.33333);"
+  },
+  "budget": {
+    "p95_frame_ms": 20,
+    "long_tasks": 0
+  }
+}
