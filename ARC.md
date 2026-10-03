@@ -172,3 +172,22 @@ pre-justified; only flag a 🔴 if a view you did NOT touch also changed.
 RETURN POINTS: arc-complete (PR open, checks green, awaiting-merge) per rule (4) above, or a genuine
 blocker per rule (5). Report back: branch name, PR URL, check status, which gates were green, any
 originality concern that remains on the brand mark (slice 12) after the Eye LITE pass.
+
+## 2026-10-02 — Train resume addendum (Cowork): slices 14–15, page-diff gate, PR, run record
+Status: slices 1–13 are `Status: done` on `arc/snag-train-2026-10` (head 9b348c9); the train session ended before
+slice 14. Resume from SLICE 14 under the order above, unchanged, then the PRE-PR GATE, then rule (4):
+full close on the branch → push → `gh pr create --fill --base main` with thirteen `Fixes #n` lines (#15–#27) →
+PR open, not draft, checks green → STOP (shadow mode: do NOT merge).
+
+=== STEP 16 — train run record (council registry) — AFTER the PR is open ===
+Repo: /Users/mark/Documents/Claude/council-hub/council (main). Leave its untracked `supabase/` and
+`instruments/snag/inlet/supabase/.temp/` alone. Edit `instruments/snag/registry.json` only:
+  - append to `train.runs`: {"date":"2026-10-02","apps":["optimo"],"issues_closed":[15,16,17,18,19,20,21,22,23,24,25,26,27],
+    "prs":[{"app":"optimo","pr":"<PR URL>","status":"awaiting-merge"}],"held":[],"skipped":[],"red":[]}
+  - set `train.last_run` = "2026-10-02". Do not change `shadow_remaining` (it decrements only after a fully
+    clean train, on the next run).
+  - preserve the file's existing indentation style; `git add instruments/snag/registry.json` by name only →
+    commit `snag train 2026-10: run record (optimo PR awaiting-merge)` → push origin main →
+    `node instruments/snag/tools/registry-check.mjs` exits 0.
+Done-criteria: `git -C ~/Documents/Claude/council-hub/council log -1 --format=%s` shows the commit and
+`git status -sb` shows main in sync with origin; report the PR URL + check status + registry commit SHA.
