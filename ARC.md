@@ -29,7 +29,7 @@ Status: done 3977543
 ### Slices 2–10 — snags #29–#37 (one slice per Issue, train rules)
 Scope: each open `snag` Issue #29…#37 in order; done-criteria = the Issue's acceptance; commit carries `Fixes #n`.
 Independent → may run as parallel sub-agents. Issues close only via the merged PR.
-Status:
+Status: done — 2 #29 875e12d · 3 #30 7933f86 · 4 #31 f755cd9 · 5 #32 3a5bb72 · 6 #33 3e0c259 · 7 #34 a9806a0 · 8 #35 8aa0dcd · 9 #36 a4a89a0 · 10 #37 d4e47ba
 
 ### Slice 11 — data layer
 Scope: commit `db/004_ai.sql` unchanged; add `planner_ai_plans` + `planner_ai_profile` to the Dexie schema, types and
