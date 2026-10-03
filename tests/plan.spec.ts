@@ -133,6 +133,27 @@ test.describe('Plan tab (arc 3)', () => {
     expect(server.rows.planner_ai_plans.size).toBe(1)
   })
 
+  test('AI-P0-1: planning Tomorrow moves the whole app to tomorrow — header, timeline and the accepted tasks agree', async ({ page, context }) => {
+    await openApp(page, context, { at: '08:00', seed: live })
+    await openPlan(page)
+    await page.getByTestId('plan-day-tomorrow').click()
+    const tomorrow = await page.evaluate(() => {
+      const d = new Date()
+      d.setDate(d.getDate() + 1)
+      return { day: d.getDate(), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+    })
+    await expect(page.locator('.hdr-date, .hdr-title').first()).toContainText(String(tomorrow.day))
+    await expect(page.locator('.plan-day')).toHaveAttribute('aria-label', `Timeline for ${tomorrow.key}`)
+    await ask(page, 'Forecast draft, swim, email')
+    await expect(page.getByTestId('plan-block')).toHaveCount(3)
+    await page.getByTestId('plan-accept-all').click()
+    await expect(page.getByTestId('toast')).toContainText(`Added 3 blocks to`)
+    await expect.poll(async () => (await titles(page)).map((t) => t.start_at).sort()).toEqual([at('09:00', 1), at('10:30', 1), at('13:30', 1)].sort())
+    // back to today: tomorrow's proposal steps aside instead of drawing ghosts on the wrong day
+    await page.getByTestId('plan-day-today').click()
+    await expect(page.getByTestId('plan-ghost')).toHaveCount(0)
+  })
+
   for (const theme of ['light', 'dark'] as const)
     test(`axe clean with a proposal open (${theme}) + evidence`, async ({ page, context }, info) => {
       await openApp(page, context, { at: '08:00', theme, seed: (s) => (live(s), seedTask(s, { title: 'Standup, platform team', start_at: at('11:00'), duration_min: 30, category_id: CAT.meet })) })

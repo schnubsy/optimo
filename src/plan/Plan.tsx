@@ -6,6 +6,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../data/db'
 import type { AiBlock, AiPlanMode, Category, SettingsData } from '../data/types'
 import { addDays, fmtClock, fmtDur, isoAt, minutesInDay, todayKey } from '../lib/time'
+import { useUI } from '../state/ui'
 import { Timeline } from '../timeline/Timeline'
 import { useItems } from '../timeline/items'
 import { useEvents } from '../calendar/events'
@@ -38,17 +39,25 @@ type Pick = 'today' | 'tomorrow' | 'date'
 export function Plan({ cats, settings }: { cats: Map<string, Category>; settings: SettingsData }) {
   const online = useOnline()
   const [down, setDown] = useState<PlannerDown | null>(() => (supabase() ? knownDown : 'not-connected'))
-  const [pick, setPick] = useState<Pick>('today')
-  const [custom, setCustom] = useState(() => addDays(todayKey(), 2))
-  const day = pick === 'today' ? todayKey() : pick === 'tomorrow' ? addDays(todayKey(), 1) : custom
+  // AI-P0-1: the day being planned IS the app's day — the header (title, strip, stats) and the timeline below always
+  // agree with what Accept will write to
+  const day = useUI((s) => s.date)
+  const setUI = useUI((s) => s.set)
+  const today = todayKey()
+  const pick: Pick = day === today ? 'today' : day === addDays(today, 1) ? 'tomorrow' : 'date'
+  const setPick = (p: 'today' | 'tomorrow') => setUI({ date: p === 'today' ? today : addDays(today, 1) })
   const [intent, setIntent] = useState('')
-  const [mode, setMode] = useState<AiPlanMode>(settings.plan_mode ?? 'propose')
-  const [research, setResearch] = useState(settings.plan_research ?? false)
+  // Settings → Planning sets the defaults; a choice made here wins for this visit (settings may load after mount)
+  const [modeChoice, setMode] = useState<AiPlanMode | null>(null)
+  const [researchChoice, setResearch] = useState<boolean | null>(null)
+  const mode = modeChoice ?? settings.plan_mode ?? 'propose'
+  const research = researchChoice ?? settings.plan_research ?? false
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [planId, setPlanId] = useState<string | null>(null)
   const plan = useLiveQuery(() => (planId ? db.aiPlans.get(planId) : undefined), [planId])
-  const live = plan && plan.status === 'draft' && plan.mode === 'propose' ? plan : null
+  // a proposal belongs to its day: switch days and it steps aside (and comes back when that day is shown again)
+  const live = plan && plan.status === 'draft' && plan.mode === 'propose' && plan.plan_date === day ? plan : null
   // per-proposal working state (ticks, the block being edited, answers) — keyed by the proposal it belongs to, so a
   // fresh or re-planned proposal starts fully ticked without a reset effect
   const liveKey = live ? `${live.id}|${live.updated_at ?? ''}|${live.version ?? 0}` : ''
@@ -65,7 +74,7 @@ export function Plan({ cats, settings }: { cats: Map<string, Category>; settings
     if (live?.id) cardRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }, [live?.id])
 
-  const planDay = live?.plan_date ?? day
+  const planDay = day
   const days = useMemo(() => [planDay], [planDay])
   const itemsByDay = useItems(days)
   const eventsByDay = useEvents(days)
@@ -96,6 +105,7 @@ export function Plan({ cats, settings }: { cats: Map<string, Category>; settings
     try {
       const row = await propose({ date: day, intent: intent.trim(), mode, research, ...extra })
       setPlanId(row.id)
+      if (row.plan_date !== useUI.getState().date) setUI({ date: row.plan_date })
       if (row.mode === 'auto') await applyPlan(row)
     } catch (e) {
       const err = e instanceof PlannerError ? e : new PlannerError('Couldn’t reach the planner — try again in a moment.')
@@ -178,12 +188,11 @@ export function Plan({ cats, settings }: { cats: Map<string, Category>; settings
               <input
                 type="date"
                 aria-label="Another day"
-                value={custom}
+                value={day}
                 className={pick === 'date' ? 'on' : ''}
                 onChange={(e) => {
                   if (!e.target.value) return
-                  setCustom(e.target.value)
-                  setPick('date')
+                  setUI({ date: e.target.value })
                 }}
                 data-testid="plan-day-date"
               />

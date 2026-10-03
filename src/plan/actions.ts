@@ -3,6 +3,7 @@
 import * as repo from '../data/repo'
 import { getSettings } from '../data/repo'
 import type { AiBlock, AiPlan, Priority } from '../data/types'
+import { fromKey, shortDay } from '../lib/time'
 import { useUI } from '../state/ui'
 import { learn } from './api'
 
@@ -45,7 +46,7 @@ export async function acceptPlan(plan: AiPlan, d: Decision): Promise<string[]> {
   const edits = order.filter((i) => !same(plan.proposal.blocks[i], d.kept.get(i)!)).map((i) => ({ before: plan.proposal.blocks[i], after: d.kept.get(i)! }))
   const rejected = plan.proposal.blocks.filter((_, i) => !d.kept.has(i))
   void learn({ plan_id: plan.id, accepted_task_ids: ids, edits, rejected })
-  useUI.getState().notify({ text: `Added ${ids.length} block${ids.length === 1 ? '' : 's'} to the day`, undo: () => undoPlan(plan, ids, 'draft') })
+  useUI.getState().notify({ text: `Added ${ids.length} block${ids.length === 1 ? '' : 's'} to ${shortDay(fromKey(plan.plan_date))}`, undo: () => undoPlan(plan, ids, 'draft') })
   return ids
 }
 
@@ -53,7 +54,7 @@ export async function acceptPlan(plan: AiPlan, d: Decision): Promise<string[]> {
 export async function applyPlan(plan: AiPlan): Promise<string[]> {
   const ids = await createFrom(plan.proposal.blocks)
   await repo.updateAiPlan(plan.id, { status: 'applied', accepted_task_ids: ids })
-  useUI.getState().notify({ text: `Planned ${ids.length} block${ids.length === 1 ? '' : 's'} into the day`, undo: () => undoPlan(plan, ids, 'rejected') })
+  useUI.getState().notify({ text: `Planned ${ids.length} block${ids.length === 1 ? '' : 's'} into ${shortDay(fromKey(plan.plan_date))}`, undo: () => undoPlan(plan, ids, 'rejected') })
   return ids
 }
 
