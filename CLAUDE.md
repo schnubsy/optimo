@@ -26,12 +26,14 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**v0.2 "Meadow" + snag train 2026-10 LIVE** — PR #38 merged `e17b434` (2026-10-02), Pages build ship-proofed,
-launcher republished, Issues #15–#27 closed. Gauntlet: unit · Playwright desktop + iPhone 15 (axe) · deno · secret gate ·
-Lighthouse 100/100 · 98/100. Server side LIVE since 2026-09-27.
-**Arc 3 — AI planner (Plan tab) in progress** on `arc/ai-planner` (ARC.md "2026-10-03 — arc 3"): housekeeping, snags
-#29–#37, `planner_ai_*` data layer, `plan-day` Edge Function, Plan tab, learning + settings.
-**Not yet verified by Mark:** iCloud connect + on-device iPhone checks (HANDOFF steps).
+**Arc 3 — AI planner (Plan tab): complete on `arc/ai-planner`, closing (PR → merge → Pages ship proof → launcher
+republish).** The Plan tab turns written intent into a proposed day: ghost blocks with a *why* each and conflicts marked;
+accept all / some / edit / reject, or Auto with Undo. Learning goes into `planner_ai_profile` (Settings → Planning), with
+optional web research. The `plan-day` Edge Function uses the caller's JWT for RLS and calls Claude through a strict
+tool. Snags #29–#37 are fixed; the Eye review found 1 P0 (fixed) and filed 16 P1/P2 as #39–#54. Gauntlet + sentry
+green, Lighthouse 100/100 · 98/100.
+**Cowork owes:** apply `db/004_ai.sql`, deploy `plan-day` (until then the tab says "Planner isn't connected yet").
+**Not yet verified by Mark:** iCloud connect + on-device iPhone checks; the Plan tab against the real model.
 
 ## Project rules
 
