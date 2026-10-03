@@ -43,6 +43,13 @@ export async function setCalendarEnabled(acc: CalendarAccount, href: string, ena
   return calendars
 }
 
+/** The calendar optimo writes timed tasks into; null turns write-back off. */
+export async function setWriteCalendar(acc: CalendarAccount, href: string | null) {
+  const { error } = await client().from('planner_calendar_accounts').update({ write_calendar_href: href }).eq('id', acc.id)
+  if (error) throw new Error(error.message)
+  return href
+}
+
 export async function disconnect(acc: CalendarAccount) {
   const { error } = await client().from('planner_calendar_accounts').delete().eq('id', acc.id)
   if (error) throw new Error(error.message)
