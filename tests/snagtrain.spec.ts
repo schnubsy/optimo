@@ -387,4 +387,42 @@ test.describe('snag train 2026-10', () => {
     await pill.scrollIntoViewIfNeeded()
     await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-13-running-pill-${info.project.name}.png` })
   })
+  // === slice 14 — Eye LITE P0s (docs/evidence/snag-train-2026-10-slice-14-design-critique.md) ===
+  test('ST-P0-1 the iPhone event sheet sits above the floating tab bar, not trapped under it', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the bottom sheet is mobile-only')
+    const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
+    await openApp(page, context, { seed: seedDay })
+    await setView('settings')
+    const form = page.getByTestId('calendar-connect')
+    await form.getByLabel('Apple ID').fill(FAKE_USER)
+    await form.getByLabel('App-specific password').fill(FAKE_PASSWORD)
+    await form.getByRole('button', { name: 'Connect iCloud' }).click()
+    await expect(page.getByTestId('calendar-account')).toBeVisible()
+    await setView('day')
+    const ev = page.getByTestId('timeline').getByTestId('event').filter({ hasText: 'Dentist check-up' })
+    await ev.scrollIntoViewIfNeeded()
+    await ev.getByRole('button', { name: /Dentist check-up/ }).click()
+    await expect(page.getByTestId('event-details')).toBeVisible()
+    const onTop = await page.evaluate(() => {
+      const r = document.querySelector('.tabbar')!.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return !!hit?.closest('.sheet-wrap')
+    })
+    expect(onTop).toBe(true)
+    await page.getByTestId('event-details').getByRole('button', { name: 'Close' }).click()
+    await expect(page.getByTestId('event-details')).toHaveCount(0)
+  })
+
+  test('ST-P0-2 no settings group uses a native legend; Reminders + Calendars labels sit inside their cards', async ({ page, context }) => {
+    await openApp(page, context)
+    await page.evaluate(() => (window as any).__optimo.ui.getState().set({ view: 'settings', mobileTab: 'board' }))
+    await expect(page.locator('.settings legend')).toHaveCount(0)
+    for (const name of ['Reminders', 'Calendars']) {
+      const group = page.getByRole('group', { name })
+      await expect(group).toBeVisible()
+      const card = (await group.boundingBox())!
+      const label = (await group.locator(':scope > h3').boundingBox())!
+      expect(label.y).toBeGreaterThanOrEqual(card.y + 8)
+    }
+  })
 })

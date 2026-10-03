@@ -51,8 +51,8 @@ export function CalendarSettings() {
   }
 
   return (
-    <fieldset className="set-row" data-testid="calendars">
-      <legend>Calendars</legend>
+    <fieldset className="set-row" aria-labelledby="set-calendars-label" data-testid="calendars">
+      <h3 id="set-calendars-label">Calendars</h3>
       {accounts?.map((a) => (
         <div key={a.id} className="cal-acc" data-testid="calendar-account">
           <div className="cal-acc-hd">

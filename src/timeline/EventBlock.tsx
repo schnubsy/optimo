@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '../icons/Icon'
 import { fmtClock } from '../lib/time'
 import { useIsMobile } from '../lib/useMedia'
@@ -63,7 +64,9 @@ export const EventBlock = memo(function EventBlock({ item, col, cols, hourPx, cl
           <EventDetails title={title} time={time} location={e.location} calendarName={calName} />
         </div>
       )}
-      {open && mobile && (
+      {/* portalled to the .app root: inside .evt (z 25) the fixed sheet was trapped below the tab bar + FAB (z 30);
+          the root (not <body>) keeps the .is-mobile sheet styles */}
+      {open && mobile && createPortal(
         <div className="sheet-wrap" role="presentation" onMouseDown={(ev) => ev.target === ev.currentTarget && setOpen(false)}>
           <div className="sheet evt-sheet" role="dialog" aria-modal="true" aria-label={title} data-testid="event-details">
             <i className="grabber" aria-hidden="true" />
@@ -75,7 +78,8 @@ export const EventBlock = memo(function EventBlock({ item, col, cols, hourPx, cl
             </header>
             <EventDetails title={title} time={time} location={e.location} calendarName={calName} />
           </div>
-        </div>
+        </div>,
+        document.querySelector('.app') ?? document.body,
       )}
     </div>
   )

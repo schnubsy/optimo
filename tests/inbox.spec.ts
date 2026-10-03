@@ -57,6 +57,10 @@ test.describe('inbox & quick-add', () => {
 
   test('Place fills the earliest free slot that fits', async ({ page, context }) => {
     let inbox: ReturnType<typeof seedDay>['inbox']
+    // pin the clock mid-morning: run late in the evening, the earliest free slot falls on tomorrow's board
+    const now = new Date()
+    now.setHours(8, 0, 0, 0)
+    await page.clock.install({ time: now })
     const { errors } = await openApp(page, context, { seed: (s) => (inbox = seedDay(s).inbox) })
     await showInbox(page)
     await inboxRow(page, 'Read chapter 4').getByTestId('place').click()
