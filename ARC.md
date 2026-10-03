@@ -64,4 +64,4 @@ Status: done 62b3f60
 
 ### Slice 6 — design review (Eye LITE) · Slice 7 — Lighthouse budget
 Standard UI-arc slices (arc.md). Only 🔴 P0 actioned in-arc; the rest filed as `snag`.
-Status:
+Status: done 4254b43 (slice 6) · 3e4018d (slice 7)
