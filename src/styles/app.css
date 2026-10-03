@@ -173,6 +173,8 @@
 .backlog .empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-8) var(--sp-4); color: var(--ink-2); font-size: var(--fs-15); text-align: center; }
 .backlog .empty .empty-chip { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--cat-3-chip); color: var(--chip-glyph-color); }
 .backlog .ft { margin: 0; padding: var(--sp-3) var(--sp-4); font-size: var(--fs-12); color: var(--ink-2); line-height: var(--lh-snug); }
+/* #29: the drag hint is desktop copy and sat under the floating tab bar; mobile Place = the row pill + swipe */
+.is-mobile .backlog .ft { display: none; }
 
 /* ---------- quick-add (command line) ---------- */
 .cmd { padding: var(--sp-2) var(--sp-4); background: var(--canvas); }
