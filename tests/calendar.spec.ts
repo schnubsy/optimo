@@ -125,7 +125,7 @@ test.describe('iCloud calendar (read-only)', () => {
     await expect(status.getByTestId('calendar-none')).toHaveText('No calendars found')
     await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveText('No calendars found on this Apple ID')
     await expect(status.getByTestId('calendar-synced')).toHaveText(/· 0 events$/)
-    await expect(page.getByTestId('toast')).toContainText('No calendars found on this Apple ID') // never "synced." over nothing
+    await expect(page.getByTestId('calendar-sync-error')).toHaveText('No calendars found on this Apple ID.') // never "Synced" over nothing (arc 5a slice 2: on the button, not a toast)
     expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
     if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-empty-${info.project.name}`)
   })

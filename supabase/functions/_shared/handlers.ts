@@ -214,5 +214,8 @@ export async function handleSync(req: Request, p: Ports): Promise<Response> {
       results.push({ id: acc.id, error: msg })
     }
   }
-  return json(200, { accounts: results })
+  // arc 5a slice 2: top-level totals for the client's "Synced · N events · N sent to iCloud" (additive — accounts[] kept)
+  const events = results.reduce((n, r) => n + (r.events ?? 0), 0)
+  const pushed = results.reduce((n, r) => n + (r.twoWay?.pushed ?? 0), 0)
+  return json(200, { accounts: results, events, pushed })
 }

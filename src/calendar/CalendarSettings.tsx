@@ -6,6 +6,7 @@ import { fmtClock } from '../lib/time'
 import type { CalendarAccount } from '../data/types'
 import { useUI } from '../state/ui'
 import { connectICloud, disconnect, listAccounts, setCalendarEnabled, setWriteCalendar, syncCalendars } from './api'
+import { SyncButton } from './SyncButton'
 
 /** Settings → Calendars: connect iCloud (Apple ID + app-specific password), per-calendar read toggles, the write
  * target ("Put optimo tasks in"), sync, disconnect. */
@@ -42,19 +43,10 @@ export function CalendarSettings() {
     }
   }
 
+  /** The SyncButton shows progress / result / reason from the shared sync status (no toast); refresh the rows after. */
   async function sync() {
-    setBusy(true)
-    try {
-      await syncCalendars()
-      const fresh = await listAccounts()
-      setAccounts(fresh)
-      const failed = fresh.find((x) => x.last_error)
-      notify({ text: failed ? (failed.last_error as string) : 'Calendars synced.' })
-    } catch (err) {
-      notify({ text: (err as Error).message })
-    } finally {
-      setBusy(false)
-    }
+    await syncCalendars().catch(() => undefined)
+    await refresh()
   }
 
   return (
@@ -105,9 +97,7 @@ export function CalendarSettings() {
             }}
           />
           <div className="set-actions">
-            <button type="button" className="ghost-btn" onClick={sync} disabled={busy} data-testid="calendar-sync">
-              Sync now
-            </button>
+            <SyncButton onSync={sync} />
             <button
               type="button"
               className="ghost-btn"
