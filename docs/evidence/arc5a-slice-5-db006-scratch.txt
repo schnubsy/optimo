@@ -1,0 +1,46 @@
+applied db/001_planner.sql
+applied db/002_calendar_push.sql
+applied db/004_ai.sql
+applied db/005_calendar_twoway.sql
+pre-006: tasks max(version)=1, sync_log rows=11
+PASS  db/006 run 1 applied clean
+PASS  db/006 run 2 applied clean
+PASS  exactly one person after two runs (Mark, idempotent seed)
+PASS  Mark's person is created_by Mark's auth user
+PASS  planner_tasks: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_categories: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_settings: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_ai_profile: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_ai_plans: all 0 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_exceptions: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_calendar_accounts: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_calendar_links: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_events: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_push_subscriptions: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_reminder_sent: all 1 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  planner_sync_log: all 6 of Mark's existing rows → Mark; other accounts' rows left unassigned
+PASS  backfill fired no merge trigger (version unchanged)
+PASS  backfill left updated_at alone
+PASS  backfill wrote no sync-log rows
+PASS  family_access flag starts off
+PASS  every trigger re-enabled after the backfill
+PASS  arc-5a insert without person_id → filled with Mark
+PASS  arc-5a upsert on an existing row merges (LWW), bumps version, keeps person
+PASS  planner_settings upsert on_conflict=user_id still works
+PASS  sync-log rows now carry the person
+PASS  Mark's own sync-log pull: his old rows + the 3 new writes, nobody else's
+PASS  flag off: a granted family member does NOT see Mark's rows (arc-5a client unaffected)
+PASS  Barb's arc-5a writes land (person_id null until 5b — no person of hers yet, no unique clash on settings/profile)
+PASS  flag off: Mark's unfiltered sync-log pull never sees Barb's log rows
+PASS  flag on: family-wide read of Mark-person rows
+PASS  flag on: family-wide write
+PASS  never for someone without the optimo grant
+PASS  a third run keeps the flag value it finds
+PASS  anyone signed in with optimo can add a person and sees everyone
+PASS  created_by defaults to the adder
+PASS  someone without the grant cannot add people
+PASS  …or see them
+PASS  a new row from Barb is filled with Barb's own person once she has one
+PASS  no anon grants on planner_people
+
+RESULT: GREEN
