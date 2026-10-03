@@ -113,3 +113,15 @@ describe('AI tables — local store + sync contract', () => {
     vi.restoreAllMocks()
   })
 })
+
+describe('Settings → Planning summary', () => {
+  it('says what was learned in plain words, leaving empty fields out', async () => {
+    const { learnedLines } = await import('../../src/plan/PlanningSettings')
+    expect(learnedLines({ day_shape: 'deep work first', preferred_block_min: 75, habits: ['walk'], avoid: [] })).toEqual([
+      'Day shape: deep work first',
+      'Focus blocks: about 75 min',
+      'Habits: walk',
+    ])
+    expect(learnedLines({})).toEqual([])
+  })
+})

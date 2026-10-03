@@ -318,6 +318,14 @@
 .settings .seg button[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
 .set-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); clear: both; }
 .settings .build { margin-top: var(--sp-4); }
+/* arc 3: Settings → Planning — two choice rows and the learned summary inside one card */
+.plan-set { gap: var(--sp-3); }
+.plan-set > div { clear: both; }
+.plan-set .sub { display: block; margin-bottom: 4px; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); }
+.plan-set .seg-in button { min-height: var(--tap-min); padding: 0 var(--sp-4); background: var(--surface); border: 0; border-radius: var(--r-pill); font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink-2); }
+.plan-set .seg-in button[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
+.plan-learned ul { margin: 0 0 var(--sp-1); padding-left: var(--sp-4); display: grid; gap: 2px; font-size: var(--fs-13); color: var(--ink); }
+.plan-learned p { margin: 0 0 var(--sp-2); }
 
 /* ================= chrome (design spec §5.5–5.8) ================= */
 .hdr-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); white-space: nowrap; }

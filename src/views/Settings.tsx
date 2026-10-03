@@ -9,6 +9,7 @@ import { useUI } from '../state/ui'
 import '../categories/categories.css'
 import { CalendarSettings } from '../calendar/CalendarSettings'
 import { PushSettings } from '../push/PushSettings'
+import { PlanningSettings } from '../plan/PlanningSettings'
 import { supabase } from '../sync/remote'
 
 // #12: day bounds are chosen from 15-min steps rendered in the user's clock (a native time field ignores it)
@@ -87,6 +88,8 @@ export function Settings() {
       {supabase() && <CalendarSettings />}
 
       <PushSettings />
+
+      <PlanningSettings s={s} />
 
       <fieldset className="set-row" aria-labelledby="set-organise-label">
         <h3 id="set-organise-label">Organise</h3>
