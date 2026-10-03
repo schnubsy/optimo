@@ -8,6 +8,8 @@ import type { BrowserContext, Page, Route, WebSocketRoute } from '@playwright/te
 import { mergeRow } from '../../src/sync/merge'
 import { handleConnect, handleSync, eventKey, type AccountRow, type EventRow, type Ports } from '../../supabase/functions/_shared/handlers.ts'
 import { fakeCalDav } from '../fake/caldav'
+import { handlePlan, PlannerUnavailable, type PlanPorts, type PlanRow, type ProfileRow } from '../../supabase/functions/_shared/plan.ts'
+import { FakeModel } from '../fake/planPorts'
 import { TEST_CRON, TEST_KEK } from '../fake/ports'
 
 export const SUPABASE_HOST = 'eepjhpyziczrxvirczio.supabase.co'
@@ -15,6 +17,8 @@ export const TEST_USER = { id: '00000000-0000-4000-8000-00000000cafe', email: 't
 
 type Row = Record<string, unknown> & { field_ts?: Record<string, number> }
 const TABLES = ['planner_categories', 'planner_tasks', 'planner_exceptions', 'planner_settings'] as const
+/** arc 3 (db/004_ai.sql): present only when the test says 004 is applied (`server.ai = true`) */
+const AI_TABLES = ['planner_ai_plans', 'planner_ai_profile'] as const
 /** server-owned tables written only by the (in-process) Edge Function handlers */
 const SERVER_TABLES = ['planner_calendar_accounts', 'planner_events', 'planner_push_subscriptions'] as const
 
@@ -26,6 +30,8 @@ const DEFAULTS: Record<string, Row> = {
   },
   planner_exceptions: { task_id: null, skipped: false },
   planner_settings: { data: {} },
+  planner_ai_plans: { mode: 'propose', status: 'draft', proposal: {}, research: [], model: null, accepted_task_ids: [] },
+  planner_ai_profile: { data: {}, accepted_count: 0 },
 }
 
 function keyOf(table: string, r: Row): string {
@@ -52,7 +58,14 @@ export function fakeSession() {
 }
 
 export class FakeSupabase {
-  rows: Record<string, Map<string, Row>> = Object.fromEntries([...TABLES, ...SERVER_TABLES].map((t) => [t, new Map()]))
+  rows: Record<string, Map<string, Row>> = Object.fromEntries([...TABLES, ...AI_TABLES, ...SERVER_TABLES].map((t) => [t, new Map()]))
+  /** db/004_ai.sql applied? false ⇒ PostgREST answers PGRST205 for planner_ai_* (the pre-Cowork state) */
+  ai = false
+  /** plan-day deployed? false ⇒ the functions gateway 404s it */
+  planFn = false
+  /** the scripted Messages API behind plan-day */
+  model = new FakeModel()
+  planCalls: { action: string; status: number; body: Record<string, unknown> }[] = []
   /** the iCloud side of the calendar functions — a hermetic CalDAV server */
   caldav = fakeCalDav({ requests: [], extra: [], removeDentist: false })
   /** function calls with their status (the password gate also greps the stored rows) */
@@ -130,9 +143,18 @@ export class FakeSupabase {
       this.functionCalls.push({ name: fn[1], status: res.status })
       return route.fulfill({ status: res.status, headers: { ...cors, 'content-type': 'application/json' }, body: await res.text() })
     }
+    if (p === '/functions/v1/plan-day' && method === 'POST') {
+      if (!this.planFn) return json(404, { code: 'NOT_FOUND', message: 'Requested function was not found' })
+      const body = JSON.parse(req.postData() ?? '{}')
+      const res = await handlePlan(new Request(url.href, { method, headers: req.headers(), body: req.postData() ?? '' }), this.planPorts())
+      this.planCalls.push({ action: String(body.action), status: res.status, body })
+      return route.fulfill({ status: res.status, headers: { ...cors, 'content-type': 'application/json' }, body: await res.text() })
+    }
     const m = p.match(/^\/rest\/v1\/(planner_\w+)$/)
     if (m) {
       const table = m[1]
+      if ((AI_TABLES as readonly string[]).includes(table) && !this.ai)
+        return json(404, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` })
       if (table === 'planner_push_subscriptions') {
         const subs = this.rows.planner_push_subscriptions
         if (method === 'POST') {
@@ -156,7 +178,7 @@ export class FakeSupabase {
         } else Object.assign(this.rows.planner_calendar_accounts.get(id) ?? {}, JSON.parse(req.postData() ?? '{}'))
         return route.fulfill({ status: 204, headers: cors })
       }
-      if (method === 'POST' && (TABLES as readonly string[]).includes(table)) {
+      if (method === 'POST' && ([...TABLES, ...AI_TABLES] as readonly string[]).includes(table)) {
         const body = JSON.parse(req.postData() ?? '[]')
         for (const r of Array.isArray(body) ? body : [body]) this.upsert(table, r)
         return route.fulfill({ status: 201, headers: cors })
@@ -187,6 +209,55 @@ export class FakeSupabase {
     const entry = { seq: this.log.length + 1, user_id: TEST_USER.id, table_name: table, row_id: k, op, at: new Date().toISOString() }
     this.log.push(entry)
     this.broadcast(entry)
+  }
+
+  /** Ports for the real plan-day handler over this fake's tables, with the scripted model. */
+  private planPorts(): PlanPorts {
+    const need = () => {
+      if (!this.ai) throw new PlannerUnavailable('relation "planner_ai_plans" does not exist')
+    }
+    const live = (t: string) => [...this.rows[t].values()].filter((r) => !r.deleted_at)
+    return {
+      model: 'claude-sonnet-5-5',
+      newId: () => {
+        const hex = Date.now().toString(16).padStart(12, '0')
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-7${crypto.randomUUID().slice(15)}`
+      },
+      now: () => new Date(),
+      userFromJwt: async (jwt) => {
+        try {
+          return JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString()).sub ?? null
+        } catch {
+          return null
+        }
+      },
+      dayContext: async (_u, from, to) => {
+        const s = (this.rows.planner_settings.values().next().value?.data ?? {}) as Record<string, number>
+        return {
+          settings: { day_start: s.day_start ?? 360, day_end: s.day_end ?? 1320, default_duration: s.default_duration ?? 30 },
+          categories: live('planner_categories').map((c) => ({ id: String(c.id), name: String(c.name) })),
+          tasks: live('planner_tasks')
+            .filter((t) => t.start_at && !t.rrule && String(t.start_at) >= from && String(t.start_at) < to)
+            .map((t) => ({ title: String(t.title), start_at: String(t.start_at), duration_min: Number(t.duration_min), category_id: (t.category_id as string) ?? null, priority: Number(t.priority), done: !!t.completed_at })),
+          events: live('planner_events')
+            .filter((e) => String(e.start_at) < to && String(e.end_at) > from)
+            .map((e) => ({ title: String(e.title), start_at: String(e.start_at), end_at: String(e.end_at), all_day: !!e.all_day })),
+        }
+      },
+      profile: async () => (need(), (this.rows.planner_ai_profile.values().next().value as unknown as ProfileRow) ?? null),
+      countPlansSince: async (_u, since) => (need(), [...this.rows.planner_ai_plans.keys()].filter((id) => id >= since).length),
+      getPlan: async (_u, id) => (need(), (this.rows.planner_ai_plans.get(id) as unknown as PlanRow) ?? null),
+      upsertPlan: async (row) => {
+        need()
+        this.upsert('planner_ai_plans', row as unknown as Row)
+        return { ...this.rows.planner_ai_plans.get(row.id) } as unknown as PlanRow
+      },
+      upsertProfile: async (row) => {
+        need()
+        this.upsert('planner_ai_profile', row as unknown as Row)
+      },
+      create: (body) => this.model.create(body),
+    }
   }
 
   /** Ports for the real calendar handlers, over this fake's tables (events go through the sync log like press). */

@@ -23,9 +23,11 @@ run "unit (vitest)"      npx vitest run --reporter=dot
 run "build (vite)"       npm run build --silent
 # the press launcher (dist/optimo.html) is built here, not in `npm run build` — Pages deploys dist/ and must not ship it
 run "build press launcher + publish-checks" bash -c "node build-press.mjs && node tools/publish-checks.mjs --check"
-run "edge functions (deno check + test)" bash -c 'cd supabase/functions && deno check calendar-connect/index.ts calendar-sync/index.ts $(ls -d push-send/index.ts 2>/dev/null) && deno test _shared/'
+run "edge functions (deno check + test)" bash -c 'cd supabase/functions && deno check calendar-connect/index.ts calendar-sync/index.ts push-send/index.ts plan-day/index.ts && deno test _shared/'
 # secret gate: the fixture app-specific password never lands in evidence or the build
 run "secret gate (no test password in docs/evidence, dist)" bash -c '! grep -rIlE "qvtz-?hmwk-?rpxa-?ndjc" docs/evidence dist --exclude-dir=playwright-report'
+# arc 3: no Anthropic key ever reaches the client, the evidence or the repo's tracked files (only the Edge secret holds it)
+run "secret gate (no Anthropic key in dist, evidence, tracked files)" bash -c '! grep -rIlE "sk-ant-[A-Za-z0-9_-]{20,}" dist docs/evidence --exclude-dir=playwright-report && ! git grep -IlE "sk-ant-[A-Za-z0-9_-]{20,}"'
 
 # preview server for Playwright + Lighthouse
 npx vite preview --port "$PORT" --strictPort >>"$LOG" 2>&1 &

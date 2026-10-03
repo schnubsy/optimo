@@ -3,7 +3,8 @@
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
     "ical.js": "npm:ical.js@^2.2.1",
     "web-push": "npm:web-push@^3.6.7",
-    "rrule": "npm:rrule@^2.8.1"
+    "rrule": "npm:rrule@^2.8.1",
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.131.0"
   },
   "compilerOptions": { "lib": ["deno.window", "dom"] },
   "lint": { "rules": { "exclude": ["no-explicit-any"] } }

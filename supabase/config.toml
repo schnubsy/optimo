@@ -14,3 +14,8 @@ import_map = "./functions/deno.json"
 [functions.push-send]
 verify_jwt = false
 import_map = "./functions/deno.json"
+
+# arc 3 AI planner: user JWT only (propose / learn); RLS via the caller's JWT inside the handler
+[functions.plan-day]
+verify_jwt = true
+import_map = "./functions/deno.json"
