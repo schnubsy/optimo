@@ -61,7 +61,7 @@ toast with Undo (tombstones exactly those tasks). Questions from the model shown
 (re-plan). Offline or function unreachable → disabled with "Planner isn't connected yet / you're offline".
 Done: Playwright desktop + iPhone 15 (axe) cover propose→accept-some, edit→accept, auto→undo, research citations,
 not-connected state; screenshots to evidence.
-Status:
+Status: done db6f3d1
 
 ### Slice 14 — learning + settings
 Scope: accept/edit fires `learn`; Settings → "Planning" section: default mode (Propose/Auto), research default,
