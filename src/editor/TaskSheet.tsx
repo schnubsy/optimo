@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../data/db'
 import * as repo from '../data/repo'
-import { useCategories, useSettings } from '../data/hooks'
-import type { Priority, Subtask, Task } from '../data/types'
+import { useSettings } from '../data/hooks'
+import type { Category, Priority, Subtask, Task } from '../data/types'
 import { newId } from '../data/ids'
 import { dateKey, fmtDur, fromKey, isoAt, minutesInDay } from '../lib/time'
 import { useUI } from '../state/ui'
@@ -92,7 +92,9 @@ function parseKey(key: string) {
   return { id, date: date ?? null }
 }
 
-export function TaskSheet() {
+/** `cats` comes from Planner's already-resolved list (#31): a fresh live query here mounted the sheet with an empty
+ *  Category row that filled a frame later (a 40px layout shift and empty evidence captures). */
+export function TaskSheet({ cats }: { cats: Category[] }) {
   const editingId = useUI((s) => s.editingId)
   const draft = useUI((s) => s.draft)
   const loaded = useLiveQuery(async () => {
@@ -105,18 +107,17 @@ export function TaskSheet() {
     const o = ex?.task_id ? await db.tasks.get(ex.task_id) : undefined
     return o && !o.deleted_at ? { ...o, id: t.id, rrule: t.rrule, dtstart: t.dtstart, _override: true } : t
   }, [editingId])
-  if (draft) return <SheetForm key={`draft:${draft.start_at}`} task={null} occ={null} />
+  if (draft) return <SheetForm key={`draft:${draft.start_at}`} task={null} occ={null} cats={cats} />
   if (!editingId || !loaded) return null
-  return <SheetForm key={editingId} task={loaded} occ={parseKey(editingId).date} />
+  return <SheetForm key={editingId} task={loaded} occ={parseKey(editingId).date} cats={cats} />
 }
 
-function SheetForm({ task, occ }: { task: Task | null; occ: string | null }) {
+function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null; cats: Category[] }) {
   const draft = useUI((s) => s.draft)
   const editingId = useUI((s) => s.editingId)
   const day = useUI((s) => s.date)
   const set = useUI((s) => s.set)
   const settings = useSettings()
-  const cats = useCategories()
   const [form, setForm] = useState<Form>(() => {
     if (!task)
       return toForm({ reminders: settings.reminder_lead && draft?.start_at ? [settings.reminder_lead] : [], ...draft, start_at: draft?.start_at ?? null, duration_min: draft?.duration_min ?? settings.default_duration }, day)

@@ -303,7 +303,7 @@ export function Planner({ userId }: { userId: string }) {
             </footer>
           </>
         )}
-        <TaskSheet />
+        <TaskSheet cats={cats} />
         <PlacePicker />
         {view === 'focus' && <Focus />}
         <Toast />

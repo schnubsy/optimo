@@ -270,10 +270,13 @@ test.describe('snag train 2026-10', () => {
       await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-inbox-iphone-15-${theme}.png` })
       await page.evaluate(() => (window as any).__optimo.ui.getState().set({ mobileTab: 'board' }))
       await setView('month')
+      // #31: capture only after the month live query has painted today's category dots
+      await expect(page.locator('.mday.today .dots i').first()).toBeVisible()
       await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-month-iphone-15-${theme}.png` })
       await setView('day')
       await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
       await expect(page.getByRole('dialog')).toBeVisible()
+      await expect(page.locator('[data-testid="sheet-category"] button').first()).toBeVisible()
       await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-editor-iphone-15-${theme}.png` })
     })
 
