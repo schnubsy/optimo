@@ -102,4 +102,17 @@ test.describe('snags #29–#37 (arc 3)', () => {
     expect(r.pad).toBe(r.bodyPad)
     expect(Math.abs(r.headRight - r.colRight)).toBeLessThanOrEqual(2)
   })
+
+  test('#36 Month (iPhone): the title sits on the 16pt gutter; the arrows have an edge', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'mobile month header')
+    await openApp(page, context, { seed: (s) => seedDay(s), theme: 'light' })
+    await page.evaluate(() => (window as any).__optimo.ui.getState().set({ view: 'month', mobileTab: 'board' }))
+    const h2 = page.locator('.mhead h2')
+    await expect(h2).toBeVisible()
+    const left = await h2.evaluate((e) => e.getBoundingClientRect().left)
+    const hdrLeft = await page.locator('.hdr-title').evaluate((e) => e.getBoundingClientRect().left)
+    expect(Math.abs(left - hdrLeft)).toBeLessThanOrEqual(1)
+    expect(await page.locator('.mhead .nav').first().evaluate((e) => getComputedStyle(e).boxShadow)).toMatch(/inset/)
+    if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-9-month-iphone-15-light.png' })
+  })
 })
