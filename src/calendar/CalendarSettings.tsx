@@ -205,7 +205,7 @@ function WriteTarget({ account: a, onChange }: { account: CalendarAccount; onCha
         ))}
       </select>
       <p id={`${id}-help`} className="cal-help">
-        Timed tasks are written to this calendar; edits made there come back.
+        Scheduled tasks (not repeating ones) appear in this calendar. Moving, renaming or deleting one there changes it here — deleting it there deletes the task.
       </p>
     </div>
   )

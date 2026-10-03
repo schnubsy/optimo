@@ -147,7 +147,7 @@ test.describe('iCloud calendar (read-only)', () => {
     const select = acc.getByLabel('Put optimo tasks in')
     await expect(select).toHaveValue(hrefOf('optimo'))
     await expect(select.locator('option')).toHaveText(['None — don’t write', 'Home', 'optimo'])
-    await expect(acc).toContainText('Timed tasks are written to this calendar; edits made there come back.')
+    await expect(acc).toContainText('Scheduled tasks (not repeating ones) appear in this calendar. Moving, renaming or deleting one there changes it here — deleting it there deletes the task.')
 
     // read toggle → stored + a sync
     const syncs = () => server.functionCalls.filter((c) => c.name === 'calendar-sync').length
