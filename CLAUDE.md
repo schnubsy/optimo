@@ -26,15 +26,15 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**Arc 4 — iCloud two-way sync + calendar picker: complete on `arc/icloud-two-way`, closing (PR → merge → Pages ship
-proof).** Discovery fixed (iCloud's single-quoted `name='VEVENT'` dropped every calendar) and re-run every sync; honest
-status ("Found N calendars · synced HH:MM · N events" / "No calendars found"). Settings → Calendars lists own + shared
-calendars with read switches and a "Put optimo tasks in" select. calendar-sync writes scheduled, non-recurring tasks
-into that calendar (etag-guarded PUT/DELETE/move) and pulls iCloud moves / renames / deletes back as `calendar-sync`
-LWW upserts; the client triggers it ~5 s after task pushes. Eye: no P0 (P1-1 copy fixed), #56–#65 filed. Gauntlet +
-sentry green, Lighthouse 100/100 · 98/100. db/005 applied by Cowork.
-**Cowork owes:** deploy `calendar-connect` + `calendar-sync` (live code is still the read-only, broken-discovery v1).
-**Not yet verified by Mark:** iCloud connect + two-way on the real Apple ID; on-device iPhone checks.
+**Arc 5a — Family Wing sign-in · sync feedback · calendar roles · paint a block · people schema: complete on
+`arc/family-wing-people`, closing (PR → merge → Pages + launcher ship proof).** optimo has no sign-in of its own: it
+reads/rotates the Family Wing session (`press:family:v1`, `src/auth/pressSession.ts`), sends signed-out people to its
+launcher `press/optimo.html?return=…`, gates on `press_access_has('optimo.html')` ("ask Mark" page). Sync button shows
+Syncing… / Synced · N events · N sent to iCloud / reason + Retry (also for auto-syncs). One role per calendar (Off · Show
+in optimo · Two-way; #56 #58 fixed). Drag on empty timeline paints a block (mouse, long-press touch, keyboard).
+`db/006_people.sql` written + scratch-proven, NOT applied; family RLS held behind `planner_flags.family_access`.
+**Cowork owes:** apply db/006; deploy calendar-sync + calendar-connect (counts). **Next:** arc 5b (people picker,
+per-person sync/RLS flip, per-person iCloud). Snags #67–#79 (Eye) + #39–#65 open.
 
 ## Project rules
 
