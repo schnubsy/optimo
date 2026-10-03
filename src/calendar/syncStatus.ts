@@ -33,6 +33,8 @@ export function reduce(s: SyncStatus, a: SyncAction): SyncStatus {
 }
 
 const NO_CALENDARS = 'No calendars found on this Apple ID'
+/** #58: the account's own empty state explains this one; the sync button stays quiet about it ("Sync again") */
+export const NO_CALENDARS_REASON = 'No calendars found on this Apple ID.'
 const OFFLINE = 'Couldn’t reach the calendar service — check your connection and try again.'
 
 /** Short, plain copy for whatever went wrong (a server code, a server message, a network failure). */
@@ -40,7 +42,7 @@ export function reasonFor(err: unknown): string {
   const raw = (typeof err === 'string' ? err : err instanceof Error ? err.message : '').trim()
   const name = err instanceof Error ? err.name : ''
   if (!raw && !name) return 'Calendar sync failed — try again.'
-  if (raw === 'NO_CALENDARS' || raw.startsWith(NO_CALENDARS)) return 'No calendars found on this Apple ID.'
+  if (raw === 'NO_CALENDARS' || raw.startsWith(NO_CALENDARS)) return NO_CALENDARS_REASON
   if (raw === 'not_connected' || /isn.t connected/i.test(raw)) return 'Calendar sync isn’t set up on the server yet.'
   if (name === 'FunctionsFetchError' || name === 'FunctionsRelayError' || /failed to fetch|network|load failed|fetch failed/i.test(raw)) return OFFLINE
   if (!raw) return 'Calendar sync failed — try again.'

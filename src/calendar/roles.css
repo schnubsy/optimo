@@ -1,0 +1,13 @@
+/* arc 5a slice 3 — one role per calendar: name row, a three-way segmented radiogroup, one helper line. */
+.cal-role { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--surface); border-radius: var(--r-sm); }
+.cal-role-hd { flex: 1 1 10rem; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-15); }
+.cal-role-hd .cal-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-roles { flex: 0 1 auto; display: flex; gap: 2px; padding: 3px; background: var(--panel); border-radius: var(--r-pill); box-shadow: inset 0 0 0 1px var(--line); }
+.cal-roles button { flex: 1 1 auto; min-height: var(--tap-min); padding: 0 var(--sp-3); border: 0; border-radius: var(--r-pill); background: none; font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink-2); white-space: nowrap; }
+.cal-roles button[aria-checked='true'] { background: var(--accent); color: var(--ink-on-accent); }
+.cal-roles button:disabled { opacity: 0.45; cursor: not-allowed; }
+.cal-role-help { flex: 1 1 100%; }
+.cal-empty { margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+@media (max-width: 560px) {
+  .cal-roles { flex: 1 1 100%; }
+}

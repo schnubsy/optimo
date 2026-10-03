@@ -38,18 +38,16 @@ export async function connectICloud(input: { username: string; password: string;
   return data as CalendarAccount
 }
 
-export async function setCalendarEnabled(acc: CalendarAccount, href: string, enabled: boolean) {
-  const calendars = acc.calendars.map((c) => (c.href === href ? { ...c, enabled } : c))
-  const { error } = await client().from('planner_calendar_accounts').update({ calendars }).eq('id', acc.id)
+/**
+ * Store a calendar's role (Off · Show in optimo · Two-way, see roles.ts) — the calendars list and the write target in
+ * ONE update, so a role change is never half-applied.
+ */
+export async function setCalendarRole(acc: CalendarAccount, patch: Pick<CalendarAccount, 'calendars'> & { write_calendar_href: string | null }) {
+  const { error } = await client()
+    .from('planner_calendar_accounts')
+    .update({ calendars: patch.calendars, write_calendar_href: patch.write_calendar_href })
+    .eq('id', acc.id)
   if (error) throw new Error(error.message)
-  return calendars
-}
-
-/** The calendar optimo writes timed tasks into; null turns write-back off. */
-export async function setWriteCalendar(acc: CalendarAccount, href: string | null) {
-  const { error } = await client().from('planner_calendar_accounts').update({ write_calendar_href: href }).eq('id', acc.id)
-  if (error) throw new Error(error.message)
-  return href
 }
 
 export async function disconnect(acc: CalendarAccount) {
