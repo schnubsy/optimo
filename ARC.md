@@ -145,7 +145,7 @@ Implementation: `.pill .elapsed{border-radius:inherit;border-start-end-radius:0;
 Done-criteria: running-pill evidence (Day view, desktop + iPhone-15) shows a flat-edged tone-sweep, not
   a nested rounded block.
 
-=== SLICE 14 — design review (standard UI slice, Eye LITE) ===
+=== SLICE 14 — design review (standard UI slice, Eye LITE) === Status: done 4c3ecce
 Scope: Eye LITE critique over this arc's own evidence (slices 1–13), including a specific originality
   check on slice 12's reworked brand mark. Only P0 findings are actioned as a fix within this slice;
   new P1/P2 findings get filed as new snag Issues, not fixed here.
