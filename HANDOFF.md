@@ -1,11 +1,12 @@
 # HANDOFF — optimo
 
 ## Current state
-Arc 3 — **AI planner (Plan tab)** — is complete on `arc/ai-planner`: 16 slices ticked, gauntlet GREEN (vitest 340 ·
-deno incl. plan-day · secret gates incl. no `sk-ant-` · Playwright desktop + iPhone 15 with axe · Lighthouse 100/100
-desktop, 98/100 mobile), sentry GREEN, pre-PR page-diff GREEN. This HANDOFF is written before the PR. The close
-continues in this session: PR → merge → reconcile main → Pages ship proof → launcher republish. Each of these is
-recorded below once proven.
+Arc 3 — **AI planner (Plan tab)** is **merged and live**: PR #55 merged at `10866d1` (2026-10-03). The main
+checkout is reconciled (HEAD = `10866d1`). Pages ship proof: the live `<meta name="build">` is **`10866d1`** (it was
+`e17b434`). The launcher is republished: press `9dc2908`, live `press/optimo.html` sha256 `82ddc9d2…bd1a` = local, and
+GitHub blob `58da52f5…` = local. Issues #29–#37 closed via the PR. The gauntlet was GREEN (vitest 340 · deno incl.
+plan-day · secret gates · Playwright desktop + iPhone 15 with axe · Lighthouse 100/100, 98/100), and so were sentry
+and the page-diff gate. **The Plan tab shows "Planner isn't connected yet" until Cowork runs steps 1–2.**
 
 ## Shipped this arc (on the branch)
 1. Pages `paths-ignore` (docs/**, *.md, ARC.md, HANDOFF.md): control-file commits no longer deploy.
@@ -22,9 +23,9 @@ recorded below once proven.
 16. Lighthouse budget held (`…-slice-16-lighthouse-budget.md`). Sentry: `docs/evidence/ai-planner-sentry.md`.
 
 ## Open / blockers (close-out manifest)
-- push · PR · merge · reconcile main checkout · Pages deploy + ship proof · launcher republish (#30 changed the
-  brand mark the launcher carries): executed by this close session after this commit. The final report carries the
-  proof for each.
+- push · PR #55 · merge `10866d1` · reconcile main · Pages ship proof · launcher publish (press `9dc2908`):
+  **DONE**, proofs in Current state. Inbox cleanup: none needed. ARC.md and `db/004_ai.sql` lived in the main
+  checkout (no worktree) and are now tracked (ARC.md truncated by the close).
 - **migrations/backfills — BLOCKED → Mark's manual step 1** (Cowork applies `db/004_ai.sql`).
 - **deploy (Edge Function plan-day) — BLOCKED → Mark's manual step 2** (Cowork deploys).
 - Until steps 1 and 2 land, the Plan tab says "Planner isn't connected yet", AI outbox rows park, and core sync is unaffected.
