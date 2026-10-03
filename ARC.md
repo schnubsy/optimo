@@ -67,8 +67,8 @@ Status: done db6f3d1
 Scope: accept/edit fires `learn`; Settings → "Planning" section: default mode (Propose/Auto), research default,
 read-only "What optimo has learned" summary from the profile, Reset (tombstones the profile row).
 Done: tests cover default-mode persistence, learn call on accept, reset.
-Status:
+Status: done 9f07c77
 
 ### Slice 15 — design review (Eye LITE) · Slice 16 — Lighthouse budget
 Standard UI-arc slices (arc.md). Only 🔴 P0 findings are actioned in-arc; the rest filed as `snag`.
-Status:
+Status: done — 15 1456450 (1 P0 fixed, 16 P1/P2 → #39–#54) · 16 c791d2d (100/100 · 98/100)
