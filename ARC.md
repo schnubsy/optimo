@@ -151,7 +151,7 @@ Scope: Eye LITE critique over this arc's own evidence (slices 1–13), including
   new P1/P2 findings get filed as new snag Issues, not fixed here.
 Done-criteria: critique run and recorded in docs/evidence/; zero unresolved P0s.
 
-=== SLICE 15 — performance budget (standard UI slice) ===
+=== SLICE 15 — performance budget (standard UI slice) === Status: done 58b4304
 Scope: `scripts/gauntlet.sh`'s existing Lighthouse budget step (desktop + iPhone-15) — confirm it still
   meets the baseline recorded in HANDOFF (100/100, 98/100) after 13 UI-touching slices.
 Done-criteria: Lighthouse evidence captured; no regression vs. the recorded baseline, or a documented,
