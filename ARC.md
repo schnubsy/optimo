@@ -26,5 +26,5 @@ Status: done 8545bfa
 Done: press-drag on empty timeline (long-press on touch, never fights scroll) shows a grid-snapped ghost block; release creates the task; tap opens the detail editor. Keyboard path for a11y. 60 fps budget held (transforms only).
 
 ### Slice 5 — People schema draft (B2, not applied)
-Status: open
+Status: done 4c9a0d4
 Done: db/006_people.sql — planner_people + person_id on every per-person planner_* row (tasks, categories, settings, ai_profile, ai_plans, exceptions, calendar_accounts, links, events, push_subscriptions, reminder_sent, sync_log), backfill all rows to a "Mark" person, family-wide read/write via press_access_has('optimo'); additive and safe under the arc-5a client. docs/spec.md §People written (picker, per-device last person, per-person iCloud, sync scope). Arc 5b order drafted in HANDOFF.
