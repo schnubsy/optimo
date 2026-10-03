@@ -60,7 +60,7 @@ their etag differs from the link's, apply start/end/title back to the task (upse
 `calendar-sync`) and update the link; object gone from iCloud → tombstone the task. Echo guard: a task change made by
 the pull must not be re-pushed (set pushed_version to the merged version).
 Done: deno tests: move in iCloud → task moves; rename → title; delete → task tombstoned; no ping-pong over 3 syncs.
-Status:
+Status: done 62b3f60
 
 ### Slice 6 — design review (Eye LITE) · Slice 7 — Lighthouse budget
 Standard UI-arc slices (arc.md). Only 🔴 P0 actioned in-arc; the rest filed as `snag`.
