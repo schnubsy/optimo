@@ -71,6 +71,9 @@ export interface SettingsData {
   iconOverrides?: Record<string, string>
   /** IANA zone, written when push is enabled — push-send expands series in the user's wall-clock time. */
   tz?: string
+  /** arc 3: the Plan tab's default mode and research switch (Settings → Planning) */
+  plan_mode?: 'propose' | 'auto'
+  plan_research?: boolean
 }
 
 export const DEFAULT_SETTINGS: SettingsData = {
@@ -92,14 +95,74 @@ export interface Settings extends SyncCols {
   data: SettingsData
 }
 
-export type TableName = 'categories' | 'tasks' | 'exceptions' | 'settings'
+// ---------- arc 3: AI planning (db/004_ai.sql) ----------
+
+/** One proposed block, as the plan-day function returns it (start_at ISO/UTC on plan_date). */
+export interface AiBlock {
+  title: string
+  start_at: string
+  duration_min: number
+  category_id?: string | null
+  priority?: Priority | null
+  why: string
+}
+export interface AiProposal {
+  blocks: AiBlock[]
+  questions: string[]
+  notes: string
+}
+/** A web-research source shown with the plan. */
+export interface AiSource {
+  query: string
+  url: string
+  title: string
+  snippet: string
+}
+export type AiPlanMode = 'propose' | 'auto'
+export type AiPlanStatus = 'draft' | 'accepted' | 'rejected' | 'applied' | 'failed'
+
+/** planner_ai_plans — one row per plan request (intent → proposal). */
+export interface AiPlan extends SyncCols {
+  id: string
+  plan_date: string // YYYY-MM-DD
+  intent: string
+  mode: AiPlanMode
+  status: AiPlanStatus
+  proposal: AiProposal
+  research: AiSource[]
+  model: string | null
+  accepted_task_ids: string[]
+}
+
+/** The learned planning style, distilled from accepted/edited plans by plan-day `learn`. */
+export interface AiProfileData {
+  tone?: string
+  day_shape?: string
+  preferred_block_min?: number
+  buffers?: string
+  habits?: string[]
+  avoid?: string[]
+}
+/** planner_ai_profile — one row per user; created server-side, reset = tombstone. */
+export interface AiProfile extends SyncCols {
+  id: string
+  data: AiProfileData
+  accepted_count: number
+}
+
+export type TableName = 'categories' | 'tasks' | 'exceptions' | 'settings' | 'aiPlans' | 'aiProfile'
 
 export const REMOTE_TABLE: Record<TableName, string> = {
   categories: 'planner_categories',
   tasks: 'planner_tasks',
   exceptions: 'planner_exceptions',
   settings: 'planner_settings',
+  aiPlans: 'planner_ai_plans',
+  aiProfile: 'planner_ai_profile',
 }
+
+/** Tables that exist only once db/004_ai.sql is applied — their pushes park instead of failing the sync. */
+export const OPTIONAL_TABLES: ReadonlySet<TableName> = new Set(['aiPlans', 'aiProfile'])
 
 export interface OutboxRow {
   seq?: number

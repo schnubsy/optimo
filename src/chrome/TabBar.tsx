@@ -3,9 +3,8 @@ import { Icon } from '../icons/Icon'
 
 export type TabId = 'inbox' | 'timeline' | 'week' | 'plan' | 'settings'
 
-// The AI arc inserts "Plan" between Week and Settings (design spec §5.6). Until then its column is reserved and
-// hidden: flip this (or settings.aiTab, once it exists) and nothing else in the bar changes.
-export const RESERVED_AI_TAB = false
+// Arc 3: "Plan" sits between Week and Settings (design spec §5.6) — the reserved column, now shown.
+export const RESERVED_AI_TAB = true
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'inbox', label: 'Inbox', icon: 'ui-inbox' },

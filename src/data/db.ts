@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { CalendarEvent, Category, Exception, MetaRow, OutboxRow, Settings, Task } from './types'
+import type { AiPlan, AiProfile, CalendarEvent, Category, Exception, MetaRow, OutboxRow, Settings, Task } from './types'
 
 export class OptimoDB extends Dexie {
   tasks!: EntityTable<Task, 'id'>
@@ -9,6 +9,8 @@ export class OptimoDB extends Dexie {
   outbox!: EntityTable<OutboxRow, 'seq'>
   meta!: EntityTable<MetaRow, 'key'>
   events!: EntityTable<CalendarEvent, 'id'>
+  aiPlans!: EntityTable<AiPlan, 'id'>
+  aiProfile!: EntityTable<AiProfile, 'id'>
 
   constructor(name = 'optimo') {
     super(name)
@@ -23,6 +25,8 @@ export class OptimoDB extends Dexie {
     })
     // arc 2: read-only calendar events pulled from planner_events via the sync log
     this.version(2).stores({ events: 'id, start_at, account_id' })
+    // arc 3: AI plans (by day) and the learned planning profile — both speak the sync contract (spec §5)
+    this.version(3).stores({ aiPlans: 'id, plan_date', aiProfile: 'id' })
   }
 }
 

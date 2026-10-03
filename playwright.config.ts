@@ -8,6 +8,9 @@ export default defineConfig({
   testMatch: '*.spec.ts',
   timeout: 60_000,
   retries: 0,
+  // PW_WORKERS caps parallelism when the machine is shared (another project's browsers or a backup running) — context
+  // teardown and DevTools timeouts under contention are load, not product failures. Default: Playwright's own.
+  workers: process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : undefined,
   reporter: [['line'], ['html', { open: 'never', outputFolder: 'docs/evidence/playwright-report' }]],
   use: {
     baseURL: `http://localhost:${PORT}/optimo/`,

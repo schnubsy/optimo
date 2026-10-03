@@ -30,7 +30,7 @@ test.describe('design system (arc 2 slice 2)', () => {
   test('X on a focused pill toggles done (desktop keyboard)', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'desktop', 'keyboard')
     let ids: ReturnType<typeof seedDay>['ids']
-    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
+    await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), at: '12:00' })
     const g = block(page, ids!.guitar)
     await g.scrollIntoViewIfNeeded()
     await g.locator('.blk-main').focus()

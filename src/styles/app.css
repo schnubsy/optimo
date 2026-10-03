@@ -46,6 +46,9 @@
 @keyframes pill-in { from { transform: translateY(6px); } }
 .pill.is-thin { border-radius: var(--r-pill); }
 .pill:hover { background: oklch(var(--pill-hover-l) calc(var(--cat-c) * var(--pill-cm)) var(--cat-h)); }
+/* #32: a running pill rises over the now line (z 6), so the line stops at its edges instead of striking its title —
+   inside the pill the elapsed sweep's flat edge already marks now (#27) */
+.pill.run, .pill.run.sel { z-index: 7; }
 .pill.picking { z-index: 25; }
 .pill.sel { z-index: 4; box-shadow: 0 0 0 2px var(--accent) inset, var(--pill-ring); }
 .pill.grab { z-index: 20; cursor: grabbing; will-change: transform; background: oklch(var(--pill-drag-l) calc(var(--cat-c) * var(--pill-cm)) var(--cat-h)); box-shadow: var(--shadow-drag); scale: var(--scale-lift); translate: 0 var(--lift-y); transition: scale var(--dur-instant) ease, box-shadow var(--dur-instant) ease; }
@@ -135,7 +138,8 @@
 .allday-t.done { background: var(--done-fill); color: var(--done-ink); text-decoration: line-through; }
 
 /* ---------- toast ---------- */
-.toast-wrap { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); z-index: 60; pointer-events: none; }
+/* #37: z 35 — above the tab bar (30), under sheets (40), so a toast never covers a sheet's close control */
+.toast-wrap { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); z-index: 35; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-2) 0 var(--sp-5); min-height: 48px; background: var(--ink); color: var(--canvas); border-radius: var(--r-pill); font-size: var(--fs-14); font-weight: var(--fw-semibold); box-shadow: var(--shadow-float); }
 .toast button { height: 36px; padding: 0 var(--sp-4); background: color-mix(in oklch, var(--canvas) 16%, transparent); border: 0; border-radius: var(--r-pill); font-weight: var(--fw-bold); color: inherit; }
 .is-mobile .toast-wrap { bottom: 96px; width: calc(100% - 32px); }
@@ -173,6 +177,8 @@
 .backlog .empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-8) var(--sp-4); color: var(--ink-2); font-size: var(--fs-15); text-align: center; }
 .backlog .empty .empty-chip { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--cat-3-chip); color: var(--chip-glyph-color); }
 .backlog .ft { margin: 0; padding: var(--sp-3) var(--sp-4); font-size: var(--fs-12); color: var(--ink-2); line-height: var(--lh-snug); }
+/* #29: the drag hint is desktop copy and sat under the floating tab bar; mobile Place = the row pill + swipe */
+.is-mobile .backlog .ft { display: none; }
 
 /* ---------- quick-add (command line) ---------- */
 .cmd { padding: var(--sp-2) var(--sp-4); background: var(--canvas); }
@@ -232,6 +238,8 @@
 .wbody { flex: 1; overflow: auto; min-height: 0; }
 /* #22: desktop — keep the Sun column clear of the window edge instead of flush against it */
 .is-desktop .wbody { padding-right: var(--sp-4); }
+/* #35: the day-header row takes the body's right pad, so Sun's header ends where its column does */
+.is-desktop .whead { padding-right: var(--sp-4); }
 .wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
 .wrail { position: relative; }
 .wrail .hour { position: absolute; left: 0; right: 0; }
@@ -275,6 +283,9 @@
 .mhead { display: flex; align-items: center; justify-content: flex-start; gap: var(--sp-2); margin-bottom: var(--sp-3); }
 .mhead h2 { order: -1; margin: 0 auto 0 0; min-width: 0; font-size: var(--fs-24); font-weight: var(--fw-black); letter-spacing: var(--ls-display); }
 .mhead .nav { min-width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--surface); font-size: 20px; color: var(--ink-2); }
+/* #36: the title sits on the 16pt gutter (8 month pad + 8) and the arrows keep an edge on blush */
+.is-mobile .mhead { padding-inline: var(--sp-2); }
+.mhead .nav { box-shadow: inset 0 0 0 1px var(--line); }
 .mgrid { display: grid; gap: 4px; }
 .mrow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .mrow > span { min-width: 0; }
@@ -307,6 +318,14 @@
 .settings .seg button[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
 .set-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); clear: both; }
 .settings .build { margin-top: var(--sp-4); }
+/* arc 3: Settings → Planning — two choice rows and the learned summary inside one card */
+.plan-set { gap: var(--sp-3); }
+.plan-set > div { clear: both; }
+.plan-set .sub { display: block; margin-bottom: 4px; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); }
+.plan-set .seg-in button { min-height: var(--tap-min); padding: 0 var(--sp-4); background: var(--surface); border: 0; border-radius: var(--r-pill); font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink-2); }
+.plan-set .seg-in button[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
+.plan-learned ul { margin: 0 0 var(--sp-1); padding-left: var(--sp-4); display: grid; gap: 2px; font-size: var(--fs-13); color: var(--ink); }
+.plan-learned p { margin: 0 0 var(--sp-2); }
 
 /* ================= chrome (design spec §5.5–5.8) ================= */
 .hdr-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); white-space: nowrap; }
@@ -370,7 +389,8 @@
 .hdr-now { flex: none; margin-left: var(--sp-1); padding: 2px 8px; border-radius: var(--r-pill); background: var(--now-flag-bg); color: var(--now-flag-fg); font-size: var(--fs-11); font-weight: var(--fw-black); }
 .pane-hdr .hdr-stats { flex: 1 1 0; min-width: 160px; flex-wrap: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pane-hdr .hdr-stats span { flex: none; }
-.pane-qa { flex: 0 1 280px; min-width: 180px; max-width: 520px; margin-left: auto; position: relative; }
+/* arc 3: the Plan button joins the gear — quick-add gives up 40px of its floor so the sync badge stays on screen */
+.pane-qa { flex: 0 1 280px; min-width: 140px; max-width: 520px; margin-left: auto; position: relative; }
 /* desktop header: the sync state is its dot (words kept for screen readers, full text in the tooltip) */
 .pane-hdr .sb-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .pane-qa .cmd { padding: 0; background: none; }
@@ -394,6 +414,8 @@
 .is-mobile .qa-sheet { max-height: calc(100dvh - var(--kb-inset, 0px) - 24px); overflow-y: auto; }
 /* #23: the glyph chip was the only real `button` in the parse row, at 36px — spec §5.10 wants 44px */
 .qa-sheet .parse button { min-height: 44px; min-width: 44px; }
+/* #33: spec §5.10 — the parse-preview chips in the iPhone sheet are 44px like every other chip there */
+.qa-sheet .cmd .parse > b, .qa-sheet .cmd .parse .f, .qa-sheet .cmd .parse > span:not(.muted):not(.hint) { min-height: 44px; }
 .qa-sheet .cmd { padding: 0; background: none; }
 .qa-sheet .cmd .parse { position: static; box-shadow: none; background: none; padding: var(--sp-2) 0 0; pointer-events: auto; }
 .glyph-picker { display: grid; gap: var(--sp-2); max-height: 40dvh; overflow: auto; padding: var(--sp-2); background: var(--surface); border-radius: var(--r-lg); pointer-events: auto; }

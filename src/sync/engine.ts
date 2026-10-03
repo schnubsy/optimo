@@ -4,11 +4,11 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { db, getMeta, setMeta } from '../data/db'
 import { onLocalWrite, taskKind } from '../data/repo'
-import { REMOTE_TABLE, type CalendarEvent, type Category, type Exception, type Settings, type TableName, type Task } from '../data/types'
+import { OPTIONAL_TABLES, REMOTE_TABLE, type AiPlan, type AiProfile, type CalendarEvent, type Category, type Exception, type Settings, type TableName, type Task } from '../data/types'
 import { mergeRow } from './merge'
 import { useSync } from '../state/sync'
 
-const PUSH_ORDER: TableName[] = ['categories', 'tasks', 'exceptions', 'settings']
+const PUSH_ORDER: TableName[] = ['categories', 'tasks', 'exceptions', 'settings', 'aiPlans', 'aiProfile']
 const TABLE_OF: Record<string, TableName> = Object.fromEntries(
   Object.entries(REMOTE_TABLE).map(([k, v]) => [v, k as TableName]),
 )
@@ -53,6 +53,14 @@ const CONFLICT: Record<TableName, string> = {
   tasks: 'id',
   exceptions: 'series_id,occurrence_date',
   settings: 'user_id',
+  aiPlans: 'id',
+  aiProfile: 'id',
+}
+
+/** PostgREST's answer when a table isn't in the schema (yet): PGRST205 / 404, or Postgres 42P01. */
+export function isMissingTable(error: { code?: string; message?: string; status?: number } | null): boolean {
+  if (!error) return false
+  return error.code === 'PGRST205' || error.code === '42P01' || /could not find the table|does not exist/i.test(error.message ?? '')
 }
 
 /** The running engine (one per signed-in session) — calendar sync asks it to pull after the server refresh. */
@@ -70,6 +78,8 @@ export class SyncEngine {
   private again = false
   private stopped = false
   private unsub: (() => void) | null = null
+  /** Optional tables (db/004_ai.sql) the server doesn't have yet: their outbox rows wait, retried every cycle. */
+  readonly parked = new Set<TableName>()
 
   constructor(sb: SupabaseClient, userId: string) {
     this.sb = sb
@@ -133,8 +143,14 @@ export class SyncEngine {
     this.pullTimer = setTimeout(() => void this.run(), delay)
   }
 
+  /** Outbox rows that can actually go up now — rows for parked optional tables don't count as "pending". */
+  private async pendingCount(): Promise<number> {
+    if (!this.parked.size) return db.outbox.count()
+    return db.outbox.filter((e) => !this.parked.has(e.table)).count()
+  }
+
   private async refreshPending() {
-    const n = await db.outbox.count()
+    const n = await this.pendingCount()
     const s = useSync.getState()
     s.set({ pending: n, state: !navigator.onLine ? 'offline' : n > 0 ? 'pending' : s.state === 'error' ? 'error' : 'synced' })
   }
@@ -164,7 +180,7 @@ export class SyncEngine {
       await this.push()
       await this.pull()
       this.backoff = 0
-      const n = await db.outbox.count()
+      const n = await this.pendingCount()
       set({ state: n > 0 ? 'pending' : 'synced', pending: n, lastSync: Date.now(), error: null })
     } catch (e) {
       const offline = !navigator.onLine
@@ -179,6 +195,7 @@ export class SyncEngine {
     const entries = await db.outbox.orderBy('seq').toArray()
     if (!entries.length) return
     const maxSeq = entries[entries.length - 1].seq!
+    const held = new Set<TableName>()
     for (const table of PUSH_ORDER) {
       // Latest outbox payload per row wins (the local row already carries every field's ts).
       const latest = new Map<string, Record<string, unknown>>()
@@ -189,10 +206,24 @@ export class SyncEngine {
         const { error } = await this.sb
           .from(REMOTE_TABLE[table])
           .upsert(rows.slice(i, i + CHUNK), { onConflict: CONFLICT[table], ignoreDuplicates: false, defaultToNull: false })
+        if (error && OPTIONAL_TABLES.has(table) && isMissingTable(error)) {
+          // not applied on the server yet: keep these rows queued, never block the core tables (degrade cleanly)
+          held.add(table)
+          break
+        }
         if (error) throw new Error(`push ${table}: ${error.message}`)
       }
     }
-    await db.outbox.where('seq').belowOrEqual(maxSeq).delete()
+    for (const t of OPTIONAL_TABLES) {
+      if (held.has(t)) this.parked.add(t)
+      else if (!entries.some((e) => e.table === t)) continue
+      else this.parked.delete(t)
+    }
+    await db.outbox
+      .where('seq')
+      .belowOrEqual(maxSeq)
+      .filter((e) => !held.has(e.table))
+      .delete()
     this.refreshPending()
   }
 
@@ -285,7 +316,7 @@ export async function applyRemote(table: TableName, rows: Record<string, unknown
       const local = await tbl.get(key as never)
       const merged = local ? mergeRow(local, incoming) : incoming
       if (table === 'tasks') (merged as Task)._kind = taskKind(merged as Task)
-      await tbl.put(merged as Task | Category | Exception | Settings)
+      await tbl.put(merged as Task | Category | Exception | Settings | AiPlan | AiProfile)
     }
   })
 }

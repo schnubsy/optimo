@@ -2,6 +2,13 @@ name: pages
 on:
   push:
     branches: [main]
+    # control files and docs never count as a ship (lessons 2026-10-02 [pages]): a docs-only push must not move the
+    # live build SHA. Any commit that also touches a non-ignored path still deploys.
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'ARC.md'
+      - 'HANDOFF.md'
   workflow_dispatch:
 permissions:
   contents: read

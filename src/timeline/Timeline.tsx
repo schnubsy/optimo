@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import type { Category, SettingsData } from '../data/types'
 import { fmtClock, isoAt, todayKey } from '../lib/time'
@@ -58,7 +58,7 @@ function ClusterPill({ items, hourPx, clock24, cats }: { items: Item[]; hourPx: 
   )
 }
 
-export function Timeline({ day, items, events = [], cats, settings }: { day: string; items: Item[]; events?: EventItem[]; cats: Map<string, Category>; settings: SettingsData }) {
+export function Timeline({ day, items, events = [], cats, settings, overlay }: { day: string; items: Item[]; events?: EventItem[]; cats: Map<string, Category>; settings: SettingsData; overlay?: (hourPx: number) => ReactNode }) {
   const hourPx = useHourPx()
   const now = useNow()
   const isToday = day === todayKey()
@@ -226,6 +226,7 @@ export function Timeline({ day, items, events = [], cats, settings }: { day: str
         })}
         {isToday && <NowLine now={now} hourPx={hourPx} clock24={settings.clock24} />}
         <DropGhost day={day} hourPx={hourPx} clock24={settings.clock24} />
+        {overlay?.(hourPx)}
       </div>
     </div>
   )
