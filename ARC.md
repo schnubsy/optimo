@@ -34,7 +34,7 @@ Scope: `syncAccount` re-runs discovery each time and merges into `calendars` (ke
 ones arrive enabled; vanished ones removed); stores counts; `last_error` = "No calendars found on this Apple ID" when
 the list is empty. Settings shows "Found N calendars" + "synced HH:MM · N events".
 Done: deno tests for merge + empty-list error; Playwright shows both states.
-Status:
+Status: done 2ffd5fd
 
 ### Slice 3 — calendar picker
 Scope: `src/calendar/CalendarSettings.tsx`: list every calendar (colour dot, name, shared badge) with a read toggle
