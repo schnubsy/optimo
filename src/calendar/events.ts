@@ -4,6 +4,9 @@ import { db } from '../data/db'
 import type { CalendarEvent } from '../data/types'
 import { dayRange, minutesInDay } from '../lib/time'
 import { listAccounts, pruneEvents, syncCalendars } from './api'
+import { cancelCalendarPush, scheduleCalendarPush } from './autosync'
+import { afterPush } from '../sync/engine'
+import { getSettings, updateSettings } from '../data/repo'
 
 /** A calendar event placed on one day: minutes after local midnight, clipped to the day. */
 export interface EventItem {
@@ -49,17 +52,25 @@ export function useCalendarSync(enabled: boolean) {
       try {
         const accounts = await listAccounts()
         await pruneEvents(accounts)
+        const writes = accounts.some((a) => a.enabled && !!a.write_calendar_href)
+        // all-day tasks land on the user's local date in iCloud: the server needs this device's zone
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (writes && (await getSettings()).tz !== tz) await updateSettings({ tz })
         if (accounts.some((a) => a.enabled)) await syncCalendars()
       } catch {
         /* offline or not configured — the next tick retries; Settings shows last_error */
       }
     }
     void run()
+    const onPush = (tables: Set<string>) => tables.has('tasks') && scheduleCalendarPush()
+    afterPush.add(onPush)
     const t = setInterval(run, EVERY)
     const onVis = () => document.visibilityState === 'visible' && void run()
     document.addEventListener('visibilitychange', onVis)
     return () => {
       stopped = true
+      afterPush.delete(onPush)
+      cancelCalendarPush()
       clearInterval(t)
       document.removeEventListener('visibilitychange', onVis)
     }

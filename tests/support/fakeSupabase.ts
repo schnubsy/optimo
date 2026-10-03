@@ -10,6 +10,7 @@ import { handleConnect, handleSync, eventKey, type AccountRow, type EventRow, ty
 import { fakeCalDav } from '../fake/caldav'
 import { handlePlan, PlannerUnavailable, type PlanPorts, type PlanRow, type ProfileRow } from '../../supabase/functions/_shared/plan.ts'
 import { FakeModel } from '../fake/planPorts'
+import type { LinkRow, TaskRow } from '../../supabase/functions/_shared/twoway.ts'
 import { TEST_CRON, TEST_KEK } from '../fake/ports'
 
 export const SUPABASE_HOST = 'eepjhpyziczrxvirczio.supabase.co'
@@ -68,6 +69,8 @@ export class FakeSupabase {
   planCalls: { action: string; status: number; body: Record<string, unknown> }[] = []
   /** the iCloud side of the calendar functions — a hermetic CalDAV server */
   caldav = fakeCalDav({ requests: [], extra: [], removeDentist: false })
+  /** planner_calendar_links (db/005; server-owned, written by the in-process calendar-sync) */
+  calLinks = new Map<string, LinkRow>()
   /** function calls with their status (the password gate also greps the stored rows) */
   functionCalls: { name: string; status: number }[] = []
   log: { seq: number; user_id: string; table_name: string; row_id: string; op: string; at: string }[] = []
@@ -77,6 +80,9 @@ export class FakeSupabase {
   otpCode = '424242'
   otpSends: string[] = []
   lastOtpAt = 0
+  /** ms the page's pinned clock (openApp `at`) sits from the wall clock; the in-process handlers use `now()` */
+  clockOffset = 0
+  now = () => new Date(Date.now() + this.clockOffset)
   private sockets = new Set<{ ws: WebSocketRoute; topic: string; id: number }>()
   private nextBindingId = 1000
 
@@ -223,7 +229,7 @@ export class FakeSupabase {
         const hex = Date.now().toString(16).padStart(12, '0')
         return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-7${crypto.randomUUID().slice(15)}`
       },
-      now: () => new Date(),
+      now: this.now,
       userFromJwt: async (jwt) => {
         try {
           return JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString()).sub ?? null
@@ -301,6 +307,19 @@ export class FakeSupabase {
           logEvent(row)
         }
       },
+      // two-way (arc 4): the real twoWay() over this fake's planner_tasks (merge + sync log like press) and links
+      tasksForPush: async (_u, fromIso) =>
+        [...this.rows.planner_tasks.values()].filter((t) => t.start_at && Date.parse(String(t.start_at)) >= Date.parse(fromIso) && !t.rrule && !t.series_id && !t.deleted_at).map((t) => ({ ...t }) as unknown as TaskRow),
+      tasksByIds: async (_u, ids) => ids.map((id) => this.rows.planner_tasks.get(id)).filter(Boolean).map((t) => ({ ...t }) as unknown as TaskRow),
+      links: async (accountId) => [...this.calLinks.values()].filter((l) => l.account_id === accountId).map((l) => ({ ...l })),
+      upsertLink: async (row) => void this.calLinks.set(row.task_id, { ...row }),
+      deleteLink: async (taskId) => void this.calLinks.delete(taskId),
+      writeTask: async (_u, id, fields, ts) => {
+        const field_ts = Object.fromEntries([...Object.keys(fields), 'device_id'].map((k) => [k, ts]))
+        this.upsert('planner_tasks', { id, ...fields, device_id: 'calendar-sync', field_ts })
+        return Number(this.rows.planner_tasks.get(id)!.version)
+      },
+      userTz: async () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     }
   }
 

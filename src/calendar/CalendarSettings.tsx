@@ -1,9 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../data/db'
+import { useSettings } from '../data/hooks'
+import { fmtClock } from '../lib/time'
 import type { CalendarAccount } from '../data/types'
 import { useUI } from '../state/ui'
-import { connectICloud, disconnect, listAccounts, setCalendarEnabled, syncCalendars } from './api'
+import { connectICloud, disconnect, listAccounts, setCalendarEnabled, setWriteCalendar, syncCalendars } from './api'
 
-/** Settings → Calendars: connect iCloud (Apple ID + app-specific password), per-calendar toggles, sync, disconnect. */
+/** Settings → Calendars: connect iCloud (Apple ID + app-specific password), per-calendar read toggles, the write
+ * target ("Put optimo tasks in"), sync, disconnect. */
 export function CalendarSettings() {
   const notify = useUI((s) => s.notify)
   const [accounts, setAccounts] = useState<CalendarAccount[] | null>(null)
@@ -41,8 +46,10 @@ export function CalendarSettings() {
     setBusy(true)
     try {
       await syncCalendars()
-      await refresh()
-      notify({ text: 'Calendars synced.' })
+      const fresh = await listAccounts()
+      setAccounts(fresh)
+      const failed = fresh.find((x) => x.last_error)
+      notify({ text: failed ? (failed.last_error as string) : 'Calendars synced.' })
     } catch (err) {
       notify({ text: (err as Error).message })
     } finally {
@@ -58,27 +65,45 @@ export function CalendarSettings() {
           <div className="cal-acc-hd">
             <b>{a.label}</b>
             <span className="muted">{a.username}</span>
-            <span className="muted">{a.last_sync_at ? `synced ${new Date(a.last_sync_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'not synced yet'}</span>
           </div>
+          <AccountStatus account={a} />
           {a.last_error && <p className="cal-error" role="alert">{a.last_error}</p>}
-          {a.calendars.map((c) => (
-            <button
-              key={c.href}
-              type="button"
-              role="switch"
-              aria-checked={c.enabled}
-              className="switch-row"
-              data-testid="calendar-toggle"
-              onClick={async () => {
-                const calendars = await setCalendarEnabled(a, c.href, !c.enabled)
-                setAccounts((xs) => xs?.map((x) => (x.id === a.id ? { ...x, calendars } : x)) ?? null)
-                await syncCalendars().catch(() => undefined)
-              }}
-            >
-              <span>{c.name}</span>
-              <i className="switch" aria-hidden="true" />
-            </button>
-          ))}
+          <ul className="cal-list" aria-label={`${a.label} calendars`}>
+            {a.calendars.map((c) => (
+              <li key={c.href}>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={c.enabled}
+                  className="switch-row cal-row"
+                  data-testid="calendar-toggle"
+                  onClick={async () => {
+                    const calendars = await setCalendarEnabled(a, c.href, !c.enabled)
+                    setAccounts((xs) => xs?.map((x) => (x.id === a.id ? { ...x, calendars } : x)) ?? null)
+                    await syncCalendars().catch(() => undefined)
+                  }}
+                >
+                  <span className="cal-dot" aria-hidden="true" style={c.color ? { background: c.color } : undefined} />
+                  <span className="cal-name">{c.name}</span>
+                  {c.shared && (
+                    <span className="cal-badge" data-testid="calendar-shared">
+                      Shared
+                    </span>
+                  )}
+                  <i className="switch" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <WriteTarget
+            account={a}
+            onChange={async (href) => {
+              await setWriteCalendar(a, href)
+              setAccounts((xs) => xs?.map((x) => (x.id === a.id ? { ...x, write_calendar_href: href } : x)) ?? null)
+              await syncCalendars().catch(() => undefined)
+              await refresh()
+            }}
+          />
           <div className="set-actions">
             <button type="button" className="ghost-btn" onClick={sync} disabled={busy} data-testid="calendar-sync">
               Sync now
@@ -101,7 +126,7 @@ export function CalendarSettings() {
       {accounts && !accounts.length && (
         <form className="cal-form" onSubmit={onConnect} data-testid="calendar-connect">
           <p className="cal-help">
-            Shows your iCloud events on the timeline, read-only. Use an <b>app-specific password</b>, not your Apple ID password —
+            Shows your iCloud events on the timeline, and can write timed tasks into one calendar you choose. Use an <b>app-specific password</b>, not your Apple ID password —
             create one at{' '}
             <a href="https://appleid.apple.com/account/manage" target="_blank" rel="noreferrer">
               appleid.apple.com → App-Specific Passwords
@@ -127,5 +152,61 @@ export function CalendarSettings() {
         </form>
       )}
     </fieldset>
+  )
+}
+
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
+
+/** Honest status: what discovery found and what this device holds — never "synced" over an empty account. */
+function AccountStatus({ account: a }: { account: CalendarAccount }) {
+  const events = useLiveQuery(() => db.events.where('account_id').equals(a.id).count(), [a.id]) ?? 0
+  const { clock24 } = useSettings()
+  const found = a.calendars.length
+  const at = a.last_sync_at ? new Date(a.last_sync_at) : null
+  return (
+    <p className="cal-status muted" data-testid="calendar-status">
+      {found ? <span data-testid="calendar-found">Found {plural(found, 'calendar')}</span> : <span data-testid="calendar-none">No calendars found</span>}
+      <span aria-hidden="true"> · </span>
+      <span data-testid="calendar-synced">
+        {at ? `synced ${fmtClock(at.getHours() * 60 + at.getMinutes(), clock24)} · ${plural(events, 'event')}` : 'not synced yet'}
+      </span>
+    </p>
+  )
+}
+
+/** "Put optimo tasks in": None, or any calendar optimo may write to (read-only shared calendars are not offered). */
+function WriteTarget({ account: a, onChange }: { account: CalendarAccount; onChange: (href: string | null) => Promise<void> }) {
+  const [saving, setSaving] = useState(false)
+  const targets = a.calendars.filter((c) => c.writable !== false)
+  const id = `cal-write-${a.id}`
+  return (
+    <div className="cal-write">
+      <label htmlFor={id}>Put optimo tasks in</label>
+      <select
+        id={id}
+        value={a.write_calendar_href ?? ''}
+        disabled={saving}
+        aria-describedby={`${id}-help`}
+        data-testid="calendar-write"
+        onChange={async (e) => {
+          setSaving(true)
+          try {
+            await onChange(e.target.value || null)
+          } finally {
+            setSaving(false)
+          }
+        }}
+      >
+        <option value="">None — don’t write</option>
+        {targets.map((c) => (
+          <option key={c.href} value={c.href}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <p id={`${id}-help`} className="cal-help">
+        Scheduled tasks (not repeating ones) appear in this calendar. Moving, renaming or deleting one there changes it here — deleting it there deletes the task.
+      </p>
+    </div>
   )
 }

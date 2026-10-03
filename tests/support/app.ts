@@ -58,13 +58,16 @@ export function seedDay(server: FakeSupabase) {
 export async function openApp(page: Page, context: BrowserContext, opts: { seed?: (s: FakeSupabase) => void; theme?: 'dark' | 'light'; at?: string } = {}) {
   // `at: 'HH:MM'` pins today's clock (lessons 2026-10-02 [test]): late at night the timeline sits at "now" and
   // virtualises evening blocks away, so specs that reach for a 19:30 pill must not depend on the wall clock.
+  const server = new FakeSupabase()
   if (opts.at) {
     const [h, m] = opts.at.split(':').map(Number)
     const now = new Date()
     now.setHours(h, m, 0, 0)
     await page.clock.install({ time: now })
+    // the in-process Edge handlers stamp field_ts with the server's clock: keep it on the page's pinned clock, or a
+    // server write "later today" out-votes every client edit made at the pinned time (arc 4: plan specs failed after 08:00)
+    server.clockOffset = now.getTime() - Date.now()
   }
-  const server = new FakeSupabase()
   opts.seed?.(server)
   await server.attach(context)
   if (opts.theme) await context.addInitScript((t) => localStorage.setItem('optimo.theme', t), opts.theme)

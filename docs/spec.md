@@ -93,7 +93,24 @@ a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtu
   RRULEs with ical.js (instance uid = `UID#start`), upserts changed rows into `planner_events` and tombstones the
   rest; clients pull them through `planner_sync_log` like any row (server-owned: replace, no merge). The app
   refreshes on open and every 15 min while visible. Events render as outlined, fixed pills (tap = details),
-  share overlap columns with tasks, and count against free time. Two-way is later.
+  share overlap columns with tasks, and count against free time.
+- **Arc 4 — iCloud two-way + calendar picker.** Discovery reads attributes single- or double-quoted (iCloud writes
+  `name='VEVENT'`) and re-runs on every sync: calendars keep their read toggle, new ones arrive on, vanished ones go;
+  each carries `shared` / `writable`. Settings → Calendars lists them (colour, name, "Shared" badge, read switch), shows
+  "Found N calendars · synced HH:MM · N events" or "No calendars found", and a **"Put optimo tasks in"** select writing
+  `write_calendar_href` (db/005; default: a calendar named "optimo" the first time discovery finds it; None = off).
+  After the event pull, `calendar-sync` runs the two-way pass (`_shared/twoway.ts`): every scheduled, non-recurring,
+  non-override, live task with `start_at ≥ now−7d` (no upper bound; all-day → DATE events in `settings.tz`) whose
+  `version > planner_calendar_links.pushed_version` is PUT as `optimo-<task_id>.ics` (UID `optimo-<id>@optimo`,
+  `X-OPTIMO-TASK-ID`; If-None-Match `*` on create, If-Match on update); deleted / unscheduled / made-recurring → DELETE;
+  a new write target → move. Completed tasks keep their event; a task that ages out of the window keeps its event.
+  Objects with an `optimo-` UID are never cached as `planner_events`. Pull back: an etag change applies start, length
+  and title to the task, and an object gone from the write calendar (including one moved to another calendar in
+  iCloud) tombstones the task — both as an upsert with `field_ts = now` and `device_id = 'calendar-sync'`, so
+  `planner_merge()` arbitrates like any client. A 412 on PUT is treated as that iCloud edit (never overwritten). Echo
+  guard: a pulled-back change sets `pushed_version` to the merged version. The client asks for a sync ~5 s after its
+  outbox pushes task rows (one call per burst); the 15-min cron is the backstop. **Recurring tasks are not written to
+  iCloud yet** (series and per-occurrence overrides stay optimo-only).
 - **Arc 3 — AI planning (Plan tab).** The Plan tab takes written intent for a day (today / tomorrow / a date), a mode
   (**Propose**, the default, or **Auto**) and an optional web-research switch, and posts them to the `plan-day` Edge
   Function (user JWT, `verify_jwt`; every read/write under the caller's JWT so RLS applies). `propose` loads that
@@ -147,7 +164,10 @@ server-side (Edge Function secrets) in later arcs.
   only status / accepted_task_ids.
 - `planner_ai_profile` (arc 3: id, user_id unique, data jsonb `{tone, day_shape, preferred_block_min, buffers,
   habits[], avoid[]}`, accepted_count, …sync cols) — distilled server-side; clients only reset it (tombstone).
-  Both are optional tables for a client: a push answered with PGRST205 / 42P01 (not applied yet) parks those
+- `planner_calendar_links` (arc 4, `db/005_calendar_twoway.sql`: task_id PK → planner_tasks, account_id, calendar_href,
+  object_href, uid `optimo-<task_id>@optimo`, etag, pushed_version, pushed_at) — server-owned (calendar-sync, service
+  role); clients may read. `planner_calendar_accounts.write_calendar_href` is the one calendar optimo writes into.
+  `planner_ai_plans` / `planner_ai_profile` are optional tables for a client: a push answered with PGRST205 / 42P01 (not applied yet) parks those
   outbox rows and retries every cycle; the core tables never wait on them.
 
 **Sync cols on every row:** `version bigint` (server-incremented by trigger), `updated_at timestamptz`,

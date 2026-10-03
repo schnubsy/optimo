@@ -201,8 +201,10 @@ export interface CalendarAccount {
   provider: 'icloud'
   label: string
   username: string
-  calendars: { href: string; name: string; color: string | null; enabled: boolean }[]
+  calendars: { href: string; name: string; color: string | null; enabled: boolean; shared?: boolean; writable?: boolean }[]
   enabled: boolean
   last_sync_at: string | null
   last_error: string | null
+  /** db/005: the calendar optimo writes timed tasks into; null = write-back off */
+  write_calendar_href?: string | null
 }

@@ -1,63 +1,59 @@
 # HANDOFF — optimo
 
 ## Current state
-Arc 3 — **AI planner (Plan tab)** is **merged and live**: PR #55 merged at `10866d1` (2026-10-03). The main
-checkout is reconciled (HEAD = `10866d1`). Pages ship proof: the live `<meta name="build">` is **`10866d1`** (it was
-`e17b434`). The launcher is republished: press `9dc2908`, live `press/optimo.html` sha256 `82ddc9d2…bd1a` = local, and
-GitHub blob `58da52f5…` = local. Issues #29–#37 closed via the PR. The gauntlet was GREEN (vitest 340 · deno incl.
-plan-day · secret gates · Playwright desktop + iPhone 15 with axe · Lighthouse 100/100, 98/100), and so were sentry
-and the page-diff gate. **The Plan tab shows "Planner isn't connected yet" until Cowork runs steps 1–2.**
+Arc 4 — **iCloud two-way sync + calendar picker** is complete on `arc/icloud-two-way` (slices 1–7 ticked, gauntlet +
+sentry GREEN, Lighthouse 100/100 · 98/100). This close runs PR → merge → main-checkout reconcile → Pages ship proof;
+the post-merge proofs are recorded below once they exist. **The live Edge Functions are still the arc-2 v1 code**
+(read-only, the discovery bug that found 0 calendars) until Cowork runs manual step 1.
 
 ## Shipped this arc (on the branch)
-1. Pages `paths-ignore` (docs/**, *.md, ARC.md, HANDOFF.md): control-file commits no longer deploy.
-2–10. Snags #29–#37: iPhone inbox hint, brand-mark chip inside the pill, editor category flash, running pill over
-   the now line, 44px parse chips, handshake glyph, Week header pad, Month gutter, toasts under sheets.
-11. `planner_ai_plans` / `planner_ai_profile` in Dexie v3 + sync. Optional-table pushes park until 004 is live.
-12. `plan-day` Edge Function (`propose` / `learn`): caller-JWT RLS, strict plan tool, web search ≤ 3 with sources,
-   Haiku distil, 30/day, one retry, intent never logged, 503 `not_connected`.
-13. Plan tab: intent / day / Propose|Auto / research → ghost blocks with a why each and clashes marked. Accept all /
-   some / edit / reject; Auto + Undo; "Planner isn't connected yet" / offline states.
-14. Learning on accept + Settings → Planning (default mode, research default, learned summary, Reset).
-15. Eye LITE (`docs/evidence/ai-planner-slice-15-design-critique.md`): AI-P0-1 fixed (the Plan tab plans the app's
-   day). 16 P1/P2 filed as `snag` #39–#54.
-16. Lighthouse budget held (`…-slice-16-lighthouse-budget.md`). Sentry: `docs/evidence/ai-planner-sentry.md`.
+1. Discovery reads `name='VEVENT'` and `name="VEVENT"` alike; calendars carry `shared` / `writable`. Every CalDAV
+   fixture is now iCloud-shaped; the regression test fails on the old code (`…-slice-1-discovery.md`).
+2. Rediscovery every sync (toggles kept, new calendars on, vanished ones gone); default write target = a calendar named
+   "optimo" the first time it is found (Mark's existing empty account heals and picks it on its first sync). Status:
+   "Found N calendars · synced HH:MM · N events" / "No calendars found on this Apple ID".
+3. Settings → Calendars picker: colour dot, name, "Shared" badge, read switch, "Put optimo tasks in" (None or writable).
+4. Push: scheduled, non-recurring tasks from now−7 d onward → `optimo-<id>.ics` in the chosen calendar (all-day as
+   DATE); edits re-PUT with If-Match; delete / unschedule → DELETE; new target → move; completed tasks stay. The app
+   asks calendar-sync ~5 s after pushing task changes; the 15-min cron is the backstop. Recurring tasks: not written.
+5. Pull back: iCloud move / rename → the task; deleted in iCloud → task tombstoned; 412 → iCloud wins; no ping-pong.
+6. Eye LITE: no P0; P1-1 helper copy corrected in-arc; #56–#65 filed as `snag`. 7. Lighthouse budget held.
+Also: Plan specs' time-of-day failure fixed (fake server clock follows the pinned page clock); eslint ignores `.claude/`.
 
 ## Open / blockers (close-out manifest)
-- push · PR #55 · merge `10866d1` · reconcile main · Pages ship proof · launcher publish (press `9dc2908`):
-  **DONE**, proofs in Current state. Inbox cleanup: none needed. ARC.md and `db/004_ai.sql` lived in the main
-  checkout (no worktree) and are now tracked (ARC.md truncated by the close).
-- **migrations/backfills — BLOCKED → Mark's manual step 1** (Cowork applies `db/004_ai.sql`).
-- **deploy (Edge Function plan-day) — BLOCKED → Mark's manual step 2** (Cowork deploys).
-- Until steps 1 and 2 land, the Plan tab says "Planner isn't connected yet", AI outbox rows park, and core sync is unaffected.
-- Snags #39–#54 (🟡/⚪) wait for the next train. #40 (Undo after Accept still teaches the profile) and #50 (re-plan
-  with Auto selected writes the day) are the first to take.
-- Carried: launcher heading font, iCloud connect and the on-device iPhone checks are not yet run by Mark.
+- push · PR · merge · reconcile main · Pages ship proof: run in this close (proofs appended here after the merge).
+- **migrations — DONE by Cowork** before the order: `db/005_calendar_twoway.sql` applied, committed unchanged
+  (`git hash-object` = `455dd4ce41f2af0561bc3d69602e030d5ce98011`).
+- **deploy (Edge: calendar-connect, calendar-sync) — BLOCKED → manual step 1 (Cowork).**
+- publish (press launcher) — N/A: the launcher card is unchanged this arc.
+- Snags #56–#65 (🟡/⚪) wait for the next train; #56 (target-change side effects) and #58 (empty state) first.
+  Carried: #39–#54 from arc 3.
+- Uncommitted on purpose in the main checkout: `docs/backlog/2026-10-03-mark-feedback.md` (Cowork's arc-5 seed).
 
 ## Exact next steps
-1. Cowork: manual steps 1 → 2 below, then "Cowork: run verify".
-2. Mark: step 3 (the real model on the Plan tab), then steps 4–6. Anything failing → a `snag` Issue.
-3. Next arc: snag train for #39–#54 (any Claude Code prompt carries `MAIN CHECKOUT: /Users/mark/Documents/code/optimo`
-   and `INBOX FILES:` as the order lists them, and pulls `main` before branching).
+1. Cowork: manual step 1, then "Cowork: run verify".
+2. Mark: steps 2–3 (real Apple ID, real iPhone). Anything failing → a `snag` Issue.
+3. Next arc: arc 5 from `docs/backlog/2026-10-03-mark-feedback.md` (any Claude Code prompt carries
+   `MAIN CHECKOUT: /Users/mark/Documents/code/optimo` and `INBOX FILES:` as the order lists them, and pulls `main`
+   before branching).
 
 ## Mark's manual steps
-1. **Apply 004 (Cowork, Supabase connector, project `eepjhpyziczrxvirczio`).** Precondition, then the action, then
-   the postcondition, in one chain:
-   `cd ~/Documents/code/optimo && git pull --ff-only && [ "$(git hash-object db/004_ai.sql)" = 2e019b196e0546f76980550785af27f193b80fa1 ]`
-   → apply `db/004_ai.sql` via the connector → run
-   `select c.relname, c.relrowsecurity, (select count(*) from pg_trigger t where t.tgrelid=c.oid and not t.tgisinternal) trg, (select count(*) from pg_policies p where p.tablename=c.relname) pol from pg_class c where c.relname in ('planner_ai_plans','planner_ai_profile');`
-   **Postcondition:** both rows present, `relrowsecurity = true`, `trg = 2`, `pol = 1`.
-2. **Deploy plan-day (Cowork/Mark, Terminal):**
-   `cd ~/Documents/code/optimo && git pull --ff-only && grep -c handlePlan supabase/functions/plan-day/index.ts && supabase functions deploy plan-day --project-ref eepjhpyziczrxvirczio && curl -s -o /dev/null -w '%{http_code}\n' -X POST https://eepjhpyziczrxvirczio.supabase.co/functions/v1/plan-day`
-   **Postcondition:** `grep -c` ≥ 1. The curl prints **401** (verify_jwt; unauthenticated). Record the new
-   `ezbr_sha256` (no prior value: this is a new function). Then, signed in, Plan → Propose returns 200 and a
-   `planner_ai_plans` row with `status = 'draft'` (`select status, model from planner_ai_plans order by id desc limit 1;`).
-3. **Plan tab against the real model (Mark):** live app → Plan → write a real day → Propose. Check the blocks, each
-   why, the challenge notes and ≤ 3 questions; Accept some → tasks on the timeline; Settings → Planning shows a
-   learned summary after an accept. Research on → sources listed.
-4. **Launcher font check (iPhone):** https://schnubsy.github.io/press/optimo.html. The heading should render in
-   the rounded face.
-5. **Connect iCloud:** appleid.apple.com → App-Specific Passwords → "+" `optimo` → live app → Settings → Calendars.
-   Postcondition: "synced HH:MM" with calendars listed; `select count(*) from planner_events where deleted_at is null;` > 0.
-6. **iPhone:** Add to Home Screen → open → Settings → Reminders → Turn on → Send a test. Postconditions: the test
-   notification arrives; a task 10 min out with a 5-min reminder notifies with the app closed; the event sheet sits
-   above the tab bar.
+1. **Deploy calendar-connect + calendar-sync (Cowork, Supabase connector, project `eepjhpyziczrxvirczio`).**
+   Precondition → action → postcondition, in one chain:
+   `cd ~/Documents/code/optimo && git pull --ff-only && grep -c "twoWay(dav, acc, p" supabase/functions/_shared/handlers.ts`
+   (must print ≥ 1) → deploy both functions via the connector with their entry `calendar-*/index.ts` plus
+   `deno.json` and `_shared/{caldav,crypto,due,handlers,ics,supabase,twoway,vevent}.ts`; keep `verify_jwt` as today
+   (calendar-connect **true**, calendar-sync **false** — it also takes `x-cron-secret`) → list the functions.
+   **Postcondition:** `ezbr_sha256` differs from the pre-deploy values — calendar-connect
+   `9c67cfe5b8206a0e4155bb4600568e43584ef31222bc4b067ebc8dcf4e5cd5d8`, calendar-sync
+   `be3d852f7b4d5025e55a9f733873bf2834602b6c1495d8e6e53c8a143464364d` (both v1) — and the source read back matches
+   the repo. Then, signed in as Mark: Settings → Calendars → Sync now shows **"Found N calendars" with N ≥ 1**;
+   `select count(*) from planner_events where deleted_at is null;` **> 0**; `select write_calendar_href from
+   planner_calendar_accounts;` ends in the "optimo" calendar's href; create a test task today 15:00 in optimo → within
+   ~10 s it appears in that iCloud calendar (`select count(*) from planner_calendar_links;` ≥ 1), then delete it.
+   Note: on that first sync every scheduled task from 7 days ago onward is written into the "optimo" calendar.
+2. **Two-way on the real Apple ID (Mark).** iPhone Calendar: move an optimo task's event → Sync now in optimo → the task
+   moves; rename → the title follows; delete → the task disappears. Settings → Calendars: switch a calendar off → its
+   events leave the timeline; pick "None" → new tasks stop appearing in iCloud.
+3. **iPhone:** Add to Home Screen → open → Settings → Reminders → Turn on → Send a test (carried from arc 2/3); the
+   launcher heading renders in the rounded face at https://schnubsy.github.io/press/optimo.html.

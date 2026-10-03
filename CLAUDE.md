@@ -26,14 +26,15 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**Arc 3 — AI planner (Plan tab): complete on `arc/ai-planner`, closing (PR → merge → Pages ship proof → launcher
-republish).** The Plan tab turns written intent into a proposed day: ghost blocks with a *why* each and conflicts marked;
-accept all / some / edit / reject, or Auto with Undo. Learning goes into `planner_ai_profile` (Settings → Planning), with
-optional web research. The `plan-day` Edge Function uses the caller's JWT for RLS and calls Claude through a strict
-tool. Snags #29–#37 are fixed; the Eye review found 1 P0 (fixed) and filed 16 P1/P2 as #39–#54. Gauntlet + sentry
-green, Lighthouse 100/100 · 98/100.
-**Cowork owes:** apply `db/004_ai.sql`, deploy `plan-day` (until then the tab says "Planner isn't connected yet").
-**Not yet verified by Mark:** iCloud connect + on-device iPhone checks; the Plan tab against the real model.
+**Arc 4 — iCloud two-way sync + calendar picker: complete on `arc/icloud-two-way`, closing (PR → merge → Pages ship
+proof).** Discovery fixed (iCloud's single-quoted `name='VEVENT'` dropped every calendar) and re-run every sync; honest
+status ("Found N calendars · synced HH:MM · N events" / "No calendars found"). Settings → Calendars lists own + shared
+calendars with read switches and a "Put optimo tasks in" select. calendar-sync writes scheduled, non-recurring tasks
+into that calendar (etag-guarded PUT/DELETE/move) and pulls iCloud moves / renames / deletes back as `calendar-sync`
+LWW upserts; the client triggers it ~5 s after task pushes. Eye: no P0 (P1-1 copy fixed), #56–#65 filed. Gauntlet +
+sentry green, Lighthouse 100/100 · 98/100. db/005 applied by Cowork.
+**Cowork owes:** deploy `calendar-connect` + `calendar-sync` (live code is still the read-only, broken-discovery v1).
+**Not yet verified by Mark:** iCloud connect + two-way on the real Apple ID; on-device iPhone checks.
 
 ## Project rules
 

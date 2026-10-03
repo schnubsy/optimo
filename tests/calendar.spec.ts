@@ -8,6 +8,11 @@ import { FAKE_PASSWORD, FAKE_USER } from './fake/caldav'
 import type { FakeSupabase } from './support/fakeSupabase'
 
 const setView = (page: Page, view: string) => page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board' }), view)
+/** Evidence: the Calendars group centred in the viewport (an element shot slides under the sticky iPhone header). */
+async function shot(page: Page, name: string) {
+  await page.getByTestId('calendars').evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.screenshot({ path: `docs/evidence/${name}.png` })
+}
 const events = (page: Page) => page.getByTestId('timeline').getByTestId('event')
 
 async function connect(page: Page, password = FAKE_PASSWORD) {
@@ -38,8 +43,9 @@ test.describe('iCloud calendar (read-only)', () => {
     const acc = page.getByTestId('calendar-account')
     await expect(acc).toBeVisible()
     await expect(acc).toContainText(FAKE_USER)
-    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(1) // Home (VEVENT); the VTODO list is skipped
-    await expect(acc.getByTestId('calendar-toggle')).toHaveAttribute('aria-checked', 'true')
+    // Home + optimo + the shared Family calendar (iCloud-shaped, single-quoted replies); Reminders / inbox / outbox skipped
+    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(3)
+    for (const t of await acc.getByTestId('calendar-toggle').all()) await expect(t).toHaveAttribute('aria-checked', 'true')
     await expect(page.getByTestId('calendar-connect')).toHaveCount(0)
     expect(server.functionCalls.map((c) => `${c.name}:${c.status}`)).toEqual(['calendar-connect:200', 'calendar-sync:200'])
 
@@ -55,12 +61,15 @@ test.describe('iCloud calendar (read-only)', () => {
     await expect(page.getByTestId('event-details')).toContainText('Harbour St Dental')
     expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
 
-    // calendar off → the server tombstones its events → the pull removes them
+    // calendars off → the server tombstones their events → the pull removes them
     await setView(page, 'settings')
-    await page.getByTestId('calendar-toggle').click()
-    await expect(page.getByTestId('calendar-toggle')).toHaveAttribute('aria-checked', 'false')
+    for (const name of ['Home', 'Family']) {
+      const t = page.getByTestId('calendar-toggle').filter({ hasText: name })
+      await t.click()
+      await expect(t).toHaveAttribute('aria-checked', 'false')
+    }
     await expect.poll(() => page.evaluate(() => (window as any).__optimo.db.events.count())).toBe(0)
-    await page.getByTestId('calendar-toggle').click()
+    await page.getByTestId('calendar-toggle').filter({ hasText: 'Home' }).click()
     await expect.poll(() => page.evaluate(() => (window as any).__optimo.db.events.count())).toBeGreaterThan(0)
 
     // disconnect removes the account and every event on this device
@@ -99,6 +108,91 @@ test.describe('iCloud calendar (read-only)', () => {
     const b = (await deep.boundingBox())!
     expect(Math.abs(a.x - b.x)).toBeGreaterThan(20)
     void server
+  })
+
+  test('honest status: "Found 3 calendars" + "synced HH:MM · N events"; an empty Apple ID says "No calendars found"', async ({ page, context }, info) => {
+    const { server } = await openApp(page, context)
+    await connect(page)
+    const status = page.getByTestId('calendar-status')
+    await expect(status.getByTestId('calendar-found')).toHaveText('Found 3 calendars')
+    await expect(status.getByTestId('calendar-synced')).toHaveText(/^synced \d{2}:\d{2} · 12 events$/) // the app's 24 h clock, not the locale's
+    await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveCount(0)
+    if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-found-${info.project.name}`)
+
+    // the same account after iCloud stops listing any event calendar: the status and the error both say so
+    server.caldav.state.emptyHome = true
+    await page.getByTestId('calendar-sync').click()
+    await expect(status.getByTestId('calendar-none')).toHaveText('No calendars found')
+    await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveText('No calendars found on this Apple ID')
+    await expect(status.getByTestId('calendar-synced')).toHaveText(/· 0 events$/)
+    await expect(page.getByTestId('toast')).toContainText('No calendars found on this Apple ID') // never "synced." over nothing
+    expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
+    if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-empty-${info.project.name}`)
+  })
+
+  test('picker: colour dot + Shared badge per calendar; read toggles; "Put optimo tasks in" writes write_calendar_href and syncs', async ({ page, context }) => {
+    const { server } = await openApp(page, context)
+    await connect(page)
+    const acc = page.getByTestId('calendar-account')
+    await expect(acc.getByTestId('calendar-toggle')).toHaveCount(3)
+    const row = () => [...server.rows.planner_calendar_accounts.values()][0] as any
+    const hrefOf = (name: string) => (row().calendars as { href: string; name: string }[]).find((c) => c.name === name)!.href
+
+    // every calendar listed with its iCloud colour; only the shared one carries the badge
+    await expect(acc.getByTestId('calendar-shared')).toHaveCount(1)
+    await expect(acc.getByTestId('calendar-toggle').filter({ hasText: 'Family' }).getByTestId('calendar-shared')).toHaveText('Shared')
+    await expect(acc.getByTestId('calendar-toggle').filter({ hasText: 'optimo' }).locator('.cal-dot')).toHaveCSS('background-color', 'rgb(63, 166, 107)')
+
+    // the write target: defaults to the "optimo" calendar (set by the server on discovery); None + writable calendars only
+    const select = acc.getByLabel('Put optimo tasks in')
+    await expect(select).toHaveValue(hrefOf('optimo'))
+    await expect(select.locator('option')).toHaveText(['None — don’t write', 'Home', 'optimo'])
+    await expect(acc).toContainText('Scheduled tasks (not repeating ones) appear in this calendar. Moving, renaming or deleting one there changes it here — deleting it there deletes the task.')
+
+    // read toggle → stored + a sync
+    const syncs = () => server.functionCalls.filter((c) => c.name === 'calendar-sync').length
+    let before = syncs()
+    const home = acc.getByTestId('calendar-toggle').filter({ hasText: 'Home' })
+    await home.click()
+    await expect(home).toHaveAttribute('aria-checked', 'false')
+    await expect.poll(() => (row().calendars as { name: string; enabled: boolean }[]).find((c) => c.name === 'Home')!.enabled).toBe(false)
+    await expect.poll(syncs).toBeGreaterThan(before)
+
+    // write target → stored + a sync; None stores null
+    before = syncs()
+    await select.selectOption({ label: 'Home' })
+    await expect.poll(() => row().write_calendar_href).toBe(hrefOf('Home'))
+    await expect.poll(syncs).toBeGreaterThan(before)
+    await expect(select).toHaveValue(hrefOf('Home'))
+    await select.selectOption({ label: 'None — don’t write' })
+    await expect.poll(() => row().write_calendar_href).toBeNull()
+    await expect(select).toHaveValue('')
+    await select.selectOption({ label: 'optimo' })
+    await expect.poll(() => row().write_calendar_href).toBe(hrefOf('optimo'))
+    await expect(select).toBeEnabled()
+
+    // ≥ 44px targets, axe clean in both themes
+    for (const t of [...(await acc.getByTestId('calendar-toggle').all()), select, acc.getByTestId('calendar-sync'), acc.getByTestId('calendar-disconnect')])
+      expect((await t.boundingBox())!.height, `${await t.getAttribute('data-testid')} height`).toBeGreaterThanOrEqual(44)
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate((t) => (window as any).__optimo.repo.updateSettings({ theme: t }), theme)
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+      expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
+    }
+  })
+
+  test('evidence: calendar picker, light + dark', async ({ page, context }, info) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    await openApp(page, context, { theme: 'light' })
+    await connect(page)
+    await expect(page.getByTestId('calendar-found')).toBeVisible()
+    await expect(page.getByTestId('calendar-write')).toBeEnabled()
+    await expect(page.getByTestId('toast')).toHaveCount(0, { timeout: 15_000 }) // the "connected" toast would cover the actions
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate((t) => (window as any).__optimo.repo.updateSettings({ theme: t }), theme)
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+      await shot(page, `icloud-two-way-slice-3-picker-${info.project.name}-${theme}`)
+    }
   })
 
   test('evidence: calendar events + settings', async ({ page, context }, info) => {
