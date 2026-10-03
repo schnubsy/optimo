@@ -34,8 +34,8 @@ export interface FakeCalDavState {
   removeDentist: boolean
   /** the home set lists no calendars at all (the "No calendars found" state) */
   emptyHome?: boolean
-  /** the next PUT answers 412 (someone edited the object in iCloud between our read and our write) */
-  failNextPut?: boolean
+  /** runs before each PUT is handled — a test edits the object "on the iPhone" here to cause a real 412 */
+  beforePut?: (url: string) => void
 }
 
 export function fixtureIcs(today = new Date()): DavObj[] {
@@ -129,13 +129,14 @@ export function fakeCalDav(state: FakeCalDavState = { requests: [], extra: [], r
   const good2 = `Basic ${btoa(`${FAKE_USER}:${FAKE_PASSWORD}`)}`
   /** objects PUT by clients (optimo) and edits made "in iCloud" by tests; Home's fixture objects are computed */
   const store = new Map<string, Map<string, DavObj>>([
+    [CAL.home, new Map()], // objects PUT into Home (its fixture events are computed below)
     [CAL.optimo, new Map()],
     [CAL.family, new Map(familyIcs(today).map((o) => [o.href, o]))],
   ])
   let n = 0
   const nextEtag = () => `"e-${++n}-${Date.now().toString(36)}"`
   const homeObjects = () => [...fixtureIcs(today).filter((o) => !(state.removeDentist && o.href.includes('dentist'))), ...state.extra]
-  const objectsOf = (cal: string): DavObj[] => (cal === CAL.home ? homeObjects() : [...(store.get(cal)?.values() ?? [])])
+  const objectsOf = (cal: string): DavObj[] => [...(cal === CAL.home ? homeObjects() : []), ...(store.get(cal)?.values() ?? [])]
 
   const fetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
     const method = (init.method ?? 'GET').toUpperCase()
@@ -194,9 +195,10 @@ export function fakeCalDav(state: FakeCalDavState = { requests: [], extra: [], r
         objs.delete(path)
         return new Response(null, { status: 204 })
       }
-      if (state.failNextPut) {
-        state.failNextPut = false
-        return new Response('', { status: 412 })
+      if (method === 'PUT' && state.beforePut) {
+        state.beforePut(url)
+        const now = objs.get(path)
+        if (ifMatch && ifMatch !== now?.etag) return new Response('', { status: 412 })
       }
       if (ifNone === '*' && cur) return new Response('', { status: 412 })
       if (ifMatch && ifMatch !== cur?.etag) return new Response('', { status: 412 })

@@ -3,6 +3,8 @@
 import { CalDav, CalDavAuthError, type DavCalendar, type Fetch } from './caldav.ts'
 import { decryptSecret, encryptSecret, importKek } from './crypto.ts'
 import { parseIcs } from './ics.ts'
+import { NO_TWO_WAY, twoWay, type SeenObject, type TwoWayPorts, type TwoWayResult } from './twoway.ts'
+import { taskIdOf } from './vevent.ts'
 
 export const ICLOUD = 'https://caldav.icloud.com/'
 export const WINDOW_BACK_DAYS = 7
@@ -41,7 +43,7 @@ export interface EventRow {
 }
 
 /** What a handler needs from the platform — service-role DB access, auth, config, network. */
-export interface Ports {
+export interface Ports extends TwoWayPorts {
   kek: string // PLANNER_KEK
   cronSecret: string // CRON_SECRET
   fetch: Fetch
@@ -136,6 +138,8 @@ export interface SyncResult {
   /** calendars discovered this sync, and live event instances cached for the account afterwards */
   calendars: number
   events: number
+  /** two-way: what moved between optimo and the write calendar this sync */
+  twoWay: TwoWayResult
 }
 
 /**
@@ -157,10 +161,18 @@ export async function syncAccount(acc: AccountRow, p: Ports, now = new Date()): 
   const existing = await p.eventKeys(acc.id)
   const seen = new Set<string>()
   const changed: EventRow[] = []
+  const optimo = new Map<string, SeenObject>() // optimo's own objects, by UID — the two-way pass reads these
   for (const cal of acc.calendars) {
-    if (!cal.enabled) continue
+    // the write calendar is always read (for iCloud-side edits), even with its events toggled off
+    if (!cal.enabled && cal.href !== acc.write_calendar_href) continue
     for (const obj of await dav.events(cal.href, from, to)) {
       for (const inst of parseIcs(obj.ics, from, to)) {
+        if (taskIdOf(inst.uid)) {
+          // a task optimo wrote: never cached as an event (the task already shows), only checked for edits
+          optimo.set(inst.uid, { calendar: cal.href, href: dav.url(obj.href), etag: obj.etag, ics: obj.ics })
+          continue
+        }
+        if (!cal.enabled) continue
         const k = eventKey(cal.href, inst.uid)
         seen.add(k)
         const sig = `${obj.etag}|${inst.start_at}|${inst.end_at}|${inst.title}`
@@ -172,7 +184,8 @@ export async function syncAccount(acc: AccountRow, p: Ports, now = new Date()): 
   if (changed.length) await p.upsertEvents(changed)
   const gone = [...existing.keys()].filter((k) => !seen.has(k))
   if (gone.length) await p.tombstoneEvents(acc.id, gone)
-  return { upserted: changed.length, removed: gone.length, calendars: acc.calendars.length, events: seen.size }
+  const two = acc.calendars.length ? await twoWay(dav, acc, p, optimo, from, now) : { ...NO_TWO_WAY }
+  return { upserted: changed.length, removed: gone.length, calendars: acc.calendars.length, events: seen.size, twoWay: two }
 }
 
 /** POST (user JWT → that user's accounts; or x-cron-secret → every enabled account). */

@@ -63,6 +63,9 @@ export function isMissingTable(error: { code?: string; message?: string; status?
   return error.code === 'PGRST205' || error.code === '42P01' || /could not find the table|does not exist/i.test(error.message ?? '')
 }
 
+/** Listeners told which tables an outbox push just sent (arc 4: task pushes trigger the iCloud write-back). */
+export const afterPush = new Set<(tables: Set<TableName>) => void>()
+
 /** The running engine (one per signed-in session) — calendar sync asks it to pull after the server refresh. */
 export let activeEngine: SyncEngine | null = null
 
@@ -225,6 +228,8 @@ export class SyncEngine {
       .filter((e) => !held.has(e.table))
       .delete()
     this.refreshPending()
+    const sent = new Set(entries.map((e) => e.table).filter((t) => !held.has(t)))
+    for (const f of afterPush) f(sent)
   }
 
   async pull() {

@@ -2,6 +2,10 @@
 import { createClient } from '@supabase/supabase-js'
 import type { AccountRow, EventRow, Ports } from './handlers.ts'
 import { eventKey } from './handlers.ts'
+import type { LinkRow, TaskRow } from './twoway.ts'
+
+const TASK_COLS = 'id,user_id,title,start_at,duration_min,all_day,rrule,series_id,deleted_at,version'
+const PAGE = 1000 // PostgREST's default max rows per response
 
 export function denoPorts(): Ports {
   const env = (k: string) => Deno.env.get(k) ?? ''
@@ -46,6 +50,42 @@ export function denoPorts(): Ports {
         const [href, uid] = k.split('\u0000')
         must(await sb.from('planner_events').update({ deleted_at: now, updated_at: now }).eq('account_id', accountId).eq('calendar_href', href).eq('uid', uid))
       }
+    },
+    // ---- two-way (arc 4): planner_tasks writes go through upsert + field_ts, so planner_merge() arbitrates them ----
+    async tasksForPush(userId, fromIso) {
+      const out: TaskRow[] = []
+      for (let off = 0; ; off += PAGE) {
+        const rows = must(
+          await sb.from('planner_tasks').select(TASK_COLS).eq('user_id', userId).gte('start_at', fromIso).is('rrule', null).is('series_id', null).is('deleted_at', null).order('id').range(off, off + PAGE - 1),
+        ) as TaskRow[]
+        out.push(...rows)
+        if (rows.length < PAGE) return out
+      }
+    },
+    async tasksByIds(userId, ids) {
+      const out: TaskRow[] = []
+      for (let i = 0; i < ids.length; i += 200) out.push(...(must(await sb.from('planner_tasks').select(TASK_COLS).eq('user_id', userId).in('id', ids.slice(i, i + 200))) as TaskRow[]))
+      return out
+    },
+    async links(accountId) {
+      return must(await sb.from('planner_calendar_links').select('*').eq('account_id', accountId)) as LinkRow[]
+    },
+    async upsertLink(row) {
+      must(await sb.from('planner_calendar_links').upsert({ ...row, pushed_at: new Date().toISOString() }, { onConflict: 'task_id' }))
+    },
+    async deleteLink(taskId) {
+      must(await sb.from('planner_calendar_links').delete().eq('task_id', taskId))
+    },
+    async writeTask(userId, id, fields, ts) {
+      const field_ts = Object.fromEntries([...Object.keys(fields), 'device_id'].map((k) => [k, ts]))
+      const row = must(
+        await sb.from('planner_tasks').upsert({ id, user_id: userId, ...fields, device_id: 'calendar-sync', field_ts }, { onConflict: 'id', defaultToNull: false }).select('version').single(),
+      ) as { version: number }
+      return Number(row.version)
+    },
+    async userTz(userId) {
+      const r = must(await sb.from('planner_settings').select('data').eq('user_id', userId).maybeSingle()) as { data?: { tz?: string } } | null
+      return r?.data?.tz ?? 'UTC'
     },
   }
 }
