@@ -10,7 +10,7 @@ RULE: Family Wing 6-digit-code setup on `press` is not changed — optimo works 
 RULE: db/006 is written, NOT applied, and must be additive + backward-compatible with the client this arc ships.
 
 ### Slice 1 — Family Wing is the only sign-in (B1) + leftover worktree
-Status: open
+Status: done eda449d
 Done: optimo reuses the marquee's supabase-js session (same origin, same project, same storage key — confirm by reading press/src); no session → redirect to the Family Wing sign-in with a return-to back to optimo; press_access_has('optimo') false → "ask Mark" page; src/auth OTP screen removed; `git worktree remove .claude/worktrees/agent-ab8537edaafdcce5a`. Playwright covers all three paths.
 
 ### Slice 2 — Sync button feedback (B5)
