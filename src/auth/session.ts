@@ -1,9 +1,38 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../sync/remote'
-import { WRONG_CODE, isCompleteCode, normalizeCode } from './signinMachine'
 
-export type AuthState = { status: 'loading' } | { status: 'signed-out' } | { status: 'signed-in'; session: Session }
+// optimo has no sign-in of its own (arc 5a): the session is the Family Wing's (src/auth/pressSession.ts), and access is
+// press's grant for the launcher page — the same check FamilyGate.require('optimo.html') makes.
+export const ACCESS_PAGE = 'optimo.html'
+const ACCESS_CACHE = 'optimo.access'
+
+export type AuthState =
+  | { status: 'loading' }
+  | { status: 'signed-out' }
+  | { status: 'no-access'; email: string }
+  | { status: 'signed-in'; session: Session }
+
+/** press_access_has('optimo.html'): true / false from the server; on a network failure the last known answer for this
+ *  user (the PWA must still open offline), defaulting to allowed — RLS stays the lock either way. */
+export async function checkAccess(session: Session): Promise<boolean> {
+  const sb = supabase()
+  const key = `${ACCESS_CACHE}:${session.user.id}`
+  if (!sb) return true
+  try {
+    const { data, error } = await sb.rpc('press_access_has', { page: ACCESS_PAGE })
+    if (error) throw error
+    const ok = data === true
+    try {
+      localStorage.setItem(key, ok ? '1' : '0')
+    } catch {
+      /* storage full / private mode */
+    }
+    return ok
+  } catch {
+    return localStorage.getItem(key) !== '0'
+  }
+}
 
 export function useSession(): AuthState {
   const [state, setState] = useState<AuthState>(() => (supabase() ? { status: 'loading' } : { status: 'signed-out' }))
@@ -11,11 +40,27 @@ export function useSession(): AuthState {
     const sb = supabase()
     if (!sb) return
     let alive = true
-    sb.auth.getSession().then(({ data }) => {
-      if (alive) setState(data.session ? { status: 'signed-in', session: data.session } : { status: 'signed-out' })
-    })
-    const { data: sub } = sb.auth.onAuthStateChange((_evt, session) => {
-      setState(session ? { status: 'signed-in', session } : { status: 'signed-out' })
+    let checked: string | null = null
+    const apply = async (session: Session | null) => {
+      if (!session) {
+        checked = null
+        if (alive) setState({ status: 'signed-out' })
+        return
+      }
+      if (checked === session.user.id) {
+        // token refresh: same person, keep the decision
+        if (alive) setState((s) => (s.status === 'signed-in' ? { status: 'signed-in', session } : s))
+        return
+      }
+      checked = session.user.id
+      const ok = await checkAccess(session)
+      if (!alive) return
+      setState(ok ? { status: 'signed-in', session } : { status: 'no-access', email: session.user.email ?? '' })
+    }
+    sb.auth.getSession().then(({ data }) => apply(data.session))
+    const { data: sub } = sb.auth.onAuthStateChange((evt, session) => {
+      if (evt === 'INITIAL_SESSION') return // getSession above covers it
+      void apply(session)
     })
     return () => {
       alive = false
@@ -25,30 +70,7 @@ export function useSession(): AuthState {
   return state
 }
 
-/** Ask press to email a one-time code. press's template sends a 6-digit code; `emailRedirectTo` stays so a
- *  link-style template would still land here (the onAuthStateChange path above picks that session up). */
-export async function sendSignInCode(email: string): Promise<string | null> {
-  const sb = supabase()
-  if (!sb) return 'Sync is not configured for this build.'
-  const redirect = new URL(import.meta.env.BASE_URL, location.origin).toString()
-  // sign-ups are OFF in press by design — never try to create a user
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect, shouldCreateUser: false } })
-  return error ? error.message : null
-}
-
-/** Verify the emailed code; on success supabase-js stores the session and useSession flips to signed-in. */
-export async function verifySignInCode(email: string, code: string): Promise<string | null> {
-  const sb = supabase()
-  if (!sb) return 'Sync is not configured for this build.'
-  const token = normalizeCode(code)
-  if (!isCompleteCode(token)) return 'Enter the 6 digits from your email.'
-  const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' })
-  if (!error) return null
-  // wrong and expired codes both come back as otp_expired / 403 "Token has expired or is invalid"
-  if (error.code === 'otp_expired' || error.status === 403 || /expired|invalid/i.test(error.message)) return WRONG_CODE
-  return error.message
-}
-
+/** Signs out of the Family Wing session itself (one session for every family tool). */
 export async function signOut() {
   await supabase()?.auth.signOut()
 }

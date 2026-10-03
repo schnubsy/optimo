@@ -184,7 +184,8 @@ export class SyncEngine {
       await this.pull()
       this.backoff = 0
       const n = await this.pendingCount()
-      set({ state: n > 0 ? 'pending' : 'synced', pending: n, lastSync: Date.now(), error: null })
+      // a run that lands after the browser went offline must not paint "synced" over "offline"
+      set({ state: !navigator.onLine ? 'offline' : n > 0 ? 'pending' : 'synced', pending: n, lastSync: Date.now(), error: null })
     } catch (e) {
       const offline = !navigator.onLine
       set({ state: offline ? 'offline' : 'error', error: offline ? null : String((e as Error).message ?? e) })

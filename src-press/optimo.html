@@ -54,6 +54,18 @@ __FAMILY_GATE__
   if (!window.FamilyGate) { document.querySelector('main').textContent = 'Sign-in unavailable — the gate did not load.'; return; }
   window.FamilyGate.cfg({ spacesUrl: 'spaces.json' });
   await window.FamilyGate.require('optimo.html'); // resolves only for a granted Family Wing session
+  // optimo sends signed-out people here with ?return=<optimo URL> (arc 5a): after the Family Wing sign-in, go back —
+  // only to an optimo page on this same origin (mirrors src/auth/familyWing.ts isOptimoReturn); anything else is ignored.
+  var ret = new URLSearchParams(location.search).get('return');
+  if (ret) {
+    try {
+      var u = new URL(ret);
+      if (u.origin === location.origin && (u.protocol === 'https:' || u.hostname === 'localhost') && u.pathname.indexOf('/optimo/') === 0) {
+        location.replace(u.href);
+        return;
+      }
+    } catch (e) {}
+  }
   card.hidden = false;
 })();
 </script>

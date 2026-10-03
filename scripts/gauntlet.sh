@@ -38,11 +38,12 @@ for i in $(seq 1 30); do curl -sf "$URL" >/dev/null && break; sleep 0.5; done
 export GAUNTLET=1
 run "playwright smoke + axe (desktop, iPhone 15)" npx playwright test --reporter=line
 
-# Lighthouse budgets: performance ≥ 85, accessibility ≥ 90 (built page, both form factors)
+# Lighthouse budgets: performance ≥ 85, accessibility ≥ 90 (built page, both form factors). Arc 5a: signed out, optimo
+# hands over to the Family Wing (press); `?stay` holds optimo's own handover page so Lighthouse audits optimo, not press.
 lh() { # preset label
   local preset="$1" label="$2"
   local out="$EV/${ARC}-lighthouse-${label}-${STAMP}.json"
-  npx lighthouse "$URL" --quiet --chrome-flags="--headless=new --no-sandbox" --output=json --output-path="$out" \
+  npx lighthouse "${URL}?stay" --quiet --chrome-flags="--headless=new --no-sandbox" --output=json --output-path="$out" \
       $( [ "$preset" = desktop ] && echo "--preset=desktop" ) >>"$LOG" 2>&1 || { summary+=("🔴 lighthouse $label failed to run"); status=1; return; }
   local perf a11y
   perf=$(node -e "const r=require('./$out');console.log(Math.round(r.categories.performance.score*100))")

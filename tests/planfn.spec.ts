@@ -7,8 +7,7 @@ import { at, openApp } from './support/app'
 const invoke = (page: import('@playwright/test').Page, body: Record<string, unknown>, auth = true) =>
   page.evaluate(
     async ([b, withAuth]) => {
-      const key = Object.keys(localStorage).find((k) => k.endsWith('-auth-token'))!
-      const jwt = JSON.parse(localStorage.getItem(key)!).access_token
+      const jwt = JSON.parse(localStorage.getItem('press:family:v1')!).access_token // the Family Wing session (arc 5a)
       const r = await fetch('https://eepjhpyziczrxvirczio.supabase.co/functions/v1/plan-day', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...(withAuth ? { authorization: `Bearer ${jwt}` } : {}) },

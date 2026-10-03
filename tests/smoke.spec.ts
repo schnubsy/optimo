@@ -2,6 +2,13 @@
 // Slice 1 makes this pass against the empty shell; later slices extend it (never replace it).
 import { test, expect } from '@playwright/test';
 import { AxeBuilder } from '@axe-core/playwright';
+import { FakeSupabase } from './support/fakeSupabase';
+
+// Arc 5a: a signed-out optimo hands over to the Family Wing (a live press URL), so the smoke runs signed in against
+// the hermetic fake — the shell, not the redirect, is what it checks (tests/familywing.spec.ts owns the redirect).
+test.beforeEach(async ({ context }) => {
+  await new FakeSupabase().attach(context);
+});
 
 test.describe('optimo smoke', () => {
   test('loads the shell with no console errors', async ({ page }) => {
