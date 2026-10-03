@@ -45,3 +45,19 @@ Deno.test('arc 4 regression: iCloud single-quoted component sets keep own + shar
   const got = cals.map((c) => `${c.name}|${c.color}|shared=${c.shared}|writable=${c.writable}`).join(', ')
   assert(got === 'Home|#5B8DEF|shared=false|writable=true, optimo|#3FA66B|shared=false|writable=true, Family|#E0745A|shared=true|writable=false', got)
 })
+
+import { NO_CALENDARS } from './handlers.ts'
+Deno.test('slice 2: sync rediscovers (toggle kept, new calendar enabled) and an empty Apple ID reports NO_CALENDARS', async () => {
+  const dav = fakeCalDav()
+  const p = new MemPorts(dav.fetch)
+  await handleConnect(post({ username: FAKE_USER, password: FAKE_PASSWORD }), p)
+  const acc = [...p.accountsById.values()][0]
+  acc.calendars = acc.calendars.filter((c) => c.name !== 'Family')
+  acc.calendars[0].enabled = false
+  const r = await (await handleSync(post({}), p)).json()
+  assert(acc.calendars.map((c) => `${c.name}:${c.enabled}`).join() === 'Home:false,optimo:true,Family:true', JSON.stringify(acc.calendars))
+  assert(r.accounts[0].calendars === 3 && r.accounts[0].events === 1, JSON.stringify(r))
+  dav.state.emptyHome = true
+  const e = await (await handleSync(post({}), p)).json()
+  assert(e.accounts[0].error === NO_CALENDARS && acc.last_error === NO_CALENDARS, JSON.stringify(e))
+})

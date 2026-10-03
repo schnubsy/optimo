@@ -8,6 +8,11 @@ import { FAKE_PASSWORD, FAKE_USER } from './fake/caldav'
 import type { FakeSupabase } from './support/fakeSupabase'
 
 const setView = (page: Page, view: string) => page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board' }), view)
+/** Evidence: the Calendars group centred in the viewport (an element shot slides under the sticky iPhone header). */
+async function shot(page: Page, name: string) {
+  await page.getByTestId('calendars').evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.screenshot({ path: `docs/evidence/${name}.png` })
+}
 const events = (page: Page) => page.getByTestId('timeline').getByTestId('event')
 
 async function connect(page: Page, password = FAKE_PASSWORD) {
@@ -103,6 +108,26 @@ test.describe('iCloud calendar (read-only)', () => {
     const b = (await deep.boundingBox())!
     expect(Math.abs(a.x - b.x)).toBeGreaterThan(20)
     void server
+  })
+
+  test('honest status: "Found 3 calendars" + "synced HH:MM · N events"; an empty Apple ID says "No calendars found"', async ({ page, context }, info) => {
+    const { server } = await openApp(page, context)
+    await connect(page)
+    const status = page.getByTestId('calendar-status')
+    await expect(status.getByTestId('calendar-found')).toHaveText('Found 3 calendars')
+    await expect(status.getByTestId('calendar-synced')).toHaveText(/^synced \d{2}:\d{2} · 12 events$/) // the app's 24 h clock, not the locale's
+    await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveCount(0)
+    if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-found-${info.project.name}`)
+
+    // the same account after iCloud stops listing any event calendar: the status and the error both say so
+    server.caldav.state.emptyHome = true
+    await page.getByTestId('calendar-sync').click()
+    await expect(status.getByTestId('calendar-none')).toHaveText('No calendars found')
+    await expect(page.getByTestId('calendar-account').getByRole('alert')).toHaveText('No calendars found on this Apple ID')
+    await expect(status.getByTestId('calendar-synced')).toHaveText(/· 0 events$/)
+    await expect(page.getByTestId('toast')).toContainText('No calendars found on this Apple ID') // never "synced." over nothing
+    expect(await new AxeBuilder({ page }).analyze().then((r) => r.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')))).toEqual([])
+    if (process.env.EVIDENCE) await shot(page, `icloud-two-way-slice-2-status-empty-${info.project.name}`)
   })
 
   test('evidence: calendar events + settings', async ({ page, context }, info) => {

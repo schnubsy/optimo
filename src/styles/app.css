@@ -450,6 +450,7 @@
 .cal-acc + .cal-acc { border-top: 1px solid var(--line); }
 .cal-acc-hd { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
 .cal-acc-hd b { font-size: var(--fs-15); }
+.cal-status { margin: 0; font-size: var(--fs-13); }
 .cal-error { color: var(--danger-ink); font-size: var(--fs-13); font-weight: var(--fw-semibold); }
 .cal-form { display: grid; gap: var(--sp-2); max-width: 420px; }
 .cal-form label { display: grid; gap: 2px; font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--ink-2); }

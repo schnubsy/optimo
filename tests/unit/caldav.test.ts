@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CalDav, componentNames, responses, text } from '../../supabase/functions/_shared/caldav.ts'
 import { decryptSecret, encryptSecret, importKek } from '../../supabase/functions/_shared/crypto.ts'
-import { handleConnect, handleSync } from '../../supabase/functions/_shared/handlers.ts'
+import { NO_CALENDARS, handleConnect, handleSync, mergeCalendars } from '../../supabase/functions/_shared/handlers.ts'
 import { CAL, FAKE_PASSWORD, FAKE_USER, PARTITION, fakeCalDav } from '../fake/caldav'
 import { MemPorts, TEST_CRON, TEST_KEK } from '../fake/ports'
 
@@ -117,5 +117,60 @@ describe('calendar-connect / calendar-sync handlers', () => {
     const r = await (await handleSync(post({}, { 'x-cron-secret': TEST_CRON }), p)).json()
     expect(r.accounts[0].error).toMatch(/reconnect in Settings/)
     expect(acc.last_error).toMatch(/reconnect/)
+  })
+})
+
+describe('slice 2 — rediscover on every sync + honest status', () => {
+  const cal = (href: string, name: string, enabled = true, writable = true) => ({ href, name, color: null, enabled, shared: false, writable })
+  it('mergeCalendars keeps each enabled choice, adds new calendars enabled, drops vanished ones', () => {
+    const prev = [cal('/a/', 'A', false), cal('/b/', 'B', true), cal('/gone/', 'Gone', false)]
+    const found = [cal('/a/', 'A renamed'), cal('/b/', 'B'), cal('/new/', 'New', true)]
+    const r = mergeCalendars(prev, found, null)
+    expect(r.calendars.map((c) => `${c.name}:${c.enabled}`)).toEqual(['A renamed:false', 'B:true', 'New:true'])
+    expect(r.write_calendar_href).toBeNull()
+  })
+  it('defaults the write target to a NEW calendar named "optimo"; never overrides an explicit None or a valid choice', () => {
+    const optimo = cal('/o/', 'Optimo')
+    expect(mergeCalendars([], [cal('/a/', 'A'), optimo], null).write_calendar_href).toBe('/o/') // first discovery
+    expect(mergeCalendars([optimo], [optimo], null).write_calendar_href).toBeNull() // Mark chose None later
+    expect(mergeCalendars([optimo], [cal('/a/', 'A'), optimo], '/a/').write_calendar_href).toBe('/a/')
+    expect(mergeCalendars([], [cal('/ro/', 'optimo', true, false)], null).write_calendar_href).toBeNull() // read-only
+    expect(mergeCalendars([cal('/a/', 'A')], [optimo], '/a/').write_calendar_href).toBeNull() // target vanished → off
+  })
+  it('sync rediscovers: a calendar added in iCloud appears, the toggle choice survives, counts come back', async () => {
+    const dav = fakeCalDav()
+    const p = new MemPorts(dav.fetch)
+    await handleConnect(post({ username: FAKE_USER, password: FAKE_PASSWORD }), p)
+    const acc = [...p.accountsById.values()][0]
+    expect(acc.write_calendar_href).toBe(`${PARTITION}${CAL.optimo}`) // the calendar named "optimo"
+    acc.calendars = acc.calendars.filter((c) => c.name !== 'Family') // as if Family was shared after connecting
+    acc.calendars[0].enabled = false // Home off
+    const r = await (await handleSync(post({}), p)).json()
+    expect(acc.calendars.map((c) => `${c.name}:${c.enabled}`)).toEqual(['Home:false', 'optimo:true', 'Family:true'])
+    expect(r.accounts[0]).toMatchObject({ calendars: 3, events: 1, upserted: 1 })
+    expect(acc.last_error).toBeNull()
+  })
+  it('the old empty-calendars account (Mark’s) heals on the next sync and gets the optimo default', async () => {
+    const p = new MemPorts(fakeCalDav().fetch)
+    await handleConnect(post({ username: FAKE_USER, password: FAKE_PASSWORD }), p)
+    const acc = [...p.accountsById.values()][0]
+    Object.assign(acc, { calendars: [], write_calendar_href: null })
+    const r = await (await handleSync(post({}), p)).json()
+    expect(r.accounts[0]).toMatchObject({ calendars: 3, events: 12 })
+    expect(acc.write_calendar_href).toBe(`${PARTITION}${CAL.optimo}`)
+  })
+  it('an Apple ID with no event calendars says so (last_error), on connect and on sync', async () => {
+    const dav = fakeCalDav({ requests: [], extra: [], removeDentist: false, emptyHome: true })
+    const p = new MemPorts(dav.fetch)
+    const c = await (await handleConnect(post({ username: FAKE_USER, password: FAKE_PASSWORD }), p)).json()
+    expect(c.last_error).toBe(NO_CALENDARS)
+    const r = await (await handleSync(post({}), p)).json()
+    expect(r.accounts[0]).toMatchObject({ calendars: 0, events: 0, error: NO_CALENDARS })
+    const acc = [...p.accountsById.values()][0]
+    expect(acc.last_error).toBe(NO_CALENDARS)
+    expect(acc.last_sync_at).toBeTruthy()
+    dav.state.emptyHome = false // a calendar appears → the error clears
+    await handleSync(post({}), p)
+    expect(acc.last_error).toBeNull()
   })
 })
