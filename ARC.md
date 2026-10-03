@@ -52,7 +52,7 @@ Completed tasks keep their event. Write-target changed → move (DELETE old, PUT
 iCloud-side edit (slice 5) instead of overwriting. Client calls calendar-sync (debounced ~5 s) after its outbox flush
 so changes land quickly; cron stays the backstop. Recurring tasks: out of scope this arc (note in spec).
 Done: deno tests with a fake CalDAV server (create, update, delete, move, 412); Playwright fake end-to-end.
-Status:
+Status: done f24b61a
 
 ### Slice 5 — pull back: iCloud edits → optimo
 Scope: during the pull, objects whose UID starts `optimo-` are NOT cached as planner_events (no double display); if
