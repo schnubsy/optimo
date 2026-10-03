@@ -41,7 +41,7 @@ Scope: `src/calendar/CalendarSettings.tsx`: list every calendar (colour dot, nam
 (updates `calendars[].enabled`) and a "Put optimo tasks in" select writing `write_calendar_href` (column added by 005).
 Default selection = the calendar named "optimo" when present. Toggle changes trigger a sync.
 Done: Playwright desktop + iPhone 15 (axe) cover toggle + write-target select; 44px targets.
-Status:
+Status: done c0bd968
 
 ### Slice 4 — push: optimo → iCloud
 Scope: CalDAV `put`/`delete` in `caldav.ts` (If-Match etag; If-None-Match * on create). In `calendar-sync`, after the
