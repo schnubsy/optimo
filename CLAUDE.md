@@ -26,15 +26,14 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**Arc 5a — Family Wing sign-in · sync feedback · calendar roles · paint a block · people schema: complete on
-`arc/family-wing-people`, closing (PR → merge → Pages + launcher ship proof).** optimo has no sign-in of its own: it
-reads/rotates the Family Wing session (`press:family:v1`, `src/auth/pressSession.ts`), sends signed-out people to its
-launcher `press/optimo.html?return=…`, gates on `press_access_has('optimo.html')` ("ask Mark" page). Sync button shows
-Syncing… / Synced · N events · N sent to iCloud / reason + Retry (also for auto-syncs). One role per calendar (Off · Show
-in optimo · Two-way; #56 #58 fixed). Drag on empty timeline paints a block (mouse, long-press touch, keyboard).
-`db/006_people.sql` applied 2026-10-03 (Code; `docs/evidence/arc5a-db006-apply.md`); family RLS held behind
-`planner_flags.family_access`. calendar-sync + calendar-connect v4 live (top-level counts). **Next:** arc 5b (people picker,
-per-person sync/RLS flip, per-person iCloud). Snags #67–#79 (Eye) + #39–#65 open.
+**Arc 5a — closed and verified (2026-10-03).** Live build `4f04493` (merge `227d2d7`). optimo has no sign-in of its own:
+Family Wing session (`press:family:v1`), signed-out → `press/optimo.html?return=…`, gate `press_access_has('optimo.html')`
+("ask Mark" page). Sync button feedback; one role per calendar (Off · Show · Two-way); paint a block by dragging.
+`db/006_people.sql` applied (people table, person_id everywhere, all rows → Mark; family RLS held behind
+`planner_flags.family_access` = false). calendar-sync + calendar-connect v4 live. Supabase channel rule rewritten
+2026-10-03 (both surfaces operate Supabase; destructive SQL → Code only while bug #94450 is open).
+**Next:** Mark's on-device checks, then arc 5b (people picker, per-person sync + RLS flip, per-person iCloud, register
+plan-day as a monitored agent). Snags #67–#79 + #39–#65 open.
 
 ## Project rules
 

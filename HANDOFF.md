@@ -30,18 +30,19 @@ Arc 5a — **Family Wing sign-in · sync feedback · calendar roles · paint a b
 - **Snags:** #67–#79 (Eye 5a: P1 #79, #67–#70; P2 #71–#78), plus #57, #59–#65 and #39–#54 carried.
 
 ## Exact next steps
-1. Cowork: "Cowork: run verify" (manual steps 1–2 are DONE).
+1. ~~Cowork: run verify~~ — DONE 2026-10-03, all green (`docs/evidence/verify-2026-10-03-3.md`, `-4.md`).
 2. Mark: steps 3–4 on real devices. Anything failing → a `snag` Issue.
-3. **Arc 5b — people** (after step 1). Any Claude Code prompt carries `MAIN CHECKOUT: /Users/mark/Documents/code/optimo` + `INBOX FILES:` and pulls `main` before branching. Slices:
+3. **Arc 5b — people** (kick off with "kick off — arc 5b"). Any Claude Code prompt carries `MAIN CHECKOUT: /Users/mark/Documents/code/optimo` + `INBOX FILES:` and pulls `main` before branching. Slices:
    - **(a) People picker.** List + "Add someone" (name, colour). The last pick is remembered per device (`optimo.person`); the picker is skipped with one person; a switcher sits in the header.
    - **(b) Per-person sync.**
      - Outbox rows carry `person_id`.
      - Pull and realtime are filtered by `person_id` + `user_id`, with a cursor per person per device.
      - Settings / ai_profile upsert `on_conflict=person_id`.
      - Calendar accounts are listed per person.
-     - Then a guarded Cowork step flips `planner_flags.family_access = true`.
-   - **(c) Per-person iCloud in Edge.** calendar-connect / calendar-sync take the person from the request; the cron path iterates by person; events and links carry the account's person. Then a Cowork deploy.
+     - Then flip `planner_flags.family_access = true` inside the order via the Supabase connector (guarded: person-scoped client live first).
+   - **(c) Per-person iCloud in Edge.** calendar-connect / calendar-sync take the person from the request; the cron path iterates by person; events and links carry the account's person. Deploy inside the order via the connector (ezbr ship proof).
    - **(d) Snags first:** #79, #67–#70.
+   - **(e) Register `plan-day` in `press_agent_registry`** (audit 🔴 2026-10-03: it calls the model but is unmonitored).
 
 ## Mark's manual steps
 1. **DONE 2026-10-03 (Code)** — proof: `docs/evidence/arc5a-db006-apply.md`. ~~Apply db/006 (Supabase connector, project `eepjhpyziczrxvirczio`).~~
