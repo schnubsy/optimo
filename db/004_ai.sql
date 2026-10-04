@@ -1,5 +1,5 @@
--- 004_ai.sql — optimo arc 3: AI planning layer. Applied by Cowork's Supabase connector AFTER the arc-3 merge
--- (HANDOFF "Mark's manual steps"); Code commits this file unchanged and never applies it. Idempotent.
+-- 004_ai.sql — optimo arc 3: AI planning layer. Cowork applied it via its Supabase connector AFTER the arc-3
+-- merge (HANDOFF "Mark's manual steps"); Code committed this file unchanged. Idempotent.
 -- Both tables speak the sync contract (spec §5): sync cols + planner_merge + planner_log_change + own-row RLS.
 
 -- One row per plan request (intent → proposal). mode: propose (default) | auto (writes tasks straight in).

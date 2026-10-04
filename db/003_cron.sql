@@ -1,6 +1,6 @@
--- 003_cron.sql — optimo arc 2: pg_cron drives the Edge Functions. Applied by Cowork's Supabase connector AFTER the
--- Edge Function secrets exist and push-send / calendar-sync are deployed (HANDOFF "Mark's manual steps").
--- Code never applies DDL. Idempotent: re-running re-schedules the same two jobs.
+-- 003_cron.sql — optimo arc 2: pg_cron drives the Edge Functions. Cowork applied it via its Supabase connector AFTER
+-- the Edge Function secrets existed and push-send / calendar-sync were deployed (HANDOFF "Mark's manual steps").
+-- Idempotent: re-running re-schedules the same two jobs.
 --
 -- Precondition (a separate, guarded step — the secret value is never committed):
 --   select vault.create_secret('<CRON_SECRET from .secrets/planner.env>', 'planner_cron_secret');

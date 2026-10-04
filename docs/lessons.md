@@ -3,7 +3,7 @@
 _Append-only. One line per lesson: `- YYYY-MM-DD [tag] lesson`. Tags: [git] [supabase] [sync] [dnd] [pwa] [perf] [design] [test]_
 - 2026-09-26 [git] RULE: originality gate — no Structured.app (or any planner's) look, copy, icon set or naming; icons drawn in-repo (`src/icons/glyphs.tsx`).
 - 2026-09-26 [supabase] RULE: only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (publishable) in the client; every other secret is server-side.
-- 2026-09-26 [supabase] RULE: Code never applies DDL; `db/*.sql` is committed by Code and applied by Cowork.
+- 2026-09-26 [supabase] ~~RULE: DDL goes through Cowork, not Code~~ — retired 2026-10-03 — was a read-only connector config, not policy. Code now applies `db/*.sql` via the Supabase connector; Cowork verifies.
 - 2026-09-26 [git] GitHub Pages on a private repo needs a paid plan; optimo went public (Mark's call). `workflow_dispatch` only works once the workflow is on the default branch — first deploy = push to main.
 - 2026-09-26 [test] Magic links can't be clicked by tests and shared storageState breaks on refresh-token rotation: gate UI/sync specs on a hermetic Supabase fake (PostgREST + sync_log + Phoenix v2 realtime via `routeWebSocket`) that reuses the client's `mergeRow`; keep a `@real` spec behind a gitignored `.env.test.local`.
 - 2026-09-26 [pwa] Playwright cannot route requests from SW-controlled pages in WebKit: set `serviceWorkers: 'block'` by default and opt in only for the offline spec (Chromium) — otherwise the hermetic fake silently stops seeing traffic.

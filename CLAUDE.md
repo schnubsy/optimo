@@ -12,7 +12,7 @@ written intent into a scheduled day. Single user (Mark). Everything original —
 - **TypeScript · React 18 · Vite · CSS variables** (tokens: `src/styles/tokens.css` = Eye FINAL "Meadow" verbatim + `tokens-a11y.css`).
 - **DnD** `@dnd-kit/core` · **local store** `dexie` (IndexedDB) · **PWA** `vite-plugin-pwa` · NLP `chrono-node` + `rrule`.
 - **Backend** Supabase project `press` (`eepjhpyziczrxvirczio`), tables `planner_*`, RLS, Supabase Auth magic link.
-  Migrations in `db/*.sql` — applied by **Cowork's Supabase connector**, never from Code.
+  Migrations in `db/*.sql` — applied by **Code via the claude.ai Supabase connector** (Mark confirms the pop-up); Cowork verifies.
 - **Hosting** GitHub Pages `https://schnubsy.github.io/optimo/` via `.github/workflows/pages.yml` on `main` (`base: '/optimo/'`).
 
 ```bash
@@ -32,8 +32,8 @@ reads/rotates the Family Wing session (`press:family:v1`, `src/auth/pressSession
 launcher `press/optimo.html?return=…`, gates on `press_access_has('optimo.html')` ("ask Mark" page). Sync button shows
 Syncing… / Synced · N events · N sent to iCloud / reason + Retry (also for auto-syncs). One role per calendar (Off · Show
 in optimo · Two-way; #56 #58 fixed). Drag on empty timeline paints a block (mouse, long-press touch, keyboard).
-`db/006_people.sql` written + scratch-proven, NOT applied; family RLS held behind `planner_flags.family_access`.
-**Cowork owes:** apply db/006; deploy calendar-sync + calendar-connect (counts). **Next:** arc 5b (people picker,
+`db/006_people.sql` applied 2026-10-03 (Code; `docs/evidence/arc5a-db006-apply.md`); family RLS held behind
+`planner_flags.family_access`. calendar-sync + calendar-connect v4 live (top-level counts). **Next:** arc 5b (people picker,
 per-person sync/RLS flip, per-person iCloud). Snags #67–#79 (Eye) + #39–#65 open.
 
 ## Project rules
@@ -45,7 +45,7 @@ Global rules: council arc instrument
   cursor over PostgREST (`docs/spec.md` §5). No client-specific server logic.
 - **Only publishable keys in the client** (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). All other
   secrets live in Edge Function secrets.
-- **DDL channel:** `db/*.sql` is committed by Code and applied by Cowork; Code's Supabase MCP is read-only.
+- **DDL channel:** `db/*.sql` is committed and applied by Code via the Supabase connector (confirm Supabase's pop-up); Cowork verifies.
 - **Perf budgets are gates:** 5k-task library, 60 fps drag (transforms only), Lighthouse perf ≥ 85 / a11y ≥ 90.
 - **Ship proof** for every Pages deploy: `<meta name="build">` on the live URL must equal the merged SHA.
 

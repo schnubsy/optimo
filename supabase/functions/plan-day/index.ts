@@ -10,7 +10,7 @@ const anthropic = new Anthropic({ apiKey: env('ANTHROPIC_API_KEY'), timeout: 45_
 // server-side refusal fallback (routes by refusal category) on the models that accept it
 const FALLBACK_MODELS = new Set(['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-opus-5', 'claude-fable-5-1'])
 
-// PGRST205 / 42P01: planner_ai_* not created yet (db/004_ai.sql is applied by Cowork after the merge)
+// PGRST205 / 42P01: planner_ai_* not created yet (db/004_ai.sql not yet applied)
 const missing = (e: { code?: string; message: string }) => e.code === 'PGRST205' || e.code === '42P01' || /does not exist|schema cache/i.test(e.message)
 const must = <T>(r: { data: T; error: { code?: string; message: string } | null }) => {
   if (r.error) throw missing(r.error) ? new PlannerUnavailable(r.error.message) : new Error(r.error.message)

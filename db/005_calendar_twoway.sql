@@ -1,5 +1,5 @@
 -- 005_calendar_twoway.sql — optimo arc 4: iCloud two-way sync + calendar picker.
--- Applied by Cowork's Supabase connector on 2026-10-03 BEFORE the arc-4 order; Code commits it unchanged. Idempotent.
+-- Cowork applied it via its Supabase connector on 2026-10-03 BEFORE the arc-4 order; Code committed it unchanged. Idempotent.
 
 -- the one calendar optimo writes timed tasks into (null = write-back off)
 alter table planner_calendar_accounts add column if not exists write_calendar_href text;

@@ -1,5 +1,5 @@
 // scripts/db-scratch.mjs — prove a db/*.sql migration against a throwaway Postgres (PGlite: real Postgres in WASM,
-// no server, no network). Code never applies DDL to `press`; this is the "runs clean twice" proof for db/006.
+// no server, no network). It never touches `press`; this is the "runs clean twice" proof for db/006.
 //   1. Supabase-shaped stubs: roles anon/authenticated/service_role, auth.users, auth.uid(), auth.jwt(),
 //      press_access_has(page) (granted when the JWT email is in a stub grant list — same opt-out shape as press);
 //   2. db/001, 002, 004, 005 as applied today (003 is pg_cron/vault only — skipped);

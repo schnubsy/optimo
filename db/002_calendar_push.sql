@@ -1,5 +1,5 @@
 -- 002_calendar_push.sql — optimo arc 2: iCloud (CalDAV) read-only calendar cache + web push.
--- Applied by Cowork's Supabase connector on 2026-09-27 (arc-2 prep). Code's MCP is read-only.
+-- Cowork applied it via its Supabase connector on 2026-09-27 (arc-2 prep).
 -- Secrets never touch these tables in clear: `secret_enc` is AES-GCM ciphertext produced by the
 -- `calendar-connect` Edge Function with the PLANNER_KEK secret; the client never stores the password.
 

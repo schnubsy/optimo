@@ -1,5 +1,5 @@
 -- optimo_grant.sql — register optimo.html as a gated Family Wing page and grant Mark (per
--- press db/20260921_press_access.sql). Applied by Cowork's Supabase connector — never from Code. Idempotent.
+-- press db/20260921_press_access.sql). Applied via the Supabase connector (Code applies; Cowork verifies). Idempotent.
 -- Postcondition (tenants-check T6):
 --   select a.page, count(g.*) filter (where g.active) from press_access_apps a
 --   left join press_access_grants g on g.page = a.page where a.page = 'optimo.html' group by a.page;   -- expect 1

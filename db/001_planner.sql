@@ -1,5 +1,5 @@
 -- 001_planner.sql — optimo v0.1 schema. Supabase project: press (eepjhpyziczrxvirczio).
--- Applied by Cowork's Supabase connector on 2026-09-26 (kickoff). Code's MCP is read-only.
+-- Cowork applied it via its Supabase connector on 2026-09-26 (kickoff).
 -- Contract: docs/spec.md §5. Every table carries the sync columns; merge is field-level LWW.
 
 create extension if not exists pgcrypto;
