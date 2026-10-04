@@ -12,7 +12,7 @@ written intent into a scheduled day. Single user (Mark). Everything original —
 - **TypeScript · React 18 · Vite · CSS variables** (tokens: `src/styles/tokens.css` = Eye FINAL "Meadow" verbatim + `tokens-a11y.css`).
 - **DnD** `@dnd-kit/core` · **local store** `dexie` (IndexedDB) · **PWA** `vite-plugin-pwa` · NLP `chrono-node` + `rrule`.
 - **Backend** Supabase project `press` (`eepjhpyziczrxvirczio`), tables `planner_*`, RLS, Supabase Auth magic link.
-  Migrations in `db/*.sql` — applied by **Code via the claude.ai Supabase connector** (Mark confirms the pop-up); Cowork verifies.
+  Migrations in `db/*.sql` — applied by **either surface via the claude.ai Supabase connector** (Supabase channel, Project rules).
 - **Hosting** GitHub Pages `https://schnubsy.github.io/optimo/` via `.github/workflows/pages.yml` on `main` (`base: '/optimo/'`).
 
 ```bash
@@ -45,7 +45,7 @@ Global rules: council arc instrument
   cursor over PostgREST (`docs/spec.md` §5). No client-specific server logic.
 - **Only publishable keys in the client** (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). All other
   secrets live in Edge Function secrets.
-- **DDL channel:** `db/*.sql` is committed and applied by Code via the Supabase connector (confirm Supabase's pop-up); Cowork verifies.
+- **Supabase channel:** `db/*.sql` is committed; either surface applies migrations, runs SQL and deploys Edge Functions directly via the claude.ai Supabase connector. Code does it inside its order with no stop; Cowork does it directly when it is driving. Exception (temporary): SQL that trips Supabase's destructive-SQL confirmation (drop/delete/truncate etc.) is auto-cancelled in Cowork (anthropics/claude-code #94450) — route only that step to Code, where Mark confirms the pop-up. Retire the exception when #94450 is fixed. Secrets stay with Mark or Cowork.
 - **Perf budgets are gates:** 5k-task library, 60 fps drag (transforms only), Lighthouse perf ≥ 85 / a11y ≥ 90.
 - **Ship proof** for every Pages deploy: `<meta name="build">` on the live URL must equal the merged SHA.
 
