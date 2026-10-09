@@ -74,10 +74,11 @@ test.describe('snags #1–#12', () => {
     // arc 2: the strip is replaced by the faded header (112pt + safe area) and a floating bar the board scrolls under
     expect((await page.getByTestId('header').boundingBox())!.height).toBeLessThanOrEqual(131 + 60)
     await expect(page.getByTestId('quickadd')).toHaveCount(0)
+    // arc 6: the FAB opens the create wizard; its parse chips appear only once something parses
     const field = await quickAdd(page)
-    await expect(page.getByTestId('parse-row')).toBeVisible()
+    await expect(page.getByTestId('wizard-parse')).toBeEmpty()
     await field.fill('Lunch at 1pm')
-    await expect(page.getByTestId('parse-row')).toContainText('Lunch')
+    await expect(page.getByTestId('wizard-parse')).toContainText('13:00')
   })
 
   test('#7 hour lines do not run through the free-time label', async ({ page, context }) => {

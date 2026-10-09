@@ -18,6 +18,7 @@ export interface Parsed {
   icon: string | null
 }
 
+const PART_OF_DAY = /^(morning|afternoon|evening|night)\b\s*/i
 const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']
 const DAY_ALT = WEEKDAYS.map((d) => `${d.slice(0, 3)}(?:${d.slice(3)})?`).join('|')
@@ -100,7 +101,16 @@ export function parseQuickAdd(input: string, ref = new Date()): Parsed {
   let dateOnly = false
   let duration = dur.duration
   const results = chrono.parse(text, ref, { forwardDate: true })
-  const r = results[0]
+  // a bare part-of-day noun is part of the title ("Movie night", "Morning pages"), not a date — chrono reads it as
+  // one; keep the word in the title and use only what follows it ("Movie night at 8pm" → "Movie night", 20:00)
+  let keep = 0
+  const r = results.find((res) => {
+    const m = res.text.match(PART_OF_DAY)
+    if (!m || /\b(this|tomorrow|tonight|in the|at|on|every)\s*$/i.test(text.slice(0, res.index))) return true
+    if (res.text.trim().length === m[0].trim().length) return false
+    keep = m[0].length
+    return true
+  })
   if (r) {
     const c = r.start
     const hasTime = c.isCertain('hour')
@@ -116,7 +126,7 @@ export function parseQuickAdd(input: string, ref = new Date()): Parsed {
       start.setHours(0, 0, 0, 0)
     }
     if (r.end && hasTime && duration === null) duration = Math.max(0, Math.round((r.end.date().getTime() - c.date().getTime()) / 60000))
-    text = text.slice(0, r.index) + ' ' + text.slice(r.index + r.text.length)
+    text = text.slice(0, r.index + keep) + ' ' + text.slice(r.index + r.text.length)
   }
   // "every Monday" with no explicit date anchors on the next such weekday
   if (rec.weekday !== null && start && !r?.start.isCertain('weekday') && !r?.start.isCertain('day')) {

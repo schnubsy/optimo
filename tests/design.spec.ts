@@ -78,8 +78,11 @@ test.describe('design review P0 guards', () => {
 
   test('P0-5 the parse row shows a parsed duration even for all-day/recurring input', async ({ page, context }) => {
     await openApp(page, context)
-    await (await quickAdd(page)).fill('Gym every weekday for 1h #health !!')
-    await expect(page.getByTestId('parse-duration')).toHaveText('1:00')
+    const f = await quickAdd(page)
+    await f.fill('Gym every weekday for 1h #health !!')
+    // desktop command line `1:00`; the iPhone wizard's chip `1 hr`
+    if ((await f.getAttribute('data-testid')) === 'quickadd') await expect(page.getByTestId('parse-duration')).toHaveText('1:00')
+    else await expect(page.getByTestId('wizard-parse-duration')).toHaveText('1 hr')
   })
 
   test('evidence: after-fix screenshots', async ({ page, context }, info) => {

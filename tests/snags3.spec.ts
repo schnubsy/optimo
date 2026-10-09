@@ -1,7 +1,7 @@
 // arc 3 slices 2–10 — snag Issues #29–#37 (label `snag`), raised by the snag-train 2026-10 slice-14 Eye LITE critique
 // (docs/evidence/snag-train-2026-10-slice-14-design-critique.md). One behavioural case per Issue.
 import { test, expect, type Page } from '@playwright/test'
-import { CAT, at, openApp, quickAdd, seedDay, seedTask } from './support/app'
+import { CAT, at, openApp, seedDay, seedTask } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
@@ -71,20 +71,20 @@ test.describe('snags #29–#37 (arc 3)', () => {
     }
   })
 
-  test('#33 the iPhone quick-add parse chips are 44px tall and the row stays on screen', async ({ page, context }, info) => {
-    test.skip(info.project.name !== 'iphone-15', 'the quick-add sheet is mobile')
+  test('#33 the iPhone parse chips stay on screen, clear of the floating Continue', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the FAB wizard is mobile')
     await openApp(page, context)
-    const field = await quickAdd(page)
+    await page.getByTestId('fab').click()
+    const field = page.getByTestId('wizard-title')
     await field.fill('Lunch with Sam tomorrow at 1pm for 45m #personal !!')
-    const chips = page.locator('.qa-sheet .cmd .parse > b, .qa-sheet .cmd .parse .f')
+    // arc 6: the chips are read-only previews (not tap targets) under the wizard title
+    const chips = page.getByTestId('wizard-parse').locator('span')
     await expect(chips.first()).toBeVisible()
     await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0) // lessons: measure after animationend
     const boxes = await chips.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ h: r.height, bottom: r.bottom })))
     expect(boxes.length).toBeGreaterThan(1)
-    for (const b of boxes) expect(b.h).toBeGreaterThanOrEqual(44)
-    const vh = page.viewportSize()!.height
-    for (const b of boxes) expect(b.bottom).toBeLessThanOrEqual(vh)
-    if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-6-quickadd-iphone-15.png' })
+    const cta = (await page.getByTestId('wizard-continue').boundingBox())!
+    for (const b of boxes) expect(b.bottom).toBeLessThanOrEqual(cta.y)
   })
 
   test('#35 Week (desktop): the last day header ends over its own column, not at the window edge', async ({ page, context }, info) => {

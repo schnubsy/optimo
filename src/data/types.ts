@@ -74,6 +74,15 @@ export interface SettingsData {
   /** arc 3: the Plan tab's default mode and research switch (Settings → Planning) */
   plan_mode?: 'propose' | 'auto'
   plan_research?: boolean
+  /** arc 6: the wizard's duration quick row + the Duration sheet's editable presets (minutes); unset = the defaults */
+  duration_presets?: number[]
+}
+
+export const DEFAULT_DURATION_PRESETS: readonly number[] = [1, 15, 30, 45, 60, 90]
+/** The duration presets in use: the saved list, or the defaults when unset/invalid. */
+export function durationPresets(s: Pick<SettingsData, 'duration_presets'>): number[] {
+  const p = s.duration_presets
+  return Array.isArray(p) && p.every((n) => typeof n === 'number' && n > 0) ? [...p] : [...DEFAULT_DURATION_PRESETS]
 }
 
 export const DEFAULT_SETTINGS: SettingsData = {

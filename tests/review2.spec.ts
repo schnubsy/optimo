@@ -51,22 +51,22 @@ test.describe('Eye P0 guards (arc 2)', () => {
     expect(f).toContain('blur(20px)')
   })
 
-  test('A2-P0-4 the quick-add sheet keeps its whole parse row on screen and follows the keyboard inset', async ({ page, context }, info) => {
+  test('A2-P0-4 the create wizard keeps its parse chips on screen and Continue follows the keyboard inset', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'iphone-15', 'mobile sheet')
     await openApp(page, context)
     const field = await quickAdd(page)
     await field.fill('Gym every weekday at 7am for 45m #health !!')
-    await expect(page.getByTestId('parse-row')).toContainText('every weekday')
+    await expect(page.getByTestId('wizard-parse')).toContainText('every weekday')
     await page.waitForFunction(() => document.getAnimations().length === 0) // measure the settled sheet, not its slide-in
     const vp = page.viewportSize()!
-    for (const chip of await page.getByTestId('parse-row').locator('b, span.f, span, button').all()) {
+    for (const chip of await page.getByTestId('wizard-parse').locator('span').all()) {
       const b = await chip.boundingBox()
       if (b) expect(b.y + b.height).toBeLessThanOrEqual(vp.height)
     }
-    // a keyboard taking 300px: the sheet's wrapper lifts by exactly that inset
-    await page.evaluate(() => (document.querySelector('.qa-wrap') as HTMLElement).style.setProperty('--kb-inset', '300px'))
-    const sheet = (await page.getByTestId('quickadd-sheet').boundingBox())!
-    expect(sheet.y + sheet.height).toBeLessThanOrEqual(vp.height - 300 + 2)
+    // a keyboard taking 300px: the floating Continue lifts by exactly that inset (arc 6: the wizard reuses keyboardInset)
+    await page.evaluate(() => (document.querySelector('.wiz') as HTMLElement).style.setProperty('--kb-inset', '300px'))
+    const cta = (await page.getByTestId('wizard-continue').boundingBox())!
+    expect(cta.y + cta.height).toBeLessThanOrEqual(vp.height - 300 + 2)
     await expect(field).toBeInViewport()
   })
 

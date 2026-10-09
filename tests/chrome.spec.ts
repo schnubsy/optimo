@@ -2,7 +2,7 @@
 // glyphs + keyword auto-suggest in quick-add and the editor.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { CAT, at, openApp, quickAdd, row, seedDay, seedTask } from './support/app'
+import { CAT, at, commitWizard, openApp, quickAdd, row, seedDay, seedTask } from './support/app'
 
 const serious = async (page: Page) => (await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
 
@@ -49,15 +49,15 @@ test.describe('iPhone chrome', () => {
     expect(tl.y + tl.height).toBeGreaterThanOrEqual(vp.height - 1)
   })
 
-  test('quick-add (⌘K / `/`) opens the sheet with focus in the field; adding closes it', async ({ page, context }) => {
+  test('FAB opens the create wizard with focus in the title; creating closes it', async ({ page, context }) => {
     await openApp(page, context)
-    await page.keyboard.press('/')
-    await expect(page.getByTestId('quickadd-sheet')).toBeVisible()
-    await expect(page.getByTestId('quickadd')).toBeFocused()
-    await page.getByTestId('quickadd').fill('Dentist at 4pm')
-    await expect(page.getByTestId('parse-icon')).toHaveAttribute('data-icon', 'health-pill')
-    await page.getByTestId('quickadd').press('Enter')
-    await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
+    await page.getByTestId('fab').click()
+    await expect(page.getByTestId('wizard')).toBeVisible()
+    await expect(page.getByTestId('wizard-title')).toBeFocused()
+    await page.getByTestId('wizard-title').fill('Dentist at 4pm')
+    await expect(page.getByTestId('wizard-glyph')).toHaveAttribute('data-icon', 'health-pill')
+    await commitWizard(page)
+    await expect(page.getByTestId('wizard')).toHaveCount(0)
     await expect(page.locator('[data-testid="block"]', { hasText: 'Dentist' })).toBeVisible()
   })
 

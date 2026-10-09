@@ -1,7 +1,7 @@
 // Inbox + quick-add + Place: capture → inbox, drag/Place → timeline, unschedule back.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay, quickAdd } from './support/app'
+import { openApp, row, seedDay, quickAdd, commitWizard } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 async function showInbox(page: Page) {
@@ -17,14 +17,19 @@ test.describe('inbox & quick-add', () => {
     const { errors } = await openApp(page, context, { seed: seedDay })
     const qa = (await quickAdd(page))
     await qa.fill('Book train tickets for 20m #errands !!')
-    await expect(page.getByTestId('parse-row')).toContainText('Book train tickets')
-    await expect(page.getByTestId('parse-row')).toContainText('inbox')
-    await expect(page.getByTestId('parse-row')).toContainText('Errands')
-    await expect(page.getByTestId('parse-row')).toContainText('P2')
-    await qa.press('Enter')
-    // desktop clears the pill; on iPhone the quick-add sheet closes on add
-    if (await isMobile(page)) await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
-    else await expect(qa).toHaveValue('')
+    if (await isMobile(page)) {
+      // iPhone: the FAB's wizard previews the parse as chips; no time typed → ② → ••• Add to Inbox
+      await expect(page.getByTestId('wizard-parse')).toContainText('20 min')
+      await expect(page.getByTestId('wizard-parse')).toContainText('Errands')
+      await commitWizard(page, { inbox: true })
+    } else {
+      await expect(page.getByTestId('parse-row')).toContainText('Book train tickets')
+      await expect(page.getByTestId('parse-row')).toContainText('inbox')
+      await expect(page.getByTestId('parse-row')).toContainText('Errands')
+      await expect(page.getByTestId('parse-row')).toContainText('P2')
+      await qa.press('Enter')
+      await expect(qa).toHaveValue('')
+    }
     await showInbox(page)
     const r = inboxRow(page, 'Book train tickets')
     await expect(r).toBeVisible()
@@ -36,22 +41,34 @@ test.describe('inbox & quick-add', () => {
     await openApp(page, context)
     const qa = (await quickAdd(page))
     await qa.fill('Coffee with Sam at 1pm')
-    await expect(page.getByTestId('parse-row')).toContainText('13:00–13:30')
-    await qa.press('Enter')
+    if (await isMobile(page)) {
+      await expect(page.getByTestId('wizard-parse-when')).toHaveText('13:00–13:30')
+      await commitWizard(page)
+    } else {
+      await expect(page.getByTestId('parse-row')).toContainText('13:00–13:30')
+      await qa.press('Enter')
+    }
     const b = page.locator('[data-testid="block"]', { hasText: 'Coffee with Sam' })
     await expect(b).toHaveAttribute('data-start', String(13 * 60))
   })
 
-  test('Tab opens the parsed fields in the editor', async ({ page, context }, info) => {
+  test('Tab opens the parsed fields in the create wizard', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'desktop', 'keyboard')
     await openApp(page, context)
     await page.keyboard.press('/')
     await page.keyboard.type('Pay rent tomorrow 9am for 15m')
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-title')).toHaveValue('Pay rent')
-    await expect(page.getByTestId('sheet-time')).toHaveValue('09:00')
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('15')
+    const w = page.getByTestId('wizard')
+    await expect(w).toBeVisible()
+    await expect(page.getByTestId('wizard-title')).toHaveValue('Pay rent')
+    await expect(w).toHaveAttribute('data-start', String(9 * 60))
+    await expect(w).toHaveAttribute('data-duration', '15')
+    const tomorrow = await page.evaluate(() => {
+      const d = new Date()
+      d.setDate(d.getDate() + 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })
+    await expect(w).toHaveAttribute('data-date', tomorrow)
   })
 
   test('Place fills the earliest free slot that fits', async ({ page, context }) => {

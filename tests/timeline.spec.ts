@@ -1,7 +1,7 @@
 // Day timeline: create at slot, drag reschedules by the dragged delta, resize changes duration, complete toggles.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay } from './support/app'
+import { commitWizard, openApp, row, seedDay } from './support/app'
 
 const hourPx = (page: Page) => page.evaluate(() => (matchMedia('(max-width: 899px)').matches ? 66 : 72))
 const block = (page: Page, id: string) => page.locator(`[data-testid="block"][data-id="${id}"]`)
@@ -37,10 +37,10 @@ test.describe('day timeline', () => {
     // 17:00 sits inside the 16:45–18:00 free row
     const inner = await page.locator('.tl-inner').boundingBox()
     await page.mouse.click(inner!.x + inner!.width / 2, inner!.y + 17 * px + 4)
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-time')).toHaveValue('17:00')
-    await page.getByTestId('sheet-title').fill('Stretch')
-    await page.getByTestId('sheet-save').click()
+    // the create wizard opens prefilled with the slot (arc 6 slice 6)
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-start', String(17 * 60))
+    await page.getByTestId('wizard-title').fill('Stretch')
+    await commitWizard(page)
     await expect(page.locator('[data-testid="block"]', { hasText: 'Stretch' })).toBeVisible()
     await expect(page.locator('[data-testid="block"]', { hasText: 'Stretch' })).toHaveAttribute('data-start', String(17 * 60))
     expect(errors).toEqual([])

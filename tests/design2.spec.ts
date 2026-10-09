@@ -47,9 +47,9 @@ test.describe('design system (arc 2 slice 2)', () => {
     await gap.scrollIntoViewIfNeeded()
     await expect(gap.locator('.free-label')).toHaveText('1h 15m free')
     await gap.getByTestId('free-add').click()
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-time')).toHaveValue('16:45')
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('30')
+    // the create wizard opens prefilled (arc 6 slice 6)
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-start', '1005')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-duration', '30')
   })
 
   test('three short pills within 30 min collapse to "+3" and expand to a list', async ({ page, context }) => {

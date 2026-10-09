@@ -96,7 +96,6 @@ function parseKey(key: string) {
  *  Category row that filled a frame later (a 40px layout shift and empty evidence captures). */
 export function TaskSheet({ cats }: { cats: Category[] }) {
   const editingId = useUI((s) => s.editingId)
-  const draft = useUI((s) => s.draft)
   const loaded = useLiveQuery(async () => {
     if (!editingId) return null
     const { id, date } = parseKey(editingId)
@@ -107,20 +106,17 @@ export function TaskSheet({ cats }: { cats: Category[] }) {
     const o = ex?.task_id ? await db.tasks.get(ex.task_id) : undefined
     return o && !o.deleted_at ? { ...o, id: t.id, rrule: t.rrule, dtstart: t.dtstart, _override: true } : t
   }, [editingId])
-  if (draft) return <SheetForm key={`draft:${draft.start_at}`} task={null} occ={null} cats={cats} />
   if (!editingId || !loaded) return null
   return <SheetForm key={editingId} task={loaded} occ={parseKey(editingId).date} cats={cats} />
 }
 
-function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null; cats: Category[] }) {
-  const draft = useUI((s) => s.draft)
+/** Edit mode only — creating goes through the wizard (src/editor/Wizard.tsx); slice 7 replaces this sheet with ③. */
+function SheetForm({ task, occ, cats }: { task: Task; occ: string | null; cats: Category[] }) {
   const editingId = useUI((s) => s.editingId)
   const day = useUI((s) => s.date)
   const set = useUI((s) => s.set)
   const settings = useSettings()
   const [form, setForm] = useState<Form>(() => {
-    if (!task)
-      return toForm({ reminders: settings.reminder_lead && draft?.start_at ? [settings.reminder_lead] : [], ...draft, start_at: draft?.start_at ?? null, duration_min: draft?.duration_min ?? settings.default_duration }, day)
     // an occurrence edits that day's instance of the series
     const shown = occ && task.dtstart && !(task as { _override?: boolean })._override ? { ...task, start_at: occurrenceStart(task, occ) } : task
     return toForm(shown, day)
@@ -141,14 +137,13 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
 
   const formRef = useRef<HTMLFormElement>(null)
   useEffect(() => {
-    if (!task) titleRef.current?.focus()
-    else formRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && set({ editingId: null, draft: null, wizard: null })
+    formRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && set({ editingId: null })
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [task, set])
 
-  const close = () => set({ editingId: null, draft: null, wizard: null })
+  const close = () => set({ editingId: null })
   const up = (p: Partial<Form>) => setForm({ ...form, ...p })
 
   async function save(e?: FormEvent) {
@@ -156,10 +151,7 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
     if (!form) return
     const input = fromForm(form)
     const rrule = form.scheduled ? repeatToRule(form.repeat, fromKey(form.date)) : null
-    if (!task) {
-      if (!input.title) return close()
-      await repo.createTask({ ...input, sort_key: Date.now(), ...(rrule ? { rrule, dtstart: input.start_at } : {}) })
-    } else if (occ && task.rrule) {
+    if (occ && task.rrule) {
       await editOccurrence(task.id, occ, input, scope)
     } else {
       const series = rrule ? { rrule, dtstart: input.start_at } : task.rrule ? { rrule: null, dtstart: null } : {}
@@ -168,13 +160,13 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
     close()
   }
 
-  const done = !!task?.completed_at
+  const done = !!task.completed_at
   return (
     <div className="sheet-wrap" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <form ref={formRef} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" onSubmit={save}>
         <i className="grabber" aria-hidden="true" />
         <header className="sheet-hd">
-          <h2 id="sheet-h">{task ? (occ ? 'Edit occurrence' : 'Edit task') : 'New task'}</h2>
+          <h2 id="sheet-h">{occ ? 'Edit occurrence' : 'Edit task'}</h2>
           <button type="button" className="icon-btn" onClick={close} aria-label="Close">
             <Icon name="ui-close" size={16} />
           </button>
@@ -330,7 +322,7 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
           <textarea rows={3} value={form.notes} onChange={(e) => up({ notes: e.target.value })} />
         </label>
 
-        {occ && task?.rrule && (
+        {occ && task.rrule && (
           <fieldset className="fld seg">
             <legend>Apply to</legend>
             <div>
@@ -344,7 +336,7 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
         )}
 
         <footer className="sheet-ft">
-          {task && (
+          {(
             <>
               <button type="button" className="text-danger" onClick={() => deleteItem({ task, occurrence: occ ? { seriesId: task.id, date: occ } : undefined }).then(close)}>
                 Delete
@@ -364,7 +356,7 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
             </>
           )}
           <button type="submit" className="primary" data-testid="sheet-save">
-            {task ? 'Save' : 'Add'}
+            Save
           </button>
         </footer>
       </form>

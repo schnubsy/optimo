@@ -6,7 +6,7 @@ export type MobileTab = 'board' | 'backlog' | 'week'
 
 import type { TaskInput } from '../data/repo'
 
-/** TaskSheet in create mode, optionally prefilled (e.g. Tab from the command line). */
+/** A create prefill (gap, paint, parsed command line, suggestion) — the wizard's draft. */
 export type Draft = TaskInput & { start_at: string | null }
 
 /** arc 6: the create wizard (① title → ② when → ③ details). `inbox` skips the time rows and creates unscheduled. */
@@ -29,12 +29,14 @@ interface UI {
   date: string
   selectedId: string | null
   editingId: string | null
-  draft: Draft | null // TaskSheet in create mode
+  /** legacy create entry (Timeline createAt / FreeGap): Planner hands it to the wizard in 'timeline' mode and clears it */
+  draft: Draft | null
   placeId: string | null // PlacePicker open for this inbox task
   focusId: string | null
   mobileTab: MobileTab
-  quickAdd: boolean // mobile quick-add sheet (FAB)
-  wizard: Wizard | null // arc 6 create flow; until the wizard lands (slice 6) it opens the editor sheet in create mode
+  /** legacy: the FAB quick-add sheet is gone (slice 6) — Planner opens the wizard when this is set and clears it */
+  quickAdd: boolean
+  wizard: Wizard | null // arc 6 create flow (src/editor/Wizard.tsx)
   openWizard: (mode: WizardMode, draft?: Partial<Draft>) => void
   toast: Toast | null
   set: (p: Partial<Omit<UI, 'set' | 'notify' | 'openWizard'>>) => void
@@ -53,9 +55,7 @@ export const useUI = create<UI>((set) => ({
   mobileTab: 'board',
   quickAdd: false,
   wizard: null,
-  openWizard: (mode, draft = {}) =>
-    // interim (slice 1): the wizard contract opens TaskSheet's create mode; slice 6 renders <Wizard> from `wizard` instead
-    set({ wizard: { mode, draft }, draft: { ...draft, start_at: mode === 'inbox' ? null : (draft.start_at ?? null) }, quickAdd: false, selectedId: null }),
+  openWizard: (mode, draft = {}) => set({ wizard: { mode, draft }, draft: null, quickAdd: false, selectedId: null, editingId: null }),
   toast: null,
   set: (p) => set(p),
   notify: (t) => set({ toast: { ...t, id: ++toastId } }),

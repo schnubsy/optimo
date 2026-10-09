@@ -122,4 +122,12 @@ describe('parseQuickAdd', () => {
   it('unparsed text survives as title verbatim (trimmed, capitalised)', () => {
     expect(p('  read   chapter 4 ').title).toBe('Read chapter 4')
   })
+  it('a bare part-of-day noun stays in the title ("Movie night", "Morning pages")', () => {
+    const r = p('Movie night at 8pm for 1.5h')
+    expect(r).toMatchObject({ title: 'Movie night', duration: 90, dateOnly: false })
+    expect(hm(r.start)).toBe('9/26 20:00')
+    expect(p('Movie night')).toMatchObject({ title: 'Movie night', start: null })
+    expect(p('Morning pages')).toMatchObject({ title: 'Morning pages', start: null })
+    expect(hm(p('Call mum tomorrow night at 7').start)).toBe('9/27 19:00')
+  })
 })

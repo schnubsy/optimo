@@ -28,7 +28,7 @@ import { Toast } from './components/Toast'
 import { TaskSheet } from './editor/TaskSheet'
 import { Day } from './views/Day'
 import { Inbox } from './views/Inbox'
-import { QuickAdd } from './quickadd/QuickAdd'
+import { Wizard } from './editor/Wizard'
 import { PlacePicker } from './components/PlacePicker'
 import { Categories } from './categories/Categories'
 import { IconSheet } from './icons/IconSheet'
@@ -88,7 +88,12 @@ export function Planner({ userId }: { userId: string }) {
   const settings = useSettings()
   const cats = useCategories()
   const catMap = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats])
-  const { date, view, set, mobileTab: tab, quickAdd } = useUI()
+  const { date, view, set, mobileTab: tab, quickAdd, draft, openWizard } = useUI()
+  // legacy create entries (Timeline createAt / FreeGap set `draft`; anything setting `quickAdd`) open the wizard
+  useEffect(() => {
+    if (draft) openWizard('timeline', draft)
+    else if (quickAdd) openWizard('timeline')
+  }, [draft, quickAdd, openWizard])
   const nearBar = useDrag((s) => s.nearBar)
   const isMobile = useIsMobile()
   const hourPx = useHourPx()
@@ -195,11 +200,11 @@ export function Planner({ userId }: { userId: string }) {
       const cmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
       if (cmdK || (e.key === '/' && !isTyping(e.target))) {
         e.preventDefault()
-        if (matchMedia('(max-width: 899px)').matches) useUI.getState().set({ quickAdd: true })
+        if (matchMedia('(max-width: 899px)').matches) useUI.getState().openWizard('timeline')
         else document.getElementById('quickadd')?.focus()
         return
       }
-      if (isTyping(e.target) || ui.editingId || ui.draft || e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTyping(e.target) || ui.editingId || ui.draft || ui.wizard || e.metaKey || e.ctrlKey || e.altKey) return
       const sel = itemsRef.current.find((i) => i.key === ui.selectedId)
       const step = settings.snap
       switch (e.key) {
@@ -207,7 +212,7 @@ export function Planner({ userId }: { userId: string }) {
         case 'N': {
           e.preventDefault()
           const start = Math.ceil(nowMinutes() / 15) * 15
-          ui.set({ draft: { start_at: new Date(fromKey(ui.date).getTime() + start * 60000).toISOString(), duration_min: settings.default_duration } })
+          ui.openWizard('timeline', { start_at: new Date(fromKey(ui.date).getTime() + start * 60000).toISOString(), duration_min: settings.default_duration })
           return
         }
         case 'd':
@@ -282,7 +287,6 @@ export function Planner({ userId }: { userId: string }) {
             </main>
             <TabBar active={mobileTabId} onChange={onTab} onReselect={onReselect} recede={nearBar} />
             <Fab />
-            {quickAdd && <QuickAdd sheet onDone={() => set({ quickAdd: false })} />}
           </>
         ) : (
           <>
@@ -305,6 +309,7 @@ export function Planner({ userId }: { userId: string }) {
           </>
         )}
         <TaskSheet cats={cats} />
+        <Wizard settings={settings} cats={cats} />
         <PlacePicker />
         {view === 'focus' && <Focus />}
         <Toast />

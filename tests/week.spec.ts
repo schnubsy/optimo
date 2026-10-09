@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay, quickAdd } from './support/app'
+import { addTask, openApp, row, seedDay, quickAdd } from './support/app'
 
 const setView = (page: Page, view: string) => page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board' }), view)
 const serious = async (page: Page) => (await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
@@ -55,8 +55,9 @@ test.describe('week, month, focus, settings', () => {
   test('recurrence: a weekday series materialises; completing one occurrence completes only that one', async ({ page, context }) => {
     await openApp(page, context)
     await (await quickAdd(page)).fill('Stand-up every day at 9:15am for 15m')
-    await expect(page.getByTestId('parse-row')).toContainText('every day')
-    await (await quickAdd(page)).press('Enter')
+    // desktop command line's parse row, or the iPhone wizard's parse chips
+    await expect(page.locator('[data-testid="parse-row"], [data-testid="wizard-parse"]')).toContainText('every day')
+    await addTask(page, 'Stand-up every day at 9:15am for 15m')
     await setView(page, 'week')
     // the series starts today, so it fills today and the rest of this week
     const days = await page.getByTestId('week-col').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.day!))
@@ -122,8 +123,7 @@ test.describe('week, month, focus, settings', () => {
     test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1')
     let s: ReturnType<typeof seedDay>
     await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
-    await (await quickAdd(page)).fill('Stretch every day at 7:45am for 15m #health')
-    await (await quickAdd(page)).press('Enter')
+    await addTask(page, 'Stretch every day at 7:45am for 15m #health')
     await setView(page, 'week')
     await page.locator('.wbody').evaluate((el) => (el.scrollTop = 6.5 * 40))
     await page.screenshot({ path: `docs/evidence/arc1-slice-5-week-${info.project.name}.png` })

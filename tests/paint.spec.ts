@@ -71,12 +71,11 @@ test.describe('paint a block', () => {
     expect(t.start_at).toBe(at('17:10'))
     expect(t.duration_min).toBe(40)
 
-    // under the 4 px threshold it is a click: today's click-to-create (draft sheet), no painted task
+    // under the 4 px threshold it is a click: click-to-create (the create wizard, prefilled), no painted task
     await page.keyboard.press('Escape')
     const q = await slotPoint(page, 20 * 60 + 30)
     await page.mouse.click(q.x, q.y(20 * 60 + 35))
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-time')).toHaveValue('20:30')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-start', String(20 * 60 + 30))
     expect(await untitled(page)).toHaveLength(1)
   })
 
