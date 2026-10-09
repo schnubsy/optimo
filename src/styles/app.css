@@ -209,6 +209,11 @@
 .cmd .parse > b, .cmd .parse .f, .cmd .parse > span:not(.muted):not(.hint) { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--sp-3); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font-weight: var(--fw-semibold); }
 .cmd .parse > span:first-child:not(.muted) { background: none; padding: 0; color: var(--ink-2); }
 .cmd .parse .hint { margin-left: auto; color: var(--ink-2); }
+/* arc 7 slice 8: "Details…" hands the line to the full wizard (mousedown keeps the field's focus so the row stays) */
+.cmd .qa-details { margin-left: auto; pointer-events: auto; position: relative; height: 28px; padding: 0 var(--sp-3); border: 0; border-radius: var(--r-pill); background: none; color: var(--accent-ink); font: var(--fw-bold) var(--fs-13) / 1 var(--font-ui); }
+.cmd .qa-details::before { content: ''; position: absolute; inset: -8px -2px; }
+.cmd .qa-details:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.cmd .qa-details + .hint { margin-left: var(--sp-2); }
 .cmd.compact { padding: var(--sp-1) var(--sp-3) var(--sp-2); }
 .cmd.compact .parse .muted { font-size: var(--fs-12); }
 /* #6: on mobile the parse row floats over the board instead of taking a row of chrome, and the empty-state syntax

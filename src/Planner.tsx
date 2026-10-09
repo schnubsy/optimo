@@ -45,7 +45,7 @@ import { useCalendarSync, useEvents, type EventItem } from './calendar/events'
 import { segmentMaps, timelineEls } from './timeline/Timeline'
 import { clampStart, MIN_DURATION, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
-import { addDays, dateKey, fromKey, nowMinutes, todayKey } from './lib/time'
+import { addDays, dateKey, todayKey } from './lib/time'
 import { useIsMobile } from './lib/useMedia'
 import { deleteItem, moveItem, resizeItem, schedule, toggleComplete, unschedule } from './actions'
 import { seedCategories } from './categories/defaults'
@@ -213,19 +213,20 @@ export function Planner({ userId }: { userId: string }) {
       const cmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
       if (cmdK || (e.key === '/' && !isTyping(e.target))) {
         e.preventDefault()
-        if (matchMedia('(max-width: 899px)').matches) useUI.getState().openWizard('timeline')
+        if (matchMedia('(max-width: 899px)').matches) useUI.getState().set({ capture: true })
         else document.getElementById('quickadd')?.focus()
         return
       }
-      if (isTyping(e.target) || ui.editingId || ui.draft || ui.wizard || e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTyping(e.target) || ui.editingId || ui.draft || ui.wizard || ui.capture || e.metaKey || e.ctrlKey || e.altKey) return
       const sel = itemsRef.current.find((i) => i.key === ui.selectedId)
       const step = settings.snap
       switch (e.key) {
         case 'n':
         case 'N': {
+          // arc 7 slice 8: N captures — the command line (desktop) / the one-line sheet (iPhone); untimed text → Inbox
           e.preventDefault()
-          const start = Math.ceil(nowMinutes() / 15) * 15
-          ui.openWizard('timeline', { start_at: new Date(fromKey(ui.date).getTime() + start * 60000).toISOString(), duration_min: settings.default_duration })
+          if (matchMedia('(max-width: 899px)').matches) ui.set({ capture: true })
+          else document.getElementById('quickadd')?.focus()
           return
         }
         case 'd':

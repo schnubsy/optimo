@@ -8,7 +8,9 @@ import { Icon } from '../icons/Icon'
 import { GlyphPicker } from '../icons/GlyphPicker'
 import { CATEGORY_OF, suggestIcon, titleStem } from './suggest'
 import { useUI } from '../state/ui'
-import { parseQuickAdd, type Parsed } from './parse'
+import { type Parsed } from './parse'
+import { captureChip, captureDone, decideCapture } from '../capture/decide'
+import { commitCapture } from '../capture/commit'
 
 /** Height the on-screen keyboard takes from the layout viewport (0 when closed). */
 export function keyboardInset(innerHeight: number, vvHeight: number, vvOffsetTop: number): number {
@@ -102,7 +104,8 @@ export function parseWhen(parsed: Parsed, settings: Pick<SettingsData, 'clock24'
 
 /**
  * The desktop header command line: parse preview before commit, Enter adds, Tab opens the create wizard prefilled,
- * Esc clears. (The iPhone FAB opens the wizard, whose title field reuses this parser.)
+ * Esc clears. arc 7 slice 8: the same rules as the iPhone capture sheet — plain text goes to the Inbox untimed with no
+ * estimate (never a default time); a time schedules it, a day without one plans it, "someday" parks it.
  */
 export function QuickAdd({ compact, fit, onDone }: { compact?: boolean; fit?: boolean; onDone?: () => void }) {
   const [text, setText] = useState('')
@@ -114,7 +117,8 @@ export function QuickAdd({ compact, fit, onDone }: { compact?: boolean; fit?: bo
   const set = useUI((s) => s.set)
   const openWizard = useUI((s) => s.openWizard)
   const notify = useUI((s) => s.notify)
-  const parsed = useMemo(() => (text.trim() ? parseQuickAdd(text) : null), [text])
+  const decision = useMemo(() => decideCapture(text), [text])
+  const parsed = decision?.parsed ?? null
   const cat = parsed ? resolveCategory(parsed, cats) : null
   const suggested = parsed?.title ? (suggestIcon(parsed.title, settings.iconOverrides)?.icon ?? cat?.icon ?? 'work-document') : null
   function pickIcon(icon: string) {
@@ -126,13 +130,13 @@ export function QuickAdd({ compact, fit, onDone }: { compact?: boolean; fit?: bo
 
   async function commit(e?: FormEvent) {
     e?.preventDefault()
-    if (!parsed || !parsed.title) return
-    const t = await repo.createTask(toInput(parsed, cat, settings.default_duration))
+    if (!decision) return
+    const t = await commitCapture(decision, cats, settings)
     setText('')
     setPicking(false)
     onDone?.()
     if (t.start_at && !t.rrule) set({ date: dateKey(new Date(t.start_at)) })
-    notify({ text: t.start_at ? `Added “${t.title}”` : `“${t.title}” → inbox`, undo: () => repo.deleteTask(t.id).then(() => undefined) })
+    notify({ text: `${captureDone(decision, new Date(), settings.clock24)} · ${t.title}`, undo: () => repo.deleteTask(t.id).then(() => undefined) })
   }
   function onKey(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape') {
@@ -147,7 +151,11 @@ export function QuickAdd({ compact, fit, onDone }: { compact?: boolean; fit?: bo
     }
   }
 
-  const when = parsed ? parseWhen(parsed, settings) : 'inbox'
+  const when = !decision || decision.place === 'inbox' ? 'inbox' : decision.place === 'timed' || decision.place === 'series' ? parseWhen(parsed!, settings) : captureChip(decision, new Date(), settings.clock24)!.toLowerCase()
+  function details() {
+    openWizard('timeline', text.trim() ? { title: text.trim() } : {})
+    setText('')
+  }
   const unknownCat = parsed?.category && !cat
 
   return (
@@ -197,6 +205,9 @@ export function QuickAdd({ compact, fit, onDone }: { compact?: boolean; fit?: bo
         ) : (
           <span className="muted">Type a task; time, “for 45m”, #category, ! priority and “every …” are understood.</span>
         )}
+        <button type="button" className="qa-details" onMouseDown={(e) => e.preventDefault()} onClick={details} data-testid="quickadd-details">
+          Details…
+        </button>
         {!compact && (
           <span className="hint">
             <kbd>Enter</kbd> add <kbd>Tab</kbd> edit fields <kbd>Esc</kbd> clear

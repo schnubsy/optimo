@@ -2,7 +2,7 @@
 // (docs/evidence/arc2-slice-7-design-critique.md). One behavioural case per slice; evidence captures are
 // gated on EVIDENCE=1 (same convention as design2.spec.ts).
 import { test, expect, type BrowserContext } from '@playwright/test'
-import { CAT, at, openApp, seedDay, seedTask } from './support/app'
+import { CAT, at, openApp, openCreateWizard, seedDay, seedTask } from './support/app'
 import { ACTIVITY, CHROME } from '../src/icons/set'
 import { FAKE_PASSWORD, FAKE_USER } from './fake/caldav'
 
@@ -237,7 +237,7 @@ test.describe('snag train 2026-10', () => {
   test('#23 the create wizard glyph chip is at least 44x44 (arc 6: the 84 px header chip)', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'iphone-15', 'the FAB wizard is mobile-only')
     await openApp(page, context)
-    await page.getByTestId('fab').click()
+    await openCreateWizard(page) // arc 7 slice 8: FAB → capture → Details…
     const field = page.getByTestId('wizard-title')
     await field.fill('Lunch with Sam at 1pm')
     const chip = page.getByTestId('wizard-glyph')
@@ -251,7 +251,7 @@ test.describe('snag train 2026-10', () => {
     test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
     test.skip(info.project.name !== 'iphone-15', 'the FAB bottom sheet is mobile-only')
     await openApp(page, context)
-    await page.getByTestId('fab').click()
+    await openCreateWizard(page)
     await page.getByTestId('wizard-title').fill('Lunch with Sam at 1pm')
     await expect(page.getByTestId('wizard-glyph')).toBeVisible()
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-9-quickadd-iphone-15.png' })

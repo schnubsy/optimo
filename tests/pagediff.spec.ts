@@ -4,7 +4,7 @@
 // scripts/page-diff-gate.mjs. Gated on PAGEDIFF=<dir>; skipped in the gauntlet.
 import { test, expect, type BrowserContext, type Page } from '@playwright/test'
 import { FakeSupabase } from './support/fakeSupabase'
-import { seedDay } from './support/app'
+import { openCreateWizard, seedDay } from './support/app'
 
 const DIR = process.env.PAGEDIFF
 const LIVE = 'https://schnubsy.github.io/optimo/'
@@ -54,7 +54,7 @@ test.describe('page-diff gate captures', () => {
       await set(page, { view: 'day', mobileTab: 'board' })
       let field = page.getByTestId('quickadd')
       if (!(await field.isVisible())) {
-        await page.getByTestId('fab').click() // arc 6: the FAB opens the create wizard (title keeps the parser)
+        await openCreateWizard(page) // arc 7 slice 8: FAB → capture → Details… (the wizard title keeps the parser)
         field = page.getByTestId('wizard-title')
       }
       await field.fill('Dentist tomorrow 3pm 30m every weekday')

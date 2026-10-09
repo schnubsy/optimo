@@ -1,6 +1,6 @@
 // arc 6 slice 9b — regression guards for the Eye LITE P0s (docs/evidence/arc6-eye-lite.md).
 import { test, expect, type Page } from '@playwright/test'
-import { openApp } from './support/app'
+import { openApp, openCreateWizard } from './support/app'
 
 const token = (page: Page, prop: 'color' | 'backgroundColor', v: string) =>
   page.evaluate(([p, name]) => {
@@ -18,7 +18,7 @@ test.describe('Eye LITE P0 guards', () => {
     await page.setViewportSize({ width: 402, height: 874 })
     await openApp(page, context0!, { at: '08:00', theme: 'dark' })
     await page.evaluate(() => (window as any).__optimo.repo.updateSettings({ clock24: false }))
-    await page.getByTestId('fab').click()
+    await openCreateWizard(page) // arc 7 slice 8: FAB → capture → Details…
     await page.getByTestId('wizard-title').fill('Watch a movie at 8pm for 1.5h')
     await page.getByTestId('wizard-continue').click()
   }

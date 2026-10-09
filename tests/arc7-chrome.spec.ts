@@ -3,7 +3,7 @@
 // inbox-mode suggestions, named completion toast, axe on ③ + Settings.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, seedDay } from './support/app'
+import { openApp, openCreateWizard, seedDay } from './support/app'
 
 const EVIDENCE = !!process.env.EVIDENCE
 const settled = (page: Page) => expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0)
@@ -45,10 +45,7 @@ async function phoneSize(page: Page, name: string) {
 }
 
 async function openCreate(page: Page) {
-  const fab = page.getByTestId('fab')
-  if (await fab.isVisible()) await fab.click()
-  else await page.keyboard.press('n')
-  await expect(wizard(page)).toHaveAttribute('data-step', '1')
+  await openCreateWizard(page) // arc 7 slice 8: FAB / N capture in one line; Details… is the wizard
 }
 
 test.describe('arc 7 slice 3 — desktop header', () => {
