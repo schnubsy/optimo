@@ -42,13 +42,17 @@ const PAD_TOP_MOBILE = 28
 /** A label's y relative to its row's top (undefined = centred in the row). */
 const rel = (l: LabelBox | undefined, rowTop: number) => (l ? l.y - rowTop : undefined)
 
+/** The drop ghost. Arc 7 slice 4: its live start–end sits INSIDE the ghost, right of the chip column — never in the
+ *  gutter on top of an hour label. */
 function DropGhost({ day, map, clock24 }: { day: string; map: SegmentMap; clock24: boolean }) {
-  const ghost = useDrag((s) => (s.ghost?.day === day ? s.ghost : null))
+  const ghost = useDrag((s) => (s.ghost?.day === day && s.ghost.where === 'day' ? s.ghost : null))
   if (!ghost) return null
   const top = map.minToY(ghost.start)
   return (
-    <div className="ghost" style={{ transform: `translateY(${top}px)`, height: Math.max(8, map.minToY(ghost.start + ghost.len) - top) }} data-testid="drop-ghost">
-      <i className="tnum">{fmtClock(ghost.start, clock24)}</i>
+    <div className="ghost" style={{ transform: `translateY(${top}px)`, height: Math.max(8, map.minToY(ghost.start + ghost.len) - top) }} data-testid="drop-ghost" data-start={ghost.start}>
+      <i className="tnum" data-testid="drop-ghost-time">
+        {fmtClock(ghost.start, clock24)}–{fmtClock(ghost.start + ghost.len, clock24)}
+      </i>
     </div>
   )
 }
