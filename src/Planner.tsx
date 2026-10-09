@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   MouseSensor,
@@ -12,7 +12,6 @@ import {
   type DragMoveEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './data/db'
 import * as repo from './data/repo'
 import { useCategories, useSettings } from './data/hooks'
@@ -22,18 +21,18 @@ import { supabase } from './sync/remote'
 import { useSync } from './state/sync'
 import { useUI } from './state/ui'
 import { useDrag } from './state/drag'
-import { Header, PaneHeader, useScrolled } from './chrome/Header'
+import { Header, PaneHeader } from './chrome/Header'
 import { TabBar, type TabId } from './chrome/TabBar'
 import { Fab } from './chrome/Fab'
+import { PanelSheet } from './chrome/PanelSheet'
 import { Toast } from './components/Toast'
-import { TaskSheet } from './editor/TaskSheet'
 import { Day } from './views/Day'
 import { Inbox } from './views/Inbox'
-import { QuickAdd } from './quickadd/QuickAdd'
+import { Wizard } from './editor/Wizard'
 import { PlacePicker } from './components/PlacePicker'
 import { Categories } from './categories/Categories'
 import { IconSheet } from './icons/IconSheet'
-import { Week, WEEK_HOUR_PX } from './views/Week'
+import { Week, weekMaps } from './views/Week'
 import { Month } from './views/Month'
 import { Settings } from './views/Settings'
 import { Plan } from './plan/Plan'
@@ -41,14 +40,13 @@ import { Focus } from './focus/Focus'
 import { startReminders } from './reminders/scheduler'
 import { applyTheme } from './lib/theme'
 import { keyBefore, inboxOrder } from './inbox/virtual'
-import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
 import { useCalendarSync, useEvents, type EventItem } from './calendar/events'
-import { timelineEls } from './timeline/Timeline'
-import { clampStart, MIN_DURATION, pxToMin, snap } from './timeline/layout'
+import { segmentMaps, timelineEls } from './timeline/Timeline'
+import { clampStart, MIN_DURATION, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
-import { addDays, fromKey, nowMinutes, todayKey } from './lib/time'
-import { useHourPx, useIsMobile } from './lib/useMedia'
+import { addDays, dateKey, fromKey, nowMinutes, todayKey } from './lib/time'
+import { useIsMobile } from './lib/useMedia'
 import { deleteItem, moveItem, resizeItem, schedule, toggleComplete, unschedule } from './actions'
 import { seedCategories } from './categories/defaults'
 import './styles/app.css'
@@ -64,7 +62,7 @@ function useSyncEngine(userId: string) {
     // seed after the first sync attempt so a device never out-votes categories it has not pulled yet
     void engine.start().then(() => engine.run()).then(seedCategories)
     try {
-      if (localStorage.getItem('optimo.test') === '1') Object.assign(window, { __optimo: { db, repo, engine, ui: useUI } })
+      if (localStorage.getItem('optimo.test') === '1') Object.assign(window, { __optimo: { db, repo, engine, ui: useUI, maps: segmentMaps } })
     } catch {
       /* no storage */
     }
@@ -90,11 +88,20 @@ export function Planner({ userId }: { userId: string }) {
   const settings = useSettings()
   const cats = useCategories()
   const catMap = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats])
-  const { date, view, set, mobileTab: tab, quickAdd } = useUI()
+  const { date, view, panel, set, mobileTab: tab, quickAdd, draft, openWizard } = useUI()
+  // legacy create entries (Timeline createAt / FreeGap set `draft`; anything setting `quickAdd`) open the wizard
+  useEffect(() => {
+    if (draft) openWizard('timeline', draft)
+    else if (quickAdd) openWizard('timeline')
+  }, [draft, quickAdd, openWizard])
   const nearBar = useDrag((s) => s.nearBar)
-  const scrolled = useScrolled()
   const isMobile = useIsMobile()
-  const hourPx = useHourPx()
+  // iPhone: the week is the collapsed day panel (slice 4) — `view: 'week'` (W key, a spec, a stale state) maps onto it
+  useEffect(() => {
+    if (isMobile && view === 'week') set({ view: 'day', panel: 'week' })
+  }, [isMobile, view, set])
+  // the overview stays mounted while the sheet moves (drag / snap), so it is there as the panel slides off it
+  const [sheetMoving, setSheetMoving] = useState(false)
   const now = useNow()
   const days = useMemo(() => [date], [date])
   const itemsByDay = useItems(days)
@@ -102,11 +109,8 @@ export function Planner({ userId }: { userId: string }) {
     if (itemsByDay) performance.mark('optimo:day-data')
     return itemsByDay?.[date] ?? []
   }, [itemsByDay, date])
-  const inboxCount = useInboxCount()
-  const isToday = date === todayKey()
   const eventsByDay = useEvents(days)
   const dayEvents = useMemo(() => eventsByDay[date] ?? [], [eventsByDay, date])
-  const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null, dayEvents.filter((e) => !e.event.all_day))
   useCalendarSync(!!supabase())
   useEffect(() => applyTheme(settings.theme), [settings.theme])
   useEffect(() => startReminders(), [])
@@ -114,7 +118,7 @@ export function Planner({ userId }: { userId: string }) {
   useEffect(() => {
     const open = (href: string) => {
       const d = new URL(href, location.href).searchParams.get('date')
-      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) useUI.getState().set({ date: d, view: 'day', mobileTab: 'board' })
+      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) useUI.getState().set({ date: d, view: 'day', mobileTab: 'board', panel: 'day' })
     }
     open(location.href)
     const onMsg = (e: MessageEvent) => e.data?.type === 'optimo:open' && open(e.data.url)
@@ -131,21 +135,23 @@ export function Planner({ userId }: { userId: string }) {
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 10 } }),
   )
+  // arc 6 RULE: the day's segment map is the only minute↔pixel conversion on the spine
   const dropMinute = useCallback(
     (e: DragMoveEvent | DragEndEvent, day: string): number | null => {
       const a = e.active.data.current as { type: string; item?: Item; task?: Task } | undefined
-      if (!a) return null
+      const map = segmentMaps.get(day)
+      if (!a || !map) return null
       if (a.type === 'block' && a.item) {
-        const base = a.item.start
-        return clampStart(snap(base + pxToMin(e.delta.y, hourPx), settings.snap), a.item.task.duration_min)
+        const y = map.minToY(a.item.start) + e.delta.y
+        return clampStart(snap(map.yToMin(y), settings.snap), a.item.task.duration_min)
       }
       const el = timelineEls.get(day)
       const r = e.active.rect.current.translated
       if (!el || !r) return null
-      const min = pxToMin(r.top - el.getBoundingClientRect().top, hourPx)
+      const min = map.yToMin(r.top - el.getBoundingClientRect().top)
       return clampStart(snap(min, settings.snap), a.task?.duration_min ?? settings.default_duration)
     },
-    [hourPx, settings.snap, settings.default_duration],
+    [settings.snap, settings.default_duration],
   )
   const onDragStart = (e: DragStartEvent) => {
     useDrag.getState().set({ activeId: String(e.active.id) })
@@ -184,12 +190,18 @@ export function Planner({ userId }: { userId: string }) {
     } else if ((o.type === 'inbox' || o.type === 'row') && a.type === 'block' && a.item && !a.item.occurrence) {
       void unschedule(a.item.task)
     } else if (o.type === 'day' && o.day && a.type === 'block' && a.item) {
-      const m = clampStart(snap(a.item.start + pxToMin(e.delta.y, WEEK_HOUR_PX), settings.snap), a.item.task.duration_min)
+      // week columns: the source column's map places the node, the target column's map reads the drop (arc 6 RULE)
+      const from = weekMaps.get(dayOfItem(a.item, o.day))
+      const to = weekMaps.get(o.day)
+      if (!from || !to) return
+      const y = from.map.minToY(a.item.start) - from.origin + e.delta.y
+      const m = clampStart(snap(to.map.yToMin(y + to.origin), settings.snap), a.item.task.duration_min)
       void moveItem(a.item, o.day, m)
     } else if (o.type === 'day' && o.day && a.task) {
       const col = document.querySelector(`[data-testid="week-col"][data-day="${o.day}"]`)
+      const to = weekMaps.get(o.day)
       const r = e.active.rect.current.translated
-      const m = col && r ? snap(pxToMin(r.top - col.getBoundingClientRect().top, WEEK_HOUR_PX), settings.snap) : settings.day_start + 3 * 60
+      const m = col && r && to ? snap(to.map.yToMin(r.top - col.getBoundingClientRect().top + to.origin), settings.snap) : settings.day_start + 3 * 60
       void schedule(a.task, o.day, clampStart(m, a.task.duration_min))
     }
   }
@@ -201,11 +213,11 @@ export function Planner({ userId }: { userId: string }) {
       const cmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
       if (cmdK || (e.key === '/' && !isTyping(e.target))) {
         e.preventDefault()
-        if (matchMedia('(max-width: 899px)').matches) useUI.getState().set({ quickAdd: true })
+        if (matchMedia('(max-width: 899px)').matches) useUI.getState().openWizard('timeline')
         else document.getElementById('quickadd')?.focus()
         return
       }
-      if (isTyping(e.target) || ui.editingId || ui.draft || e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTyping(e.target) || ui.editingId || ui.draft || ui.wizard || e.metaKey || e.ctrlKey || e.altKey) return
       const sel = itemsRef.current.find((i) => i.key === ui.selectedId)
       const step = settings.snap
       switch (e.key) {
@@ -213,7 +225,7 @@ export function Planner({ userId }: { userId: string }) {
         case 'N': {
           e.preventDefault()
           const start = Math.ceil(nowMinutes() / 15) * 15
-          ui.set({ draft: { start_at: new Date(fromKey(ui.date).getTime() + start * 60000).toISOString(), duration_min: settings.default_duration } })
+          ui.openWizard('timeline', { start_at: new Date(fromKey(ui.date).getTime() + start * 60000).toISOString(), duration_min: settings.default_duration })
           return
         }
         case 'd':
@@ -265,24 +277,43 @@ export function Planner({ userId }: { userId: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [settings.snap, settings.default_duration])
 
-  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'week' ? 'week' : view === 'settings' ? 'settings' : view === 'plan' ? 'plan' : 'timeline'
+  // arc 6: four tabs — Day / Week / Month all live under Timeline (week is the collapsed panel, slice 4)
+  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'settings' ? 'settings' : view === 'plan' ? 'plan' : 'timeline'
   const onTab = (t: TabId) => {
     if (t === 'inbox') set({ mobileTab: 'backlog' })
-    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t === 'week' ? 'week' : t === 'plan' ? 'plan' : 'settings' })
+    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t })
   }
-  const hdr = { date, view, stats, inboxCount, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
+  // re-tapping the active Timeline tab toggles the panel detent (from month: back to the day first)
+  const onReselect = (t: TabId) => {
+    if (t !== 'timeline') return
+    if (view !== 'day') set({ view: 'day' })
+    else set({ panel: panel === 'week' ? 'day' : 'week' })
+  }
+  const weekMode = isMobile && tab !== 'backlog' && view === 'day' && panel === 'week'
+  const hdr = { date, view, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
   return (
     <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => useDrag.getState().set({ ghost: null, activeId: null, nearBar: false })} autoScroll={{ threshold: { x: 0, y: 0.15 } }}>
       <div className={`app ${isMobile ? 'is-mobile' : 'is-desktop'}`}>
         {isMobile ? (
           <>
-            <Header {...hdr} scrolled={scrolled} />
-            <main className={`pane m-${tab === 'backlog' ? 'inbox' : view}`}>
-              {tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />}
+            {/* mockup 07: the inbox screen carries its own title — no day header over it */}
+            {tab !== 'backlog' && <Header {...hdr} weekMode={weekMode} />}
+            <main className={`pane m-${tab === 'backlog' ? 'inbox' : view === 'week' ? 'day' : view}`}>
+              {tab === 'backlog' ? (
+                <Inbox cats={catMap} />
+              ) : view === 'day' || view === 'week' ? (
+                <>
+                  {(panel === 'week' || sheetMoving) && <Week date={date} cats={catMap} settings={settings} overview />}
+                  <PanelSheet onMotion={setSheetMoving}>
+                    <Day day={date} items={items} events={dayEvents} cats={catMap} settings={settings} />
+                  </PanelSheet>
+                </>
+              ) : (
+                <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />
+              )}
             </main>
-            <TabBar active={mobileTabId} onChange={onTab} inboxCount={inboxCount} recede={nearBar} />
-            <Fab onClick={() => set({ quickAdd: true })} />
-            {quickAdd && <QuickAdd sheet onDone={() => set({ quickAdd: false })} />}
+            <TabBar active={mobileTabId} onChange={onTab} onReselect={onReselect} timelineGlyph={weekMode ? 'ui-grid-2x3' : undefined} recede={nearBar} />
+            <Fab />
           </>
         ) : (
           <>
@@ -304,13 +335,19 @@ export function Planner({ userId }: { userId: string }) {
             </footer>
           </>
         )}
-        <TaskSheet cats={cats} />
+        <Wizard settings={settings} cats={cats} />
         <PlacePicker />
         {view === 'focus' && <Focus />}
         <Toast />
       </div>
     </DndContext>
   )
+}
+
+/** The week column a dragged block came from: the day its start falls on (falls back to the target day). */
+function dayOfItem(item: Item, fallback: string): string {
+  const k = item.occurrence?.date ?? dateKey(new Date(item.task.start_at!))
+  return weekMaps.has(k) ? k : fallback
 }
 
 async function reorderInbox(moving: Task, target: Task) {
@@ -327,8 +364,4 @@ function ViewSwitch({ view, date, items, events, catMap, settings }: { view: str
   if (view === 'week') return <Week date={date} cats={catMap} settings={settings} />
   if (view === 'month') return <Month date={date} cats={catMap} settings={settings} />
   return <Day day={date} items={items} events={events} cats={catMap} settings={settings} />
-}
-
-function useInboxCount(): number {
-  return useLiveQuery(() => db.tasks.where('_kind').equals('inbox').count(), []) ?? 0
 }

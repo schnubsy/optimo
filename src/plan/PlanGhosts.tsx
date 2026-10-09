@@ -2,6 +2,7 @@
 // Decorative (aria-hidden) — the proposal list beside them is the accessible, interactive surface.
 import type { AiBlock, Category } from '../data/types'
 import { fmtClock } from '../lib/time'
+import type { SegmentMap } from '../timeline/segments'
 
 export interface Ghost {
   i: number
@@ -12,17 +13,19 @@ export interface Ghost {
   clash: string | null // title of an existing task/event it overlaps
 }
 
-export function PlanGhosts({ ghosts, hourPx, clock24, cats }: { ghosts: Ghost[]; hourPx: number; clock24: boolean; cats: Map<string, Category> }) {
+/** Placed by the day's segment map (arc 6), like every other row on the spine. */
+export function PlanGhosts({ ghosts, map, clock24, cats }: { ghosts: Ghost[]; map: SegmentMap; clock24: boolean; cats: Map<string, Category> }) {
   return (
     <>
       {ghosts.map((g) => {
-        const h = Math.max(((g.end - g.start) / 60) * hourPx, 22)
+        const top = map.minToY(g.start)
+        const h = Math.max(map.minToY(g.end) - top, 22)
         const color = cats.get(g.block.category_id ?? '')?.color ?? 'errand'
         return (
           <div
             key={g.i}
             className={`plan-ghost cat-${color} ${g.on ? '' : 'off'} ${g.clash ? 'clash' : ''} ${h < 40 ? 'short' : ''}`}
-            style={{ transform: `translateY(${(g.start / 60) * hourPx}px)`, height: h }}
+            style={{ transform: `translateY(${top}px)`, height: h }}
             aria-hidden="true"
             data-testid="plan-ghost"
           >

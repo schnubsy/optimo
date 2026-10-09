@@ -95,19 +95,18 @@ test.describe('iCloud calendar (read-only)', () => {
     expect(server.rows.planner_calendar_accounts.size).toBe(0)
   })
 
-  test('free time accounts for events; events share overlap columns with tasks', async ({ page, context }) => {
+  test('events share overlap columns with tasks (free-time maths with events: src/views/stats unit tests)', async ({ page, context }) => {
     const { server } = await openApp(page, context, { seed: seedDay })
-    const before = await page.getByTestId('stat-free').textContent()
     await connect(page)
     await expect(page.getByTestId('calendar-account')).toBeVisible()
     await setView(page, 'day')
     // the 10:30–11:15 dentist sits inside the 09:00–11:00 deep-work block → side by side
-    await expect.poll(async () => page.getByTestId('stat-free').textContent()).not.toBe(before)
     const dentist = events(page).filter({ hasText: 'Dentist check-up' })
     await dentist.scrollIntoViewIfNeeded()
     const deep = page.locator('[data-testid="block"]', { hasText: 'Deep work' })
-    const a = (await dentist.boundingBox())!
-    const b = (await deep.boundingBox())!
+    // arc 6: concurrent rows put their chips in side-by-side spine columns
+    const a = (await dentist.locator('.node-chip').boundingBox())!
+    const b = (await deep.getByTestId('chip').boundingBox())!
     expect(Math.abs(a.x - b.x)).toBeGreaterThan(20)
     void server
   })

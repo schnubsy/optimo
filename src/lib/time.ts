@@ -69,3 +69,74 @@ export function weekStart(key: string, startsOn: 0 | 1): string {
   const diff = (d.getDay() - startsOn + 7) % 7
   return addDays(key, -diff)
 }
+
+// ---------- arc 6: spine copy formats (mockups 01 / 08) ----------
+
+/** Gutter label: "9:00" / "10:30" (12 h, no meridiem) or "09:00" (24 h). */
+export function fmtGutter(min: number, clock24 = true): string {
+  return clock24 ? fmtClock(min, true) : fmtClock(min, false).replace(/ [AP]M$/, '')
+}
+/** "8:00–9:30 PM", "11:30 AM–12:30 PM", "20:00–21:30". */
+export function fmtRange(start: number, end: number, clock24 = true): string {
+  if (clock24) return `${fmtClock(start, true)}–${fmtClock(end, true)}`
+  const a = fmtClock(start, false)
+  const b = fmtClock(end, false)
+  return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`
+}
+/** "1 hr, 30 min" / "15 min" / "2 hr". */
+export function fmtDurWords(min: number): string {
+  const m = Math.max(0, Math.round(min))
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  if (!h) return `${r} min`
+  return r ? `${h} hr, ${r} min` : `${h} hr`
+}
+/** "13h 29m" / "1h" / "45m" — the free-time duration. */
+export function fmtGap(min: number): string {
+  const m = Math.max(0, Math.round(min))
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`
+}
+
+// ---------- arc 6 slice 7: per-task time zones (planner_tasks.tz, db/007) ----------
+
+/** The device's IANA zone. */
+export const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+
+const zoneFmt = new Map<string, Intl.DateTimeFormat>()
+/** Offset of `tz` from UTC at instant `t`, in ms (positive east of Greenwich). */
+export function tzOffset(t: number, tz: string): number {
+  let f = zoneFmt.get(tz)
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    zoneFmt.set(tz, f)
+  }
+  const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, x.value]))
+  const asUtc = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour) % 24, Number(p.minute), Number(p.second))
+  return asUtc - Math.floor(t / 1000) * 1000
+}
+
+/** ISO instant for a wall-clock day + minutes in `tz` (null/undefined = the device zone, i.e. isoAt). */
+export function isoAtZone(key: string, minutes: number, tz?: string | null): string {
+  if (!tz) return isoAt(key, minutes)
+  const [y, m, d] = key.split('-').map(Number)
+  const guess = Date.UTC(y, m - 1, d, 0, minutes)
+  let t = guess - tzOffset(guess, tz)
+  t = guess - tzOffset(t, tz) // second pass settles a DST edge
+  return new Date(t).toISOString()
+}
+
+/** The wall-clock day + minutes of an instant in `tz` (null = the device zone). */
+export function zonedParts(iso: string, tz?: string | null): { date: string; minutes: number } {
+  const t = new Date(iso).getTime()
+  if (!tz) {
+    const d = new Date(t)
+    return { date: dateKey(d), minutes: d.getHours() * 60 + d.getMinutes() }
+  }
+  const w = new Date(t + tzOffset(t, tz))
+  return { date: `${w.getUTCFullYear()}-${pad(w.getUTCMonth() + 1)}-${pad(w.getUTCDate())}`, minutes: w.getUTCHours() * 60 + w.getUTCMinutes() }
+}
+
+/** "Europe/London" → "London", "America/Argentina/Buenos_Aires" → "Buenos Aires". */
+export const zoneCity = (tz: string) => tz.split('/').pop()!.replace(/_/g, ' ')

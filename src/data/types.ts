@@ -34,6 +34,8 @@ export interface Task extends SyncCols {
   rrule: string | null // series rows only
   dtstart: string | null
   series_id: string | null // exception-override rows only
+  /** arc 6 (db/007): the IANA zone the wall-clock time was set in; null/absent = the viewer's zone */
+  tz?: string | null
   /** local index: 'inbox' | 'sched' | 'series' | 'override' | 'gone' */
   _kind?: TaskKind
 }
@@ -74,7 +76,23 @@ export interface SettingsData {
   /** arc 3: the Plan tab's default mode and research switch (Settings → Planning) */
   plan_mode?: 'propose' | 'auto'
   plan_research?: boolean
+  /** arc 6: the wizard's duration quick row + the Duration sheet's editable presets (minutes); unset = the defaults */
+  duration_presets?: number[]
+  /** arc 6: the day bookends' names (the anchor rows at day_start / day_end); defaults "Up" / "Lights out" */
+  day_start_name?: string
+  day_end_name?: string
+  /** arc 6: bookend rings ticked per day — `{ 'YYYY-MM-DD': { start?: true, end?: true } }`, last 14 days kept */
+  bookend_done?: Record<string, { start?: boolean; end?: boolean }>
 }
+
+export const DEFAULT_DURATION_PRESETS: readonly number[] = [1, 15, 30, 45, 60, 90]
+/** The duration presets in use: the saved list, or the defaults when unset/invalid. */
+export function durationPresets(s: Pick<SettingsData, 'duration_presets'>): number[] {
+  const p = s.duration_presets
+  return Array.isArray(p) && p.every((n) => typeof n === 'number' && n > 0) ? [...p] : [...DEFAULT_DURATION_PRESETS]
+}
+
+export const BOOKEND_NAMES = { start: 'Up', end: 'Lights out' } as const
 
 export const DEFAULT_SETTINGS: SettingsData = {
   theme: 'system',

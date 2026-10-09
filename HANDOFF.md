@@ -1,69 +1,55 @@
 # HANDOFF — optimo
 
 ## Current state
-Arc 5a — **Family Wing sign-in · sync feedback · calendar roles · paint a block · people schema** is **merged and live**.
-- **PR:** [schnubsy/optimo#80](https://github.com/schnubsy/optimo/pull/80), merged at `227d2d7` (2026-10-03). The main checkout is reconciled (HEAD = `227d2d7`).
-- **Pages ship proof:** the live `<meta name="build">` changed `2727643` → **`227d2d7`**. The live bundle `assets/index-Bq6XwBfR.js` contains `press:family:v1`, "isn't switched on for you yet", "Sync again" and "Untitled block added".
-- **Launcher published:** press `5334dd1`. The live https://schnubsy.github.io/press/optimo.html sha256 changed `82ddc9d2…` → **`90bd883b2d2dd58b6eb24a96d120d93faaa5bd92bb98e5185d7407e515fe9272`**, which equals release.js's dist hash. It carries the `?return=` bounce.
-- #56 and #58 closed by the merge.
-- **Gates:** gauntlet + sentry were GREEN; Eye LITE found no P0.
-- **db/006 applied + Edge redeployed (manual steps 1–2): DONE 2026-10-03 by Code** — see `docs/evidence/arc5a-db006-apply.md`.
+- Merge state: PR pending (branch arc/ui-round-spine)
+- Arc 6 — **UI/UX round (spine timeline, panel sheet, 4-tab bar, task wizard)**: all 9 slices done, each with a GREEN
+  gauntlet (last: Lighthouse desktop 100/100, mobile 97/100); sentry (secrets scan of the whole arc diff) 0 hits.
+- Live before the merge: Pages `<meta name="build">` = `4f04493`.
+- Supabase: `db/007_task_tz.sql` applied (`optimo_007_task_tz`, 20261009181817, max(version) unchanged —
+  `docs/evidence/arc6-db007-apply.md`); plan-day **v7** live, ezbr `087d34a0…` → `aab12198…`
+  (`docs/evidence/arc6-slice-8-plan-day-deploy.md`).
 
 ## Shipped this arc
-1. **Family Wing is the only sign-in** (eda449d).
-   - optimo reads and rotates the Family Wing session (`press:family:v1`) through a supabase-js storage adapter. The old optimo session migrates once.
-   - Signed out → `press/optimo.html?return=<optimo URL>` → back.
-   - `press_access_has('optimo.html')` false → the "ask Mark" page. No OTP screen.
-   - Worktree `agent-ab8537edaafdcce5a` removed.
-2. **Sync button feedback** (fbe6526): Syncing… / Synced · N events · N sent to iCloud / red reason + Retry, also during automatic syncs. calendar-sync returns `{events, pushed}`.
-3. **One role per calendar** (ff78c31): Off · Show in optimo · Two-way, with exactly one Two-way. #56 and #58 fixed; the PR says `Fixes #56`, `Fixes #58`.
-4. **Paint a block** (8545bfa): mouse drag, long-press-then-drag on touch, or keyboard (Enter / ↑↓ / Enter) → an untitled task; tap to edit. p95 frame 18 ms with 5k tasks.
-5. **`db/006_people.sql`** (4c9a0d4), `git hash-object` = `d9261803e1f4f718b9d01a14dbdb1040c3a36a0d`. Scratch-proven 3× (39 PASS); **applied unchanged 2026-10-03** (migration `20261004003931`). Spec §5.3 / §5.4 People.
+1. Tokens from the measured mockups (#000 / #1C1C1E / #EC9792, light mirror, culori a11y layer), 10 new + 3 restyled
+   glyphs, originality rule rewritten (CLAUDE.md, lessons, spec §6) — 3ffe2d3.
+2. Header `October 9, 2026 ›`, 32 px accent disc, mini-chips, stats line removed — 2ae5a87.
+3. Spine timeline on one segment map (`src/timeline/segments.ts`): bookends (names in Settings → Day, per-day ring),
+   discs / capsules, compressed gaps with our copy + Add Task, ring completes, chip opens — ddaa8b4.
+4. Two-detent PanelSheet over the spine week overview; desktop Week = spine columns — bd87537.
+5. 4 tabs (Inbox · Timeline · AI · Settings), 58 px FAB, inbox empty state + node rows — a072b4c.
+6. Wizard ① title (parser) + suggestions, ② wheel / ••• menu / duration presets — 7870679.
+7. ③ details = the edit screen (TaskSheet removed), per-task time zone + picker, db/007, Dexie v4 — 66221a0.
+8. AI subtasks: plan-day `subtasks` (Haiku, strict tool, 30/day), sparkle → Keep all / Discard — 745668b.
+9. Eye LITE vs the ten mockups (`docs/evidence/arc6-eye-lite.md`): 8 P0 fixed (9b), 30 P1 → snags — 8f7d145.
 
-## Open / blockers (close-out manifest)
-- **push · PR #80 · merge `227d2d7` · reconcile main (HEAD = `227d2d7`) · Pages ship proof (`2727643` → `227d2d7`): DONE.**
-- **publish (press launcher): DONE.** press `5334dd1`; the live sha256 equals the dist sha256 `90bd883b…` (was `82ddc9d2…`).
-- **migrations: DONE.** db/006 applied by Code via the Supabase connector (`optimo_006_people`, `20261004003931`). Mark = 1 person, 0 unassigned rows, `family_access` = false, max(version) is still 9. One new advisor WARN, by design: `planner_family_access()` is callable by authenticated.
-- **deploy (Edge: calendar-sync, calendar-connect): DONE.** Both moved v3 → v4. calendar-sync ezbr `4fa36d95…` → `3ee448f2…`; calendar-connect `b3532d49…` → `27d97ea7…`. Read-back is byte-identical to the repo (10/10 files each). The 00:45 UTC cron sync answered `200 {…,"events":12,"pushed":0}`.
-- **Inbox cleanup: N/A.** The main checkout is not a worktree. The three inbox files (ARC.md, the feedback backlog, verify-2026-10-03-2) were committed in slice 1, so no uncommitted copies remain.
-- **Worktree sweep: DONE 2026-10-09** (council v4.11.4) — the 3 agent worktrees + 3 `worktree-agent-*` branches removed (all SAFE); `git worktree list` = main checkout only.
-- **Snags:** #67–#79 (Eye 5a: P1 #79, #67–#70; P2 #71–#78), plus #57, #59–#65 and #39–#54 carried.
+## Open / blockers (close-out manifest at branch time)
+- **migrations: DONE** — db/007 applied by Code via the connector (proof above). No destructive SQL this arc.
+- **deploy (Edge plan-day): DONE** — v7, ezbr `aab12198…`; the v7 module answers its own 401 to a non-user key.
+- **push · PR · merge · reconcile main · Pages ship proof · press publish check · inbox cleanup:** run by the arc-close
+  order straight after this commit; their outcomes are in the close report and checked by `Cowork: run verify`.
+- **Inbox cleanup: N/A** — the main checkout is not a worktree; ARC.md + the mockups were committed in 751b1b9.
+- **Worktrees:** four agent worktrees under `.claude/worktrees/` (slices 2, 4, 5, 6) are kept — the order
+  forbids removing worktrees inside it; their branches are fully cherry-picked (SAFE). The next worktree sweep owns them.
+- **Snags:** Eye arc 6 P1 #81–#110 (several tagged [sheet≠image] need Mark's call: sheet value or image value), plus
+  #67–#79, #57, #59–#65, #39–#54 carried.
 
 ## Exact next steps
-1. ~~Cowork: run verify~~ — DONE 2026-10-03, all green (`docs/evidence/verify-2026-10-03-3.md`, `-4.md`).
-2. Mark: steps 3–4 on real devices. Anything failing → a `snag` Issue.
-3. **Arc 5b — people** (kick off with "kick off — arc 5b"). Any Claude Code prompt carries `MAIN CHECKOUT: /Users/mark/Documents/code/optimo` + `INBOX FILES:` and pulls `main` before branching. Slices:
-   - **(a) People picker.** List + "Add someone" (name, colour). The last pick is remembered per device (`optimo.person`); the picker is skipped with one person; a switcher sits in the header.
-   - **(b) Per-person sync.**
-     - Outbox rows carry `person_id`.
-     - Pull and realtime are filtered by `person_id` + `user_id`, with a cursor per person per device.
-     - Settings / ai_profile upsert `on_conflict=person_id`.
-     - Calendar accounts are listed per person.
-     - Then flip `planner_flags.family_access = true` inside the order via the Supabase connector (guarded: person-scoped client live first).
-   - **(c) Per-person iCloud in Edge.** calendar-connect / calendar-sync take the person from the request; the cron path iterates by person; events and links carry the account's person. Deploy inside the order via the connector (ezbr ship proof).
-   - **(d) Snags first:** #79, #67–#70.
-   - **(e) Register `plan-day` in `press_agent_registry`** (audit 🔴 2026-10-03: it calls the model but is unmonitored).
+1. `Cowork: run verify` on the merged build.
+2. Mark: the on-device checks below. Anything failing → a `snag` Issue.
+3. Mark decides the [sheet≠image] snags (#81, #82, #83, #85, #87, #91, #95, #108): type scale, 72 px row minimum,
+   panel margin, mini-chip fill. Then a snag train.
+4. **Arc 5b — people** (kick off with "kick off — arc 5b"): people picker, per-person sync + the guarded
+   `planner_flags.family_access` flip, per-person iCloud, register plan-day in `press_agent_registry`. Any Claude Code
+   prompt carries `MAIN CHECKOUT: /Users/mark/Documents/code/optimo` + `INBOX FILES:` and pulls `main` before branching.
 
 ## Mark's manual steps
-1. **DONE 2026-10-03 (Code)** — proof: `docs/evidence/arc5a-db006-apply.md`. ~~Apply db/006 (Supabase connector, project `eepjhpyziczrxvirczio`).~~
-   - **Precondition:** `cd ~/Documents/code/optimo && git pull --ff-only && test "$(git hash-object db/006_people.sql)" = d9261803e1f4f718b9d01a14dbdb1040c3a36a0d`, and note `select max(version) from planner_tasks;`.
-   - **Action:** apply `db/006_people.sql` unchanged.
-   - **Postcondition** (the queries at the foot of the file):
-     - `planner_people` has Mark, with `created_by` not null;
-     - every `person_id is null` count is 0 for Mark's rows;
-     - `planner_flags.family_access = false`;
-     - `max(version)` is unchanged;
-     - advisors show no new RLS / anon-definer findings;
-     - optimo still opens and syncs.
-2. **DONE 2026-10-03 (Code)** — calendar-sync v4 `3ee448f2…`, calendar-connect v4 `27d97ea7…`, read-back matches the repo, and the cron sync returns top-level `events` + `pushed`. ~~Deploy calendar-sync + calendar-connect.~~
-   - **Precondition:** `cd ~/Documents/code/optimo && git pull --ff-only && grep -c "accounts: results, events, pushed" supabase/functions/_shared/handlers.ts` (must print 1).
-   - **Action:** deploy both functions with their entry `calendar-*/index.ts` plus `deno.json` and `_shared/{caldav,crypto,due,handlers,ics,supabase,twoway,vevent}.ts`. Keep `verify_jwt` (connect **true**, sync **false**).
-   - **Postcondition:**
-     - `ezbr_sha256` differs from the pre-deploy values: calendar-sync `4fa36d951fd1e4bc19f39c14b4f8b537d9418808dc0782031405f1e9b50d479b`, calendar-connect `b3532d49665747cd74112ebd5f3b4e72cfc7e92a0db15411b3c02e4c2de649de` (both v2).
-     - The read-back source matches the repo.
-     - A manual sync answers JSON with top-level `events` and `pushed`.
-3. **Family Wing sign-in (Mark, iPhone + Mac).** Open https://schnubsy.github.io/optimo/ in a private window → lands on the Family Wing sign-in → 6-digit code → back in optimo on the same URL. Signed-in elsewhere → straight in. Settings → "Sign out of the Family Wing" → the Family Wing door also shows signed out.
-4. **On-device checks (Mark, iPhone).**
-   - Long-press empty timeline, then drag → a block with live times; release → untitled block; tap → editor. A quick swipe just scrolls.
-   - Settings → Calendars: Sync now shows Syncing… → Synced · N events · N sent to iCloud; roles switch with one Two-way.
-   - Carried from arc 4: two-way edits on the real Apple ID; Reminders test push.
+1. **On-device checks (iPhone, installed PWA)** — after `Cowork: run verify` is green:
+   - Tab bar + FAB sit ~22 px above the bottom edge (over the home indicator), not ~50 px (Eye P0-8).
+   - Timeline: drag the grabber down → week overview; tap a day column → that day, panel up; tap Timeline again → toggles.
+   - FAB → `Movie night at 8pm for 1.5h` → Continue → Continue → Create → a 90-min capsule at 8:00 PM.
+   - Tap a task's chip → ③ edit screen; ring on the header completes; Delete works.
+   - ② ••• → Set Timezone → London on a 9:00 task → the timeline shows it in local time with the globe.
+   - ③ sparkle on a real task → 3–7 steps → Keep all (this is plan-day v7's first live model call).
+2. **Guarded re-check of the live build** (only if verify cannot run):
+   `cd ~/Documents/code/optimo && git pull --ff-only && grep -c "segmentMaps" src/timeline/Timeline.tsx && curl -s https://schnubsy.github.io/optimo/ | grep -o '<meta name="build" content="[0-9a-f]*"'`
+   — the grep count must be ≥ 1 and the build meta must equal the PR's merge SHA (it was `4f04493` before this arc).

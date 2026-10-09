@@ -1,28 +1,29 @@
 // snag train 2026-10 — Issues #15-#27 (label `snag`), raised by the arc-2 slice-7 Eye LITE critique
 // (docs/evidence/arc2-slice-7-design-critique.md). One behavioural case per slice; evidence captures are
 // gated on EVIDENCE=1 (same convention as design2.spec.ts).
-import { test, expect, type Page, type BrowserContext } from '@playwright/test'
+import { test, expect, type BrowserContext } from '@playwright/test'
 import { CAT, at, openApp, seedDay, seedTask } from './support/app'
 import { ACTIVITY, CHROME } from '../src/icons/set'
 import { FAKE_PASSWORD, FAKE_USER } from './fake/caldav'
 
-const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
 test.describe('snag train 2026-10', () => {
   // === slice 1 (Fixes #15) — now-pill hides the hour numeral ===
-  test('#15 the now-pill never leaves the hour numeral peeking out', async ({ page, context }) => {
+  // arc 6: the now marker is a disc on the spine (decision 6) — it never sits in the gutter over an hour label
+  test('#15 the now marker stays on the spine, clear of the gutter times', async ({ page, context }) => {
     const now = new Date()
-    now.setHours(15, 6, 0, 0) // 6 min past the hour: inside the 12-min mask window
+    now.setHours(15, 6, 0, 0)
     await page.clock.install({ time: now })
     await openApp(page, context, {
       seed: (s) => seedTask(s, { title: 'Write the migration plan', start_at: at('14:00'), duration_min: 90, category_id: CAT.work }),
     })
-    const masked = page.locator('[data-testid="hour-label"][data-hour="15"]')
-    const clear = page.locator('[data-testid="hour-label"][data-hour="13"]')
-    await masked.scrollIntoViewIfNeeded()
-    await expect(page.getByTestId('now-line')).toBeVisible()
-    expect(await masked.evaluate((el) => getComputedStyle(el).opacity)).toBe('0')
-    expect(await clear.evaluate((el) => getComputedStyle(el).opacity)).toBe('1')
+    const line = page.getByTestId('now-line')
+    await line.scrollIntoViewIfNeeded()
+    await expect(line).toHaveAttribute('data-min', String(15 * 60 + 6))
+    const nb = (await line.boundingBox())!
+    const spine = (await page.getByTestId('spine').first().boundingBox())!
+    expect(Math.abs(nb.x + 5 - (spine.x + spine.width / 2))).toBeLessThanOrEqual(2)
+    for (const l of await page.getByTestId('hour-label').all()) expect((await l.boundingBox())!.x + (await l.boundingBox())!.width).toBeLessThan(nb.x)
   })
 
   test('#15 evidence: day view with the now-pill masking the hour', async ({ page, context }, info) => {
@@ -33,8 +34,7 @@ test.describe('snag train 2026-10', () => {
     await openApp(page, context, {
       seed: (s) => seedTask(s, { title: 'Write the migration plan', start_at: at('14:00'), duration_min: 90, category_id: CAT.work }),
     })
-    const px = (await isMobile(page)) ? 66 : 72
-    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 14 * px)
+    await page.getByTestId('now-line').scrollIntoViewIfNeeded()
     await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-1-day-${info.project.name}.png` })
   })
 
@@ -201,17 +201,20 @@ test.describe('snag train 2026-10', () => {
   })
 
   // === slice 8 (Fixes #22) — Week view edges: no sliver on iPhone, no flush-right on desktop ===
-  test('#22 Week: mobile 3-day columns exactly fill the space the sticky rail leaves (no sliver)', async ({ page, context }, info) => {
-    test.skip(info.project.name !== 'iphone-15', 'the 3-day mobile week is mobile-only')
+  // arc 6 slice 4: the 3-day scroller became the 7-column overview (mockup 10) — the columns fill the strip's width
+  test('#22 Week: mobile 7 columns exactly fill the 20 px gutters (no sliver, no scroll)', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the mobile week overview is mobile-only')
     const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
     await openApp(page, context, { seed: seedDay })
     await setView('week')
-    const railWidth = (await page.locator('.week.m .wrail').boundingBox())!.width
-    const colWidth = (await page.locator('.week.m .wcol').first().boundingBox())!.width
+    const cols = page.locator('.wov [data-testid="week-col"]')
+    await expect(cols).toHaveCount(7)
+    const first = (await cols.first().boundingBox())!
+    const last = (await cols.last().boundingBox())!
     const viewport = page.viewportSize()!.width
-    // the rail + 3 columns must account for the full viewport — within 1px of rounding, so there is no
-    // unfilled sliver of a 4th day left over after a snap scroll (the old 42px constant left ~10px spare)
-    expect(Math.abs(railWidth + 3 * colWidth - viewport)).toBeLessThan(1)
+    expect(Math.abs(first.x - 20)).toBeLessThan(1)
+    expect(Math.abs(viewport - (last.x + last.width) - 20)).toBeLessThan(1)
+    expect(await page.locator('.wov .wbody').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   })
 
   test('#22 Week: desktop Sun column stays clear of the window edge', async ({ page, context }, info) => {
@@ -231,13 +234,13 @@ test.describe('snag train 2026-10', () => {
   })
 
   // === slice 9 (Fixes #23) — quick-add glyph chip meets the 44px hit target on iPhone ===
-  test('#23 the quick-add glyph chip is at least 44x44 inside the mobile sheet', async ({ page, context }, info) => {
-    test.skip(info.project.name !== 'iphone-15', 'the FAB bottom sheet is mobile-only')
+  test('#23 the create wizard glyph chip is at least 44x44 (arc 6: the 84 px header chip)', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the FAB wizard is mobile-only')
     await openApp(page, context)
     await page.getByTestId('fab').click()
-    const field = page.getByTestId('quickadd')
+    const field = page.getByTestId('wizard-title')
     await field.fill('Lunch with Sam at 1pm')
-    const chip = page.getByTestId('parse-icon')
+    const chip = page.getByTestId('wizard-glyph')
     await expect(chip).toBeVisible()
     const box = (await chip.boundingBox())!
     expect(box.width).toBeGreaterThanOrEqual(44)
@@ -249,8 +252,8 @@ test.describe('snag train 2026-10', () => {
     test.skip(info.project.name !== 'iphone-15', 'the FAB bottom sheet is mobile-only')
     await openApp(page, context)
     await page.getByTestId('fab').click()
-    await page.getByTestId('quickadd').fill('Lunch with Sam at 1pm')
-    await expect(page.getByTestId('parse-icon')).toBeVisible()
+    await page.getByTestId('wizard-title').fill('Lunch with Sam at 1pm')
+    await expect(page.getByTestId('wizard-glyph')).toBeVisible()
     await page.screenshot({ path: 'docs/evidence/snag-train-2026-10-slice-9-quickadd-iphone-15.png' })
   })
 
@@ -276,7 +279,7 @@ test.describe('snag train 2026-10', () => {
       await setView('day')
       await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
       await expect(page.getByRole('dialog')).toBeVisible()
-      await expect(page.locator('[data-testid="sheet-category"] button').first()).toBeVisible()
+      await expect(page.getByTestId('wizard-title')).toHaveValue(/\S/)
       await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-editor-iphone-15-${theme}.png` })
     })
 
@@ -357,7 +360,8 @@ test.describe('snag train 2026-10', () => {
   })
 
   // === slice 13 (Fixes #27) — running pill's elapsed sweep has a flat trailing edge ===
-  test('#27 the elapsed sweep has a flat trailing edge, not a nested rounded block', async ({ page, context }) => {
+  // arc 6: no elapsed sweep on the spine — the running chip carries the accent ring (mockups 01: "the running task's chip")
+  test('#27 the running task is marked by its chip ring, not a sweep', async ({ page, context }) => {
     const now = new Date()
     now.setHours(14, 30, 0, 0) // inside the 14:00-15:30 "Write the migration plan" block
     await page.clock.install({ time: now })
@@ -366,16 +370,8 @@ test.describe('snag train 2026-10', () => {
     })
     const pill = page.locator('[data-testid="block"][data-running="true"]')
     await pill.scrollIntoViewIfNeeded()
-    const elapsed = pill.locator('.elapsed')
-    await expect(elapsed).toBeVisible()
-    const radii = await elapsed.evaluate((el) => {
-      const s = getComputedStyle(el)
-      return { tl: s.borderTopLeftRadius, tr: s.borderTopRightRadius, bl: s.borderBottomLeftRadius, br: s.borderBottomRightRadius }
-    })
-    expect(radii.tr).toBe('0px')
-    expect(radii.br).toBe('0px')
-    expect(radii.tl).not.toBe('0px') // the leading edge keeps the pill's own radius
-    expect(radii.bl).not.toBe('0px')
+    await expect(pill.locator('.elapsed')).toHaveCount(0)
+    expect(await pill.getByTestId('chip').evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none')
   })
 
   test('#27 evidence: running pill with a flat-edged elapsed sweep (Day view)', async ({ page, context }, info) => {

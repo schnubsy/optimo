@@ -1,4 +1,4 @@
-// POST {action: 'propose' | 'learn', …} with the user's JWT (verify_jwt = true). Every database read and write goes
+// POST {action: 'propose' | 'learn' | 'subtasks', …} with the user's JWT (verify_jwt = true). Every database read and write goes
 // through supabase-js carrying the CALLER's JWT, so RLS scopes it to their rows; only the model call uses a secret
 // (ANTHROPIC_API_KEY, already set on press). PLANNER_MODEL optionally overrides the default model.
 import Anthropic from '@anthropic-ai/sdk'

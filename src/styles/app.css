@@ -14,7 +14,14 @@
   --pill-bg: oklch(var(--pill-l) calc(var(--cat-c) * var(--pill-cm)) var(--cat-h));
   --pill-fg: oklch(var(--pill-ink-l) calc(var(--cat-c) * var(--pill-ink-cm)) var(--cat-h));
   --chip-bg: oklch(var(--chip-l) calc(var(--cat-c) * var(--chip-cm)) var(--cat-h));
+  /* arc 6: glyph + ring on the spine, the editor header, the week overview's past-day disc */
+  --cat-glyph: oklch(var(--glyph-l) var(--glyph-c) var(--cat-h));
+  --cat-hdr: oklch(var(--hdr-l) var(--hdr-c) var(--cat-h));
+  --cat-past: oklch(var(--past-l) var(--past-c) var(--cat-h));
 }
+/* no category yet: the editor header and the glyph take the accent hue (mockups 04) */
+.cat-accent { --cat-h: 23.4; --cat-c: 0.103; --cat-chip: var(--accent); }
+.icon-sizes { display: inline-flex; gap: var(--sp-2); align-items: center; color: var(--ink); }
 
 .boot { min-height: 100%; }
 .app { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; background: var(--canvas); }
@@ -180,25 +187,6 @@
 .backlog .filter input { width: 100%; height: 40px; padding: 0 var(--sp-4); background: var(--surface); border: 0; border-radius: var(--r-pill); font-size: var(--fs-15); box-shadow: inset 0 0 0 1px var(--line); }
 .ilist { flex: 1; overflow: auto; position: relative; min-height: 0; padding: 0 var(--sp-3); }
 .ilist ul { list-style: none; margin: 0; padding: 0; position: relative; }
-.irow { position: absolute; left: 0; right: 0; top: 0; height: 48px; }
-.irow.over::before { content: ''; position: absolute; left: 12px; right: 12px; top: -4px; height: 3px; border-radius: 2px; background: var(--accent); z-index: 3; }
-.irow-in { display: flex; align-items: center; gap: var(--sp-2); height: 48px; padding: 0 4px 0 11px; border-radius: var(--r-pill); background: var(--surface); }
-.irow.grab .irow-in { position: relative; z-index: 30; box-shadow: var(--shadow-drag); will-change: transform; }
-.irow-chip { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }
-.irow-chip::before { content: ''; position: absolute; inset: -9px; }
-.irow-chip.prio-high { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-high); }
-.irow-chip.prio-med { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-med); }
-.irow-chip.prio-low { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-low); }
-.irow-main { all: unset; box-sizing: border-box; flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; cursor: grab; }
-.irow-main:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--r-pill); }
-.irow .it { font-weight: var(--fw-bold); font-size: var(--fs-15); line-height: var(--lh-tight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.irow .im { font-size: var(--fs-13); color: var(--ink-2); line-height: var(--lh-tight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.irow .ic-cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.place { position: relative; flex: none; height: 36px; padding: 0 var(--sp-4); border: 0; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-ink); font-size: var(--fs-13); font-weight: var(--fw-bold); }
-.place::before { content: ''; position: absolute; inset: -4px 0; }
-.place:hover { background: color-mix(in oklch, var(--accent-tint) 70%, var(--accent)); }
-.backlog .empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-8) var(--sp-4); color: var(--ink-2); font-size: var(--fs-15); text-align: center; }
-.backlog .empty .empty-chip { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--cat-3-chip); color: var(--chip-glyph-color); }
 .backlog .ft { margin: 0; padding: var(--sp-3) var(--sp-4); font-size: var(--fs-12); color: var(--ink-2); line-height: var(--lh-snug); }
 /* #29: the drag hint is desktop copy and sat under the floating tab bar; mobile Place = the row pill + swipe */
 .is-mobile .backlog .ft { display: none; }
@@ -248,58 +236,7 @@
 .icon-group { margin: var(--sp-5) 0 0; font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink-2); }
 .icon-sheet .icon-chip { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }
 
-/* ---------- week ---------- */
-.week { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-.whead { display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); background: var(--canvas); }
-.wnav { display: flex; align-items: center; justify-content: center; }
-.wnav .nav { min-width: 22px; height: 36px; border: 0; background: none; font-size: 18px; color: var(--ink-2); }
-.wday { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px var(--sp-2); border: 0; border-radius: var(--r-sm); background: none; text-align: left; min-height: 48px; min-width: 0; }
-.wday b { font-size: var(--fs-13); font-weight: var(--fw-black); }
-.wday span { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--ink-2); }
-.wday.today b { color: var(--accent-ink); }
-.wday.sel { background: var(--surface); }
-.wbody { flex: 1; overflow: auto; min-height: 0; }
-/* #22: desktop — keep the Sun column clear of the window edge instead of flush against it */
-.is-desktop .wbody { padding-right: var(--sp-4); }
-/* #35: the day-header row takes the body's right pad, so Sun's header ends where its column does */
-.is-desktop .whead { padding-right: var(--sp-4); }
-.wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
-.wrail { position: relative; }
-.wrail .hour { position: absolute; left: 0; right: 0; }
-.wrail .hour b { position: absolute; right: 6px; top: -8px; font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--ink-2); }
-.wcol { position: relative; background-image: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 40px); }
-.wcol.over { background-color: color-mix(in oklch, var(--accent-tint) 60%, transparent); }
-.wcol .oob { position: absolute; left: 0; right: 0; background: color-mix(in oklch, var(--panel) 60%, transparent); pointer-events: none; }
-.wcol.today { background-color: color-mix(in oklch, var(--accent-tint) 40%, transparent); }
-.wblk { all: unset; box-sizing: border-box; position: absolute; overflow: hidden; background: var(--pill-bg); color: var(--pill-fg); border-radius: var(--r-pill); padding: 1px 6px 1px 3px; font-size: var(--fs-11); font-weight: var(--fw-bold); line-height: 1.25; cursor: grab; z-index: 2; display: flex; flex-direction: column; justify-content: center; box-shadow: var(--pill-ring); }
-.wblk:focus-visible { box-shadow: var(--focus-ring); }
-.wblk .wt { display: flex; gap: 4px; align-items: center; white-space: nowrap; overflow: hidden; }
-.wblk .wchip { flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }
-.wblk .wt .tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.wblk .wm { font-size: var(--fs-10); font-weight: var(--fw-semibold); padding-left: 20px; }
-.wblk.done { background: var(--done-fill); color: var(--done-ink); }
-.wblk.done .tt { text-decoration: line-through; }
-.wblk.done .wchip { background: var(--done-chip); color: oklch(1 0 0); }
-.wblk.grab { z-index: 30; box-shadow: var(--shadow-drag); will-change: transform; }
-.wfree { position: absolute; left: 50%; border-left: var(--free-dot) dotted var(--free-line); pointer-events: none; z-index: 1; }
-.wnow { position: absolute; left: 0; right: 0; height: 0; border-top: var(--now-line-w) solid var(--now-line); z-index: 5; pointer-events: none; }
-/* mobile: three days at a time, snapping, rail and header sticky inside one scroller */
-/* #22: 32px must match the sticky rail's own width below — a stale 42px left a ~10px sliver of the
-   adjacent day visible after every snap scroll (3 columns under-filled the space the rail actually leaves) */
-.week.m { --wcol: calc((100vw - 32px) / 3); }
-.week.m .whead { display: none; }
-.wbar { display: flex; align-items: center; justify-content: space-between; background: var(--canvas); }
-.wbar .nav { min-width: 44px; height: 44px; border: 0; background: none; font-size: 20px; color: var(--ink-2); }
-.wbar b { font-size: var(--fs-15); font-weight: var(--fw-black); }
-.week.m .wbody { overflow: auto; scroll-snap-type: x mandatory; scroll-padding-left: 32px; }
-.week.m .wgrid { grid-template-columns: 32px repeat(7, var(--wcol)); grid-template-rows: auto 960px; width: calc(32px + 7 * var(--wcol)); }
-.week.m .whead-m { grid-column: 1 / -1; display: grid; grid-template-columns: 32px repeat(7, var(--wcol)); position: sticky; top: 0; z-index: 12; background: var(--canvas); }
-.week.m .whead-m .wday { scroll-snap-align: start; padding: 4px 6px; min-height: 40px; }
-.week.m .whead-m .wday span { font-size: var(--fs-10); }
-.week.m .whead-m .corner { position: sticky; left: 0; background: var(--canvas); z-index: 2; }
-.week.m .wrail { position: sticky; left: 0; z-index: 11; background: var(--canvas); }
-.week.m .wcol { scroll-snap-align: start; }
-.week.m .wblk { font-size: var(--fs-12); }
+/* week: the spine columns live in src/chrome/panel.css (arc 6 slice 4) */
 
 /* ---------- month ---------- */
 .month { padding: var(--sp-4); overflow: auto; }
@@ -351,9 +288,6 @@
 .plan-learned p { margin: 0 0 var(--sp-2); }
 
 /* ================= chrome (design spec §5.5–5.8) ================= */
-.hdr-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); white-space: nowrap; }
-.hdr-stats b { color: var(--ink); font-weight: var(--fw-bold); }
-.hdr-stats .hdr-late b { color: var(--danger-ink); }
 .hdr-date { font-weight: var(--fw-semibold); color: var(--accent-ink); }
 .hdr-today { height: 32px; padding: 0 var(--sp-3); border: 0; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-ink); font-size: var(--fs-12); font-weight: var(--fw-bold); }
 
@@ -365,8 +299,6 @@
 .hdr-top .sync-badge { margin-left: auto; pointer-events: auto; }
 .hdr-title { margin: 0; font-size: var(--fs-22); font-weight: var(--fw-black); letter-spacing: var(--ls-display); line-height: 1.2; }
 .hdr-title-btn { padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; color: var(--ink); text-align: left; }
-.hdr .hdr-stats { margin: 2px 0 6px; transition: opacity var(--dur-tab) var(--ease-standard); }
-.hdr.scrolled .hdr-stats { opacity: 0; }
 .hdr-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; pointer-events: auto; touch-action: pan-y; }
 .hdr-day { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-2); }
 .hdr-day .wd { font-size: var(--fs-10); font-weight: var(--fw-semibold); line-height: 1; }
@@ -379,28 +311,13 @@
 .is-mobile .pane > * { padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); }
 .is-mobile .pane.m-day > .day { padding-top: 0; }
 .is-mobile .tl { padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); padding-bottom: var(--scroll-pad-bottom); scroll-padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); }
-.is-mobile .backlog .ilist, .is-mobile .week .wbody, .is-mobile .month, .is-mobile .page { padding-bottom: var(--scroll-pad-bottom); }
+.is-mobile .backlog .ilist, .is-mobile .month, .is-mobile .page { padding-bottom: var(--scroll-pad-bottom); }
 .is-mobile .allday { top: calc(var(--header-h-mobile) + env(safe-area-inset-top) - 8px); }
 .is-mobile .toast-wrap { bottom: calc(var(--tabbar-h) + var(--tabbar-inset) * 2 + env(safe-area-inset-bottom)); }
 
 /* floating pill tab bar + separate FAB */
-.tabbar { position: fixed; z-index: 30; left: var(--tabbar-inset); right: calc(var(--fab-size) + var(--tabbar-inset) * 2); bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom));
-  height: var(--tabbar-h); border-radius: var(--r-pill); background: var(--bar-bg); -webkit-backdrop-filter: var(--bar-blur); backdrop-filter: var(--bar-blur); border: var(--bar-border); box-shadow: var(--shadow-bar);
-  transition: transform var(--dur-tab) var(--ease-standard), opacity var(--dur-tab) var(--ease-standard); }
-.tabbar > [role='tablist'] { height: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 0 6px; }
-.tabbar button { position: relative; min-width: 44px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; border: 0; border-radius: var(--r-pill); background: none; color: var(--ink-2); }
-.tabbar button[hidden] { display: none; }
-.tabbar button[aria-selected='true'] { color: var(--accent-ink); }
-.tabbar .tab-ic { position: relative; display: grid; place-items: center; }
-.tabbar .tab-l { font-size: var(--fs-10); font-weight: var(--fw-bold); line-height: 1; }
-.tabbar .tab-badge { position: absolute; top: -4px; left: 14px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--r-pill); background: var(--accent); color: var(--ink-on-accent); font-size: 9px; font-weight: var(--fw-bold); line-height: 16px; text-align: center; }
-.tabbar.recede { transform: translateY(8px); opacity: 0.6; }
-@media (prefers-reduced-motion: reduce) { .tabbar.recede { transform: none; opacity: 1; background: var(--bar-bg-opaque); } }
-.fab { position: fixed; z-index: 30; right: var(--tabbar-inset); bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom)); width: var(--fab-size); height: var(--fab-size); padding: 0; border: 0; border-radius: 50%;
-  display: grid; place-items: center; background: var(--accent); color: var(--ink-on-accent); box-shadow: var(--shadow-fab); transition: transform var(--dur-instant) ease; }
-.fab:active { transform: scale(var(--scale-press)); }
 
-/* desktop pane header: segmented pill, title, stats, quick-add pill, gear, sync */
+/* desktop pane header: segmented pill, title, quick-add pill, gear, sync */
 .pane-hdr { position: relative; z-index: 15; display: flex; align-items: center; gap: var(--sp-3); min-height: var(--header-h-desktop); padding: 0 var(--sp-4); background: var(--header-fade); flex-wrap: nowrap; min-width: 0; }
 .segmented { flex: none; display: flex; gap: 2px; padding: 3px; background: var(--surface); border-radius: var(--r-pill); box-shadow: var(--shadow-bar); }
 .segmented button { height: 34px; padding: 0 var(--sp-4); border: 0; border-radius: var(--r-pill); background: none; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--ink-2); }
@@ -410,8 +327,6 @@
 .pane-title .nav { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-2); }
 .pane-title .nav:hover { background: var(--surface-hover); color: var(--ink); }
 .hdr-now { flex: none; margin-left: var(--sp-1); padding: 2px 8px; border-radius: var(--r-pill); background: var(--now-flag-bg); color: var(--now-flag-fg); font-size: var(--fs-11); font-weight: var(--fw-black); }
-.pane-hdr .hdr-stats { flex: 1 1 0; min-width: 160px; flex-wrap: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pane-hdr .hdr-stats span { flex: none; }
 /* arc 3: the Plan button joins the gear — quick-add gives up 40px of its floor so the sync badge stays on screen */
 .pane-qa { flex: 0 1 280px; min-width: 140px; max-width: 520px; margin-left: auto; position: relative; }
 /* desktop header: the sync state is its dot (words kept for screen readers, full text in the tooltip) */
@@ -423,8 +338,6 @@
 .gear { flex: none; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink-2); }
 .gear.on { background: var(--accent); color: var(--ink-on-accent); }
 .pane-hdr .sync-badge { flex: none; }
-/* narrower desktops keep planned + free; done / late / inbox live in their own views */
-@media (max-width: 1366px) { .pane-hdr .hdr-stats span:nth-child(n + 3) { display: none; } }
 
 /* quick-add: suggested glyph chip + picker; the FAB's bottom sheet */
 .parse-glyph { pointer-events: auto; flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); position: relative; }

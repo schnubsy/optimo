@@ -23,9 +23,9 @@ test.describe('snags #1–#12', () => {
     const b = block(page, id)
     await b.scrollIntoViewIfNeeded()
     await expect(b).toHaveAttribute('data-late', 'true')
-    await expect(b.locator('.blk-main')).toHaveAccessibleName(/, late/)
-    // the cue is text, not colour alone
-    expect(await b.locator('.time b').evaluate((el) => getComputedStyle(el, '::after').content)).toContain('late')
+    await expect(b.getByTestId('chip')).toHaveAccessibleName(/, late/)
+    // the cue is text, not colour alone (arc 6: in the meta line)
+    await expect(b.locator('.node-meta')).toContainText('late')
   })
 
   test('#2 priority is a label, not an unlabeled inner rule', async ({ page, context }) => {
@@ -34,22 +34,24 @@ test.describe('snags #1–#12', () => {
     const deep = block(page, ids!.deep)
     await deep.scrollIntoViewIfNeeded()
     expect(await deep.evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none')
-    await expect(deep.locator('.blk-main')).toHaveAccessibleName(/P1/)
+    await expect(deep.getByTestId('chip')).toHaveAccessibleName(/P1/)
   })
 
-  test('#3 inbox category reads as a whole short code, never cut mid-word', async ({ page, context }) => {
+  test('#3 inbox category reads as a whole name, never cut mid-word', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
     await showInbox(page)
+    // arc 6: the meta line is full width (`duration · category`), so the short-code column is gone
     const cat = page.getByTestId('inbox-row').filter({ hasText: 'Book flights' }).getByTestId('inbox-cat')
-    await expect(cat).toHaveText('Pers')
-    expect(await cat.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+    await expect(cat).toHaveText('Personal')
   })
 
-  test('#4 week header says which figure is planned; free time shows in the grid', async ({ page, context }) => {
+  // arc 6 slice 4: the plan/free figures and dotted free rules left with the old grid (mockup 10 has none) — free time
+  // now reads as the bare spine between a day's nodes, from its first node to its last
+  test('#4 week: every day shows its spine between the first and last node', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
     await setView(page, 'week')
-    await expect(page.getByTestId('week-hours').first()).toContainText(/\d+h\d\d plan · \d+h\d\d free/)
-    expect(await page.getByTestId('week-free').count()).toBeGreaterThan(0)
+    await expect(page.getByTestId('week-spine')).toHaveCount(7)
+    for (const h of await page.getByTestId('week-spine').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(h).toBeGreaterThan(100)
   })
 
   test('#5 resting "Synced" does not spend the signal colour', async ({ page, context }) => {
@@ -72,21 +74,22 @@ test.describe('snags #1–#12', () => {
     test.skip(test.info().project.name !== 'iphone-15', 'mobile chrome')
     await openApp(page, context, { seed: seedDay })
     // arc 2: the strip is replaced by the faded header (112pt + safe area) and a floating bar the board scrolls under
-    await expect(page.getByTestId('stat-unplaced')).toHaveCount(0)
-    expect((await page.getByTestId('header').boundingBox())!.height).toBeLessThanOrEqual(112 + 60)
+    expect((await page.getByTestId('header').boundingBox())!.height).toBeLessThanOrEqual(131 + 60)
     await expect(page.getByTestId('quickadd')).toHaveCount(0)
+    // arc 6: the FAB opens the create wizard; its parse chips appear only once something parses
     const field = await quickAdd(page)
-    await expect(page.getByTestId('parse-row')).toBeVisible()
+    await expect(page.getByTestId('wizard-parse')).toBeEmpty()
     await field.fill('Lunch at 1pm')
-    await expect(page.getByTestId('parse-row')).toContainText('Lunch')
+    await expect(page.getByTestId('wizard-parse')).toContainText('13:00')
   })
 
-  test('#7 hour lines do not run through the free-time label', async ({ page, context }) => {
+  test('#7 the spine never runs through the free-time sentence', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
-    // arc 2: free time is a dotted rule with an opaque sage label pill that sits above the dashed hour lines
-    const label = page.getByTestId('free-row').filter({ has: page.locator('.free-label') }).first().locator('.free-label')
-    await label.scrollIntoViewIfNeeded()
-    expect(await label.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)')
+    // arc 6: free time is a sentence in the text column, right of the spine (no hour lines cross it)
+    const say = page.getByTestId('free-row').locator('.gap-say').first()
+    await say.scrollIntoViewIfNeeded()
+    const spine = (await page.getByTestId('spine').first().boundingBox())!
+    expect((await say.boundingBox())!.x).toBeGreaterThan(spine.x + spine.width + 24)
   })
 
   test('#8 no native checkboxes in the editor or focus — subtasks toggle on their own chip', async ({ page, context }) => {

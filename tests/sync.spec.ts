@@ -84,3 +84,28 @@ test.describe('sync convergence', () => {
     await ctxB.close()
   })
 })
+
+// arc 6 slice 7 (db/007): planner_tasks.tz syncs field-level like any column
+test('tz round-trips between two devices', async ({ browser, baseURL }, info) => {
+  test.skip(info.project.name !== 'desktop', 'protocol test; runs once')
+  const server = new FakeSupabase()
+  server.upsert('planner_tasks', {
+    id: T, title: 'Call Mum', notes: '', start_at: '2026-10-09T08:00:00.000Z', duration_min: 30,
+    deleted_at: null, field_ts: { title: 1, notes: 1, start_at: 1, duration_min: 1, deleted_at: 1 },
+  })
+  const ctxA = await browser.newContext({ baseURL })
+  const ctxB = await browser.newContext({ baseURL })
+  await server.attach(ctxA, { pollMs: 1000 })
+  await server.attach(ctxB, { pollMs: 1000 })
+  const a = await ctxA.newPage()
+  const b = await ctxB.newPage()
+  await Promise.all([a.goto('./'), b.goto('./')])
+  for (const p of [a, b]) await expect.poll(async () => (await row(p))?.title, { timeout: 5000 }).toBe('Call Mum')
+  await edit(a, { tz: 'Europe/London' })
+  await expect.poll(() => server.task(T)?.tz, { timeout: 5000 }).toBe('Europe/London')
+  await expect.poll(async () => (await row(b))?.tz, { timeout: 5000 }).toBe('Europe/London')
+  await edit(b, { tz: null })
+  await expect.poll(async () => (await row(a))?.tz ?? null, { timeout: 5000 }).toBeNull()
+  await ctxA.close()
+  await ctxB.close()
+})

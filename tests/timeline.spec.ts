@@ -1,9 +1,14 @@
 // Day timeline: create at slot, drag reschedules by the dragged delta, resize changes duration, complete toggles.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay } from './support/app'
+import { commitWizard, openApp, row, seedDay } from './support/app'
 
-const hourPx = (page: Page) => page.evaluate(() => (matchMedia('(max-width: 899px)').matches ? 66 : 72))
+/** y (px, inside .tl-inner) of a minute on the open day — read from the day's segment map (arc 6: the one conversion). */
+const yOf = (page: Page, min: number) =>
+  page.evaluate((m) => {
+    const o = (window as any).__optimo
+    return o.maps.get(o.ui.getState().date).minToY(m) as number
+  }, min)
 const block = (page: Page, id: string) => page.locator(`[data-testid="block"][data-id="${id}"]`)
 
 async function dragBy(page: Page, from: { x: number; y: number }, dy: number) {
@@ -17,31 +22,30 @@ async function dragBy(page: Page, from: { x: number; y: number }, dy: number) {
 test.describe('day timeline', () => {
   test('renders the day with free rows, overlap columns and the now line', async ({ page, context }) => {
     const { errors } = await openApp(page, context, { seed: seedDay })
-    // virtualised: only blocks near the viewport are mounted; the strip counts the whole day
-    await expect(page.getByTestId('stat-done')).toHaveText('1/10')
-    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 15 * (await hourPx(page)))
+    // virtualised: only rows near the viewport are mounted
+    const y15 = await yOf(page, 15 * 60)
+    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), y15)
     expect(await page.getByTestId('block').count()).toBeGreaterThanOrEqual(4)
     await expect(page.getByTestId('free-row').first()).toBeVisible()
     await expect(page.getByTestId('now-line')).toHaveCount(1)
     // 1:1 (16:00) and the PR review (16:15) overlap → side by side
-    const a = await page.locator('[data-testid="block"]', { hasText: '1:1 with Dana' }).boundingBox()
-    const b = await page.locator('[data-testid="block"]', { hasText: 'Review pull request' }).boundingBox()
+    const a = await page.locator('[data-testid="block"]', { hasText: '1:1 with Dana' }).getByTestId('chip').boundingBox()
+    const b = await page.locator('[data-testid="block"]', { hasText: 'Review pull request' }).getByTestId('chip').boundingBox()
     expect(a && b && Math.abs(a.x - b.x) > 20).toBeTruthy()
     expect(errors).toEqual([])
   })
 
   test('tap an empty slot creates a task at that time', async ({ page, context }) => {
     const { errors } = await openApp(page, context, { seed: seedDay })
-    const px = await hourPx(page)
     const tl = page.getByTestId('timeline')
-    await tl.evaluate((el, y) => (el.scrollTop = y), 16 * px)
-    // 17:00 sits inside the 16:45–18:00 free row
+    await tl.evaluate((el, y) => (el.scrollTop = y), (await yOf(page, 16 * 60)) - 40)
+    // 17:00 sits inside the 16:45–18:00 free gap (compressed: its y comes from the map); click right of the sentence
     const inner = await page.locator('.tl-inner').boundingBox()
-    await page.mouse.click(inner!.x + inner!.width / 2, inner!.y + 17 * px + 4)
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-time')).toHaveValue('17:00')
-    await page.getByTestId('sheet-title').fill('Stretch')
-    await page.getByTestId('sheet-save').click()
+    await page.mouse.click(inner!.x + inner!.width - 40, inner!.y + (await yOf(page, 17 * 60)) + 1)
+    // the create wizard opens prefilled with the slot (arc 6 slice 6)
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-start', String(17 * 60))
+    await page.getByTestId('wizard-title').fill('Stretch')
+    await commitWizard(page)
     await expect(page.locator('[data-testid="block"]', { hasText: 'Stretch' })).toBeVisible()
     await expect(page.locator('[data-testid="block"]', { hasText: 'Stretch' })).toHaveAttribute('data-start', String(17 * 60))
     expect(errors).toEqual([])
@@ -51,12 +55,13 @@ test.describe('day timeline', () => {
     let ids: ReturnType<typeof seedDay>['ids']
     // pinned: in the small hours the timeline opens near 03:00 and a 13:00 pill sits on the auto-scroll edge
     const { errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), at: '12:00' })
-    const px = await hourPx(page)
     const lunch = block(page, ids!.lunch)
     await lunch.scrollIntoViewIfNeeded()
     const before = await row(page, ids!.lunch)
-    const box = (await lunch.locator('.blk-main').boundingBox())!
-    await dragBy(page, { x: box.x + box.width / 2, y: box.y + 8 }, 2 * px)
+    const box = (await lunch.getByTestId('chip').boundingBox())!
+    // 13:00 → 15:00: the pixel distance the day's map puts between them
+    const dy = (await yOf(page, 15 * 60)) - (await yOf(page, 13 * 60))
+    await dragBy(page, { x: box.x + box.width / 2, y: box.y + 8 }, dy)
     await expect.poll(async () => (await row(page, ids!.lunch)).start_at).not.toBe(before.start_at)
     const after = await row(page, ids!.lunch)
     expect((new Date(after.start_at).getTime() - new Date(before.start_at).getTime()) / 60000).toBe(120)
@@ -68,10 +73,10 @@ test.describe('day timeline', () => {
   test('resize changes duration only', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     const { errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
-    const px = await hourPx(page)
+    const px = 120 // 2 px/min inside a capsule: 30 min = 60 px = px / 2
     const plan = block(page, ids!.plan)
     await plan.scrollIntoViewIfNeeded()
-    await plan.locator('.blk-main').click()
+    await plan.getByTestId('chip').focus()
     const handle = plan.getByTestId('resize-handle')
     await expect(handle).toBeVisible()
     const h = (await handle.boundingBox())!
@@ -87,10 +92,10 @@ test.describe('day timeline', () => {
   test('resize persists: server row carries duration_min and survives reload', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     const { server, errors } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
-    const px = await hourPx(page)
+    const px = 120 // 2 px/min inside a capsule: 30 min = 60 px = px / 2
     const plan = block(page, ids!.plan)
     await plan.scrollIntoViewIfNeeded()
-    await plan.locator('.blk-main').click()
+    await plan.getByTestId('chip').focus()
     const handle = plan.getByTestId('resize-handle')
     await expect(handle).toBeVisible()
     const h = (await handle.boundingBox())!
@@ -110,10 +115,10 @@ test.describe('day timeline', () => {
   test('resize: a fast flick (move + release in one frame) still commits', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     const { server } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
-    const px = await hourPx(page)
+    const px = 120 // 2 px/min inside a capsule: 30 min = 60 px = px / 2
     const plan = block(page, ids!.plan)
     await plan.scrollIntoViewIfNeeded()
-    await plan.locator('.blk-main').click()
+    await plan.getByTestId('chip').focus()
     await expect(plan.getByTestId('resize-handle')).toBeVisible()
     // touch-style: down, one move, up — dispatched synchronously, as a quick thumb flick delivers them
     await plan.getByTestId('resize-handle').evaluate((el, dy) => {
@@ -134,7 +139,7 @@ test.describe('day timeline', () => {
     const { server } = await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     const d = block(page, ids!.dentist)
     await d.scrollIntoViewIfNeeded()
-    await d.locator('.blk-main').click()
+    await d.getByTestId('chip').focus()
     const start = (await row(page, ids!.dentist)).start_at
     await page.keyboard.press('Shift+ArrowDown')
     await expect.poll(async () => (await row(page, ids!.dentist)).duration_min).toBe(20)
@@ -150,9 +155,9 @@ test.describe('day timeline', () => {
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('90')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-duration', '90')
     await page.evaluate((id) => (window as any).__optimo.repo.updateTask(id, { duration_min: 120 }), ids!.plan)
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('120')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-duration', '120')
   })
 
   test('complete toggles, with undo', async ({ page, context }) => {
@@ -162,7 +167,6 @@ test.describe('day timeline', () => {
     await st.scrollIntoViewIfNeeded()
     await st.getByRole('button', { name: /^Mark .* done$/ }).click()
     await expect(st).toHaveClass(/done/)
-    await expect(page.getByTestId('stat-done')).toHaveText('2/10')
     await page.getByTestId('toast').getByRole('button', { name: 'Undo' }).click()
     await expect(st).not.toHaveClass(/done/)
     expect(errors).toEqual([])
@@ -174,7 +178,7 @@ test.describe('day timeline', () => {
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), at: '12:00' })
     const one = block(page, ids!.guitar)
     await one.scrollIntoViewIfNeeded()
-    await one.locator('.blk-main').click()
+    await one.getByTestId('chip').focus()
     const before = (await row(page, ids!.guitar)).start_at
     await page.keyboard.press('ArrowDown')
     await expect.poll(async () => (new Date((await row(page, ids!.guitar)).start_at).getTime() - new Date(before).getTime()) / 60000).toBe(5)
@@ -194,8 +198,7 @@ test.describe('day timeline', () => {
     expect(await scan()).toEqual([])
     const b = block(page, ids!.plan)
     await b.scrollIntoViewIfNeeded()
-    await b.locator('.blk-main').click()
-    await b.locator('.blk-main').click()
+    await b.getByTestId('chip').click() // arc 6: one tap on the chip opens the editor
     await expect(page.getByRole('dialog')).toBeVisible()
     expect(await scan()).toEqual([])
   })
@@ -205,9 +208,8 @@ test.describe('day timeline', () => {
       test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
       let ids: ReturnType<typeof seedDay>['ids']
       await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), theme })
-      const px = await hourPx(page)
-      await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 6.5 * px)
-      await block(page, ids!.plan).locator('.blk-main').click()
+      await block(page, ids!.plan).scrollIntoViewIfNeeded()
+      await block(page, ids!.plan).getByTestId('chip').focus()
       await page.screenshot({ path: `docs/evidence/arc1-slice-3-timeline-${info.project.name}-${theme}.png` })
     })
 
@@ -215,10 +217,10 @@ test.describe('day timeline', () => {
     test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids), theme: 'light' })
-    const px = await hourPx(page)
-    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 12.5 * px)
+    const px = 120
     const plan = block(page, ids!.plan)
-    await plan.locator('.blk-main').click()
+    await plan.scrollIntoViewIfNeeded()
+    await plan.getByTestId('chip').focus()
     await page.screenshot({ path: `docs/evidence/arc2-slice-1-resize-before-${info.project.name}.png` })
     await plan.getByTestId('resize-handle').evaluate((el, dy) => {
       const r = el.getBoundingClientRect()
@@ -231,7 +233,7 @@ test.describe('day timeline', () => {
     await expect(plan).toHaveAttribute('data-duration', '120')
     await page.reload()
     await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
-    await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 12.5 * px)
+    await block(page, ids!.plan).scrollIntoViewIfNeeded()
     await expect(block(page, ids!.plan)).toHaveAttribute('data-duration', '120')
     await page.screenshot({ path: `docs/evidence/arc2-slice-1-resize-after-reload-${info.project.name}.png` })
   })

@@ -83,7 +83,7 @@
   --n-950: oklch(0.20 0.015 40);
 
   --canvas: var(--n-50);        /* warm off-white, never pure white */
-  --panel: var(--n-100);        /* inbox rail, sheet */
+  --panel: var(--n-0);          /* the timeline panel, inbox rail, sheet body (arc 6: mirrors #1C1C1E) */
   --surface: var(--n-0);        /* inputs, quick-add, inbox rows, "+" buttons */
   --surface-hover: var(--n-200);
   --line: var(--n-200);
@@ -176,6 +176,50 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-settle: cubic-bezier(0.05, 0.7, 0.1, 1);
   --scale-lift: 1.015; --scale-press: 0.98; --lift-y: -1px;
+
+  /* ---- arc 6 — 2026-10-09 mockups (docs/design/2026-10-09-mockups/mockups.md) ---------------------
+     Structure, sizes and colours follow the mockups; light mirrors dark (decision 9). */
+  --fs-18: 1.125rem;  /* strip numeral, wizard numerals */
+  --fs-20: 1.25rem;   /* list title, wheel rows, card rows */
+  --fs-30: 1.875rem;  /* screen title (October 9, 2026 ›) */
+  --type-title: var(--fw-black) var(--fs-30) / var(--lh-tight) var(--font-ui);
+  --type-row-title: var(--fw-bold) var(--fs-22) / var(--lh-tight) var(--font-ui);
+  --type-list-title: var(--fw-semibold) var(--fs-20) / var(--lh-tight) var(--font-ui);
+  --type-numeral: var(--fw-semibold) var(--fs-18) / 1 var(--font-ui);
+  --type-body: var(--fw-regular) var(--fs-17) / var(--lh-snug) var(--font-ui);
+  --type-meta: var(--fw-semibold) var(--fs-15) / var(--lh-snug) var(--font-ui);
+  --type-weekday: var(--fw-semibold) var(--fs-13) / 1 var(--font-ui);
+  --type-tab: var(--fw-semibold) var(--fs-11) / 1 var(--font-ui);
+
+  /* spine geometry (CSS px at 402 wide; x measured from the panel's left edge) */
+  --node-size: 56px;       /* day disc / capsule width */
+  --node-size-week: 40px;  /* week overview disc (measured in mockup 10; the sheet said 48) */
+  --spine-x: 78px;         /* spine centre */
+  --spine-w: 3px;
+  --gutter-right: 41px;    /* right edge of the gutter times */
+  --text-col: 119px;       /* text column start */
+  --ring: 22px;            /* complete ring */
+  --ring-x: 362px;         /* ring centre */
+  --min-px: 2;             /* px per minute on the spine */
+  --week-hour-px: 36px;
+  --gap-cap: 120px;        /* a compressed gap's spine length */
+  --panel-radius: 28px;
+  --panel-margin: 7px;
+  --fab-size-m: 58px;      /* the mockup FAB (--fab-size kept for the desktop) */
+
+  /* surfaces (light mirror of the dark mockups) */
+  --card: var(--n-100);
+  --node: var(--n-200);
+  --spine: var(--n-300);
+  --tab-active: var(--n-100);
+  --accent-on-tint: var(--accent-ink); /* accent text on --accent-tint (the light accent is 4.2:1 there) */
+  --accent-on-node: var(--accent-ink); /* accent text on --node ("Add Task" pill) */
+  --ink-on-tint-muted: oklch(0.48 0.02 40); /* unselected duration presets on --accent-tint (mockups 02: grey) */
+
+  /* category glyph + ring, editor header and week past-chip formulas: oklch(L C <category hue>) */
+  --glyph-l: 0.55; --glyph-c: 0.10;
+  --hdr-l: 0.58; --hdr-c: 0.08;
+  --past-l: 0.78; --past-c: 0.08;
 }
 
 /* ============================ DARK ==================================== */
@@ -241,6 +285,28 @@
   --shadow-drag: 0 14px 30px -12px oklch(0 0 0 / 0.7);
   --shadow-sheet: 0 -12px 40px -20px oklch(0 0 0 / 0.7);
   --header-fade: linear-gradient(180deg, var(--canvas) 0%, var(--canvas) 55%, oklch(0.21 0.012 40 / 0) 100%);
+
+  /* ---- arc 6 — the 2026-10-09 dark mockups, measured (mockups.md → Palette) ---------------------- */
+  --canvas: oklch(0 0 0);              /* #000 — header, strip, behind the panel */
+  --panel: oklch(0.227 0.004 286);     /* #1C1C1E (measured; the sheet's 0.21 was a rounding slip) */
+  --card: oklch(0.294 0.004 286);      /* #2C2C2E */
+  --node: oklch(0.340 0.002 248);      /* #373839 */
+  --spine: oklch(0.360 0 0);           /* #3D3D3D */
+  --surface: var(--card);
+  --ink: oklch(1 0 0);
+  --ink-3: oklch(0.525 0.003 286);     /* #6A6A6C (lifted for text contrast in tokens-a11y.css) */
+  --accent: oklch(0.761 0.103 23.4);   /* #EC9792 */
+  --accent-hover: oklch(0.80 0.103 23.4); --accent-active: oklch(0.71 0.103 23.4);
+  --accent-tint: oklch(0.391 0.025 18.3); /* #524040 */
+  --accent-on-tint: var(--accent);
+  --accent-on-node: var(--accent);
+  --ink-on-tint-muted: oklch(0.80 0.003 286); /* the mockup grey, lifted to 5.2:1 on the tint */
+  --focus-ring: 0 0 0 3px oklch(0.761 0.103 23.4 / 0.55);
+  --now-line: var(--accent); --now-flag-bg: var(--accent);
+  --tab-active: oklch(0.18 0 0);
+  --glyph-l: 0.66; --glyph-c: 0.10;
+  --bar-bg: oklch(0.340 0.002 248 / 0.80);
+  --header-fade: none;
 }
 
 @media (prefers-color-scheme: dark) {

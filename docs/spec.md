@@ -22,7 +22,18 @@ web client is load-bearing for them.
 Fields: `title`, `notes` (markdown-lite), `category` (color + icon), `priority` (none / low /
 med / high), `start_at` (null ⇒ inbox), `duration_min` (default from settings, 30), `all_day`,
 `subtasks[]` (title, done), `reminders[]` (offset minutes before start — see *Reminders* below),
-`completed_at`, recurrence (§2.5).
+`completed_at`, recurrence (§2.5), `tz` (arc 6, below).
+
+**Time zone (arc 6, `db/007_task_tz.sql`).** Optional IANA zone (`planner_tasks.tz text null`), set from the create /
+edit sheet (② ••• → Set Timezone; the picker lists `Intl.supportedValuesOf('timeZone')`, device zone first; picking
+the device zone clears it). `start_at` stays the UTC instant; `tz` is the zone the wall-clock time was chosen in, so
+the editor shows and edits it there (`isoAtZone` / `zonedParts`, `src/lib/time.ts`) while the timeline converts to
+the device zone and marks the row with a globe. All-day and inbox tasks never carry a zone. Absent = the viewer's zone.
+
+**Editor (arc 6).** Create = the wizard ① title (plain-English parser) + suggestions → ② when (date, 15-min wheel,
+duration presets `settings.duration_presets`) → ③ details; edit = ③ of the same sheet (Save, Delete, the header ring
+completes). Day bookends (`settings.day_start_name` / `day_end_name`, default "Up" / "Lights out") are anchor rows,
+ticked per day in `settings.bookend_done` — never tasks.
 
 **Reminders (arc 2).** Web push on the installed PWA (iPhone Home Screen app, iOS 16.4+) and desktop browsers:
 Settings → Reminders asks permission, subscribes with the VAPID public key (`VITE_VAPID_PUBLIC_KEY`) and writes a
@@ -85,6 +96,13 @@ task converge without data loss (§5). Visible sync state (synced / pending n / 
 a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtualised.
 
 ## 3. Later arcs (not in v0.1; design for them)
+
+**AI subtasks (arc 6 slice 8, shipped).** The sparkle on the editor's subtasks card calls `plan-day` with
+`{action: 'subtasks', title, notes, duration_min}`: the small model (`claude-haiku-4-5`), one strict `submit_subtasks`
+tool with `tool_choice: auto` (one nudge on a text answer), no web search; 3–7 cleaned steps come back as proposals the
+user ticks off, then Keep all / Discard. Each request is recorded as an `applied` planner_ai_plans row so it counts
+against the 30/day limit (and stays out of the Plan tab); title and notes are never logged. Offline / not deployed →
+the Plan tab's not-connected copy.
 - **Arc 2 — Calendars (shipped: iCloud CalDAV, read-only; Google deferred).** Settings → Calendars posts the
   Apple ID + app-specific password once to the `calendar-connect` Edge Function, which discovers calendars
   (PROPFIND principal → calendar-home-set → VEVENT calendars) and stores only the AES-GCM ciphertext
@@ -152,7 +170,7 @@ server-side (Edge Function secrets) in later arcs.
 - `planner_categories` (id uuid, user_id, name, color, icon, sort_key, …sync cols)
 - `planner_tasks` (id uuid, user_id, title, notes, category_id, priority int, start_at timestamptz null,
   duration_min int, all_day bool, completed_at, subtasks jsonb, reminders jsonb, sort_key,
-  rrule text null, dtstart timestamptz null, series_id uuid null, …sync cols)
+  rrule text null, dtstart timestamptz null, series_id uuid null, tz text null /* arc 6, db/007 */, …sync cols)
 - `planner_exceptions` (series_id, occurrence_date date, task_id uuid null /* override */,
   skipped bool, …sync cols; PK (series_id, occurrence_date))
 - `planner_settings` (user_id PK, data jsonb, …sync cols)
@@ -232,11 +250,14 @@ security between them.
   - Then family-wide read/write is live.
 
 ## 6. Design system
-Tokens and the hero direction live in `docs/design/2026-09-26-lite/` (Eye LITE, 2026-09-26).
-Recommended and adopted: **Switchboard** (dark-first instrument panel, Chivo/Chivo Mono, single cobalt
-signal, free time rendered as real drop rows). Runner-up: Slack Water. Paste-ready tokens are in
-`directions.md` → `src/styles/tokens.css`. Original icon set: `src/icons/` (SVG, 24px grid, line, drawn
-in-repo — never imported from a named icon library's brand set).
+**Current (arc 6, 2026-10-09):** the spine design in `docs/design/2026-10-09-mockups/` (10 mockups + the measured
+`mockups.md` sheet) on the FINAL "Meadow" token base — `src/styles/tokens.css` (dark = the measured mockup palette:
+`--canvas` #000, `--panel` #1C1C1E, `--card`, `--node`, `--spine`, accent #EC9792; light mirrors it) plus the culori-measured
+a11y layer `tokens-a11y.css`. Font Nunito Sans (Google Fonts). Glyphs: `src/icons/set.ts` (24 px grid, filled, drawn in-repo).
+
+**Originality rule (2026-10-09):** structure, flow, sizes and colours may follow the 2026-10-09 mockups exactly; glyph artwork is always drawn in-repo on the 24 px grid (never traced from any icon set), copy strings are ours (free-time phrases, bookend names, suggestion seeds), the name stays optimo.
+
+History: Switchboard (arc 1, `docs/design/2026-09-26-lite/`) → FINAL Meadow (arc 2, `docs/design/2026-09-27-final/`) → spine (arc 6).
 
 ## 7. Testing (gauntlet — `scripts/gauntlet.sh`)
 vitest (merge logic, NLP grammar, recurrence materialisation, push-down rules) · Playwright smoke

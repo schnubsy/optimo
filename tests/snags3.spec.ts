@@ -16,7 +16,7 @@ test.describe('snags #29–#37 (arc 3)', () => {
     else await expect(ft).toBeVisible()
   })
 
-  test('#31 the editor mounts with its Category row already filled (no empty-row flash)', async ({ page, context }) => {
+  test('#31 the editor mounts already filled (no empty-field flash)', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     // record how many category chips the sheet has in the very mutation that inserts it
@@ -24,16 +24,16 @@ test.describe('snags #29–#37 (arc 3)', () => {
       const w = window as any
       w.__chipsAtMount = null
       new MutationObserver((_, obs) => {
-        const row = document.querySelector('[data-testid="sheet-category"]')
-        if (row && w.__chipsAtMount === null) {
-          w.__chipsAtMount = row.querySelectorAll('button').length
+        const title = document.querySelector<HTMLInputElement>('[data-testid="wizard-title"]')
+        if (title && w.__chipsAtMount === null) {
+          w.__chipsAtMount = title.value.length
           obs.disconnect()
         }
       }).observe(document.body, { childList: true, subtree: true })
     })
     await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
     await expect(page.getByRole('dialog')).toBeVisible()
-    expect(await page.evaluate(() => (window as any).__chipsAtMount)).toBeGreaterThanOrEqual(8)
+    expect(await page.evaluate(() => (window as any).__chipsAtMount)).toBeGreaterThanOrEqual(8) // 'Write the migration plan'
   })
 
   for (const theme of ['light', 'dark'] as const)
@@ -44,7 +44,8 @@ test.describe('snags #29–#37 (arc 3)', () => {
       await expect(page.locator('.mday.today .dots em')).toHaveText('+6')
     })
 
-  test('#32 the now line stops at a running pill instead of striking its title', async ({ page, context }) => {
+  // arc 6: the now marker is a disc on the spine + a hairline; the running task's chip carries a 2 px accent ring
+  test('#32 the running task is marked on its chip and the now marker crosses its row', async ({ page, context }) => {
     await openApp(page, context, {
       at: '14:30',
       seed: (s) => seedTask(s, { title: 'Write the migration plan', start_at: at('14:00'), duration_min: 90, category_id: CAT.work }),
@@ -53,39 +54,41 @@ test.describe('snags #29–#37 (arc 3)', () => {
     await pill.scrollIntoViewIfNeeded()
     const line = page.getByTestId('now-line')
     await expect(line).toBeVisible()
-    // what is painted where the now line crosses the middle of the pill: the pill, not the line
     const hit = await page.evaluate(() => {
       const p = document.querySelector('[data-testid="block"][data-running="true"]')!.getBoundingClientRect()
-      const nl = document.querySelector('[data-testid="now-line"]') as HTMLElement
-      const l = nl.getBoundingClientRect()
-      nl.style.pointerEvents = 'auto' // hit-testing skips pointer-events:none; the paint order is what we ask about
-      nl.style.height = '2px'
-      const el = document.elementFromPoint(p.left + p.width / 2, l.top + 1)
-      return { inPill: !!el?.closest('[data-testid="block"]'), lineInside: l.top > p.top && l.top < p.bottom }
+      const l = document.querySelector('[data-testid="now-line"]')!.getBoundingClientRect()
+      return { lineInside: l.top > p.top && l.top < p.bottom }
     })
     expect(hit.lineInside).toBe(true)
-    expect(hit.inPill).toBe(true)
+    const accent = await page.evaluate(() => {
+      const i = document.createElement('i')
+      i.style.color = 'var(--accent)'
+      document.body.append(i)
+      const c = getComputedStyle(i).color
+      i.remove()
+      return c
+    })
+    expect(await pill.getByTestId('chip').evaluate((el) => getComputedStyle(el).boxShadow)).toContain(accent)
     if (process.env.EVIDENCE) {
       await page.evaluate(() => ((document.querySelector('[data-testid="now-line"]') as HTMLElement).style.cssText += ';pointer-events:none;height:0'))
       await page.screenshot({ path: `docs/evidence/ai-planner-slice-5-running-pill-${test.info().project.name}.png` })
     }
   })
 
-  test('#33 the iPhone quick-add parse chips are 44px tall and the row stays on screen', async ({ page, context }, info) => {
-    test.skip(info.project.name !== 'iphone-15', 'the quick-add sheet is mobile')
+  test('#33 the iPhone parse chips stay on screen, clear of the floating Continue', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the FAB wizard is mobile')
     await openApp(page, context)
     await page.getByTestId('fab').click()
-    const field = page.getByTestId('quickadd')
+    const field = page.getByTestId('wizard-title')
     await field.fill('Lunch with Sam tomorrow at 1pm for 45m #personal !!')
-    const chips = page.locator('.qa-sheet .cmd .parse > b, .qa-sheet .cmd .parse .f')
+    // arc 6: the chips are read-only previews (not tap targets) under the wizard title
+    const chips = page.getByTestId('wizard-parse').locator('span')
     await expect(chips.first()).toBeVisible()
     await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0) // lessons: measure after animationend
     const boxes = await chips.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ h: r.height, bottom: r.bottom })))
     expect(boxes.length).toBeGreaterThan(1)
-    for (const b of boxes) expect(b.h).toBeGreaterThanOrEqual(44)
-    const vh = page.viewportSize()!.height
-    for (const b of boxes) expect(b.bottom).toBeLessThanOrEqual(vh)
-    if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-6-quickadd-iphone-15.png' })
+    const cta = (await page.getByTestId('wizard-continue').boundingBox())!
+    for (const b of boxes) expect(b.bottom).toBeLessThanOrEqual(cta.y)
   })
 
   test('#35 Week (desktop): the last day header ends over its own column, not at the window edge', async ({ page, context }, info) => {
@@ -110,8 +113,8 @@ test.describe('snags #29–#37 (arc 3)', () => {
     const h2 = page.locator('.mhead h2')
     await expect(h2).toBeVisible()
     const left = await h2.evaluate((e) => e.getBoundingClientRect().left)
-    const hdrLeft = await page.locator('.hdr-title').evaluate((e) => e.getBoundingClientRect().left)
-    expect(Math.abs(left - hdrLeft)).toBeLessThanOrEqual(1)
+    // arc 6: the day header's title moved to the mockups' 24px pad; the month title keeps its own 16pt gutter
+    expect(Math.abs(left - 16)).toBeLessThanOrEqual(1)
     expect(await page.locator('.mhead .nav').first().evaluate((e) => getComputedStyle(e).boxShadow)).toMatch(/inset/)
     if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-9-month-iphone-15-light.png' })
   })
@@ -125,7 +128,7 @@ test.describe('snags #29–#37 (arc 3)', () => {
     await expect(page.getByTestId('toast')).toBeVisible()
     const z = (sel: string) => page.locator(sel).first().evaluate((e) => Number(getComputedStyle(e).zIndex))
     const toast = await z('.toast-wrap')
-    expect(toast).toBeLessThan(await z('.sheet-wrap'))
+    expect(toast).toBeLessThan(await z('.wiz-wrap')) // arc 6: the editor is the wizard sheet
     if (await page.getByTestId('tabbar').isVisible()) expect(toast).toBeGreaterThan(await z('.tabbar'))
     // the sheet's close control is what a tap there hits
     const close = page.getByRole('dialog').getByRole('button', { name: 'Close' })

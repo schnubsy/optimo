@@ -1,7 +1,7 @@
 // Inbox + quick-add + Place: capture → inbox, drag/Place → timeline, unschedule back.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay, quickAdd } from './support/app'
+import { openApp, row, seedDay, quickAdd, commitWizard } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 async function showInbox(page: Page) {
@@ -17,19 +17,23 @@ test.describe('inbox & quick-add', () => {
     const { errors } = await openApp(page, context, { seed: seedDay })
     const qa = (await quickAdd(page))
     await qa.fill('Book train tickets for 20m #errands !!')
-    await expect(page.getByTestId('parse-row')).toContainText('Book train tickets')
-    await expect(page.getByTestId('parse-row')).toContainText('inbox')
-    await expect(page.getByTestId('parse-row')).toContainText('Errands')
-    await expect(page.getByTestId('parse-row')).toContainText('P2')
-    await qa.press('Enter')
-    // desktop clears the pill; on iPhone the FAB's sheet closes on add
-    if (await isMobile(page)) await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
-    else await expect(qa).toHaveValue('')
+    if (await isMobile(page)) {
+      // iPhone: the FAB's wizard previews the parse as chips; no time typed → ② → ••• Add to Inbox
+      await expect(page.getByTestId('wizard-parse')).toContainText('20 min')
+      await expect(page.getByTestId('wizard-parse')).toContainText('Errands')
+      await commitWizard(page, { inbox: true })
+    } else {
+      await expect(page.getByTestId('parse-row')).toContainText('Book train tickets')
+      await expect(page.getByTestId('parse-row')).toContainText('inbox')
+      await expect(page.getByTestId('parse-row')).toContainText('Errands')
+      await expect(page.getByTestId('parse-row')).toContainText('P2')
+      await qa.press('Enter')
+      await expect(qa).toHaveValue('')
+    }
     await showInbox(page)
     const r = inboxRow(page, 'Book train tickets')
     await expect(r).toBeVisible()
-    await expect(r).toContainText('0:20')
-    await expect(r).toContainText('P2')
+    await expect(r).toContainText('20 min · Errands · P2') // arc 6 meta: duration · category
     expect(errors).toEqual([])
   })
 
@@ -37,22 +41,34 @@ test.describe('inbox & quick-add', () => {
     await openApp(page, context)
     const qa = (await quickAdd(page))
     await qa.fill('Coffee with Sam at 1pm')
-    await expect(page.getByTestId('parse-row')).toContainText('13:00–13:30')
-    await qa.press('Enter')
+    if (await isMobile(page)) {
+      await expect(page.getByTestId('wizard-parse-when')).toHaveText('13:00–13:30')
+      await commitWizard(page)
+    } else {
+      await expect(page.getByTestId('parse-row')).toContainText('13:00–13:30')
+      await qa.press('Enter')
+    }
     const b = page.locator('[data-testid="block"]', { hasText: 'Coffee with Sam' })
     await expect(b).toHaveAttribute('data-start', String(13 * 60))
   })
 
-  test('Tab opens the parsed fields in the editor', async ({ page, context }, info) => {
+  test('Tab opens the parsed fields in the create wizard', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'desktop', 'keyboard')
     await openApp(page, context)
     await page.keyboard.press('/')
     await page.keyboard.type('Pay rent tomorrow 9am for 15m')
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-title')).toHaveValue('Pay rent')
-    await expect(page.getByTestId('sheet-time')).toHaveValue('09:00')
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('15')
+    const w = page.getByTestId('wizard')
+    await expect(w).toBeVisible()
+    await expect(page.getByTestId('wizard-title')).toHaveValue('Pay rent')
+    await expect(w).toHaveAttribute('data-start', String(9 * 60))
+    await expect(w).toHaveAttribute('data-duration', '15')
+    const tomorrow = await page.evaluate(() => {
+      const d = new Date()
+      d.setDate(d.getDate() + 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })
+    await expect(w).toHaveAttribute('data-date', tomorrow)
   })
 
   test('Place fills the earliest free slot that fits', async ({ page, context }) => {
@@ -84,10 +100,16 @@ test.describe('inbox & quick-add', () => {
     let s: ReturnType<typeof seedDay>
     const { errors } = await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
     const tl = page.getByTestId('timeline')
-    await tl.evaluate((el) => (el.scrollTop = 16 * 72))
+    // arc 6: the day's segment map gives 17:00's y (inside the compressed 16:45–18:00 gap)
+    const y17 = await page.evaluate(() => {
+      const o = (window as any).__optimo
+      const m = o.maps.get(o.ui.getState().date)
+      return [m.minToY(17 * 60), m.minToY(17 * 60 + 12)] as [number, number]
+    })
+    await tl.evaluate((el, y) => (el.scrollTop = y - 200), y17[0])
     const src = (await inboxRow(page, 'Reply to Ellen').locator('.irow-main').boundingBox())!
     const inner = (await page.locator('.tl-inner').boundingBox())!
-    const targetY = inner.y + 17 * 72 + 10 // 17:00 + a little
+    const targetY = inner.y + y17[1] // the dragged row's top (10 px above the pointer) lands just after 17:00
     await page.mouse.move(src.x + 40, src.y + 10)
     await page.mouse.down()
     for (let i = 1; i <= 12; i++) await page.mouse.move(src.x + 40 + ((inner.x + 200 - src.x - 40) * i) / 12, src.y + 10 + ((targetY - src.y - 10) * i) / 12)
@@ -99,7 +121,7 @@ test.describe('inbox & quick-add', () => {
     await expect(inboxRow(page, 'Reply to Ellen')).toHaveCount(0)
 
     // and back: drag the new block onto the inbox rail
-    const blk = (await page.locator(`[data-testid="block"][data-id="${s!.inbox.ellen}"] .blk-main`).boundingBox())!
+    const blk = (await page.locator(`[data-testid="block"][data-id="${s!.inbox.ellen}"] [data-testid="chip"]`).boundingBox())!
     const rail = (await page.getByTestId('inbox').boundingBox())!
     await page.mouse.move(blk.x + 20, blk.y + 5)
     await page.mouse.down()
@@ -113,12 +135,14 @@ test.describe('inbox & quick-add', () => {
   test('unschedule from the editor (mobile path)', async ({ page, context }) => {
     let s: ReturnType<typeof seedDay>
     await openApp(page, context, { seed: (x) => (s = seedDay(x)), at: '12:00' })
-    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.guitar}"] .blk-main`)
+    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.guitar}"] [data-testid="chip"]`)
     await b.scrollIntoViewIfNeeded()
     await b.click()
-    await b.click()
-    await page.getByRole('switch', { name: 'On the timeline (off = inbox)' }).click()
-    await page.getByTestId('sheet-save').click()
+    // arc 6: ③ time row → ② → ••• → Add to Inbox → ③ → Save
+    await page.getByTestId('details-time').click()
+    await page.getByTestId('time-more').click()
+    await page.getByRole('menuitem', { name: 'Add to Inbox' }).click()
+    await page.getByTestId('wizard-save').click()
     await expect.poll(async () => (await row(page, s!.ids.guitar)).start_at).toBeNull()
     await showInbox(page)
     await expect(inboxRow(page, 'Guitar practice')).toBeVisible()

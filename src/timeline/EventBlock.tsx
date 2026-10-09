@@ -1,10 +1,10 @@
 import { memo, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../icons/Icon'
-import { fmtClock } from '../lib/time'
+import { fmtRange } from '../lib/time'
 import { useIsMobile } from '../lib/useMedia'
 import type { EventItem } from '../calendar/events'
-import { pillHeight } from './Block'
+import type { SegmentMap } from './segments'
 import '../editor/sheet.css'
 
 /** #19: the read-only details, shared by the desktop popover and the mobile bottom sheet. */
@@ -20,18 +20,17 @@ function EventDetails({ title, time, location, calendarName }: { title: string; 
 }
 
 /**
- * A calendar event on the timeline: an outlined (not filled) pill with a small calendar chip, fixed in place
- * (not draggable or resizable); tap shows its details — a popover on desktop, a read-only bottom sheet below
- * 900px (#19) so it no longer floats over neighbouring pills with no way to dismiss it.
+ * A calendar event on the spine (arc 6): an outlined disc in the calendar's colour with a calendar glyph, the title and
+ * time beside it — fixed in place (not draggable, no ring); tap shows its details — a popover on desktop, a read-only
+ * bottom sheet below 900px (#19). Placed by the day's segment map like every other row.
  */
-export const EventBlock = memo(function EventBlock({ item, col, cols, hourPx, clock24, calendarName }: { item: EventItem; col: number; cols: number; hourPx: number; clock24: boolean; calendarName?: string }) {
+export const EventBlock = memo(function EventBlock({ item, map, col, textCols, textTop, clock24, calendarName }: { item: EventItem; map: SegmentMap; col: number; textCols?: number; textTop?: number; clock24: boolean; calendarName?: string }) {
   const [open, setOpen] = useState(false)
   const mobile = useIsMobile()
   const e = item.event
-  const height = pillHeight(item.end - item.start, hourPx)
-  const thin = height < 44
-  const time = `${fmtClock(item.start, clock24)}–${fmtClock(item.end, clock24)}`
-  const gap = 4
+  const top = map.minToY(item.start)
+  const height = Math.max(1, map.minToY(item.end) - top)
+  const time = fmtRange(item.start, item.end, clock24)
   const title = e.title || 'Busy'
   const calName = calendarName ?? 'iCloud'
   useEffect(() => {
@@ -42,22 +41,18 @@ export const EventBlock = memo(function EventBlock({ item, col, cols, hourPx, cl
   }, [open])
   return (
     <div
-      className={`evt ${thin ? 'is-thin' : ''} ${open ? 'open' : ''}`}
-      style={{
-        top: (item.start / 60) * hourPx,
-        height,
-        left: cols > 1 ? `calc(${(100 * col) / cols}% + ${col ? gap / 2 : 0}px)` : undefined,
-        width: cols > 1 ? `calc(${100 / cols}% - ${gap / 2}px)` : undefined,
-        ['--evt-color' as string]: e.color ?? undefined,
-      }}
+      className={`evt node disc ${open ? 'open' : ''}`}
+      style={{ top, height, ['--col' as string]: col, ['--text-cols' as string]: textCols ?? col, ['--text-top' as string]: textTop !== undefined ? `${textTop}px` : undefined, ['--chip-h' as string]: '56px', ['--evt-color' as string]: e.color ?? undefined }}
       data-testid="event"
       data-uid={e.uid}
       onClick={(ev) => ev.stopPropagation()}
     >
-      <button type="button" className="evt-main" aria-expanded={open} aria-label={`${title}, ${time}, calendar event`} onClick={() => setOpen(!open)}>
-        <span className="evt-chip" aria-hidden="true"><Icon name="ui-calendar" size={12} /></span>
-        <span className="evt-title">{title}</span>
-        <span className="evt-time tnum">{thin ? fmtClock(item.start, clock24) : time}</span>
+      <button type="button" className="node-chip evt-chip" aria-expanded={open} aria-label={`${title}, ${time}, calendar event`} onClick={() => setOpen(!open)}>
+        <Icon name="ui-calendar" size={22} />
+      </button>
+      <button type="button" className={`node-text ${textTop !== undefined ? 'stacked' : ''}`} tabIndex={-1} aria-hidden="true" onClick={() => setOpen(!open)}>
+        <span className="node-meta tnum">{time}</span>
+        <span className="node-title evt-title">{title}</span>
       </button>
       {open && !mobile && (
         <div className="evt-pop" role="dialog" aria-label={title} data-testid="event-details">

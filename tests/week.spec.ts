@@ -2,9 +2,18 @@
 import { readFileSync } from 'node:fs'
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { openApp, row, seedDay, quickAdd } from './support/app'
+import { addTask, openApp, row, seedDay, quickAdd } from './support/app'
 
-const setView = (page: Page, view: string) => page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board' }), view)
+// iPhone: `view: 'week'` is the collapsed day panel (arc 6 slice 4); going back to the day expands it again
+const setView = async (page: Page, view: string) => {
+  await page.evaluate((v) => (window as any).__optimo.ui.getState().set({ view: v, mobileTab: 'board', ...(v === 'day' ? { panel: 'day' } : {}) }), view)
+  // iPhone: wait for the sheet to reach its detent and finish moving (it covers the overview while it slides)
+  await page.waitForFunction((v) => {
+    const sheet = document.querySelector<HTMLElement>('[data-testid="panel-sheet"]')
+    if (sheet && v === 'week' && sheet.dataset.detent !== 'week') return false
+    return document.getAnimations().length === 0
+  }, view)
+}
 const serious = async (page: Page) => (await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
 const todayKey = () => {
   const d = new Date()
@@ -12,7 +21,7 @@ const todayKey = () => {
 }
 
 test.describe('week, month, focus, settings', () => {
-  test('week: 7 columns with planned/free per day; drag a block to the next day keeps its time', async ({ page, context }) => {
+  test('week: 7 spine columns; drag a node to the next day keeps its time', async ({ page, context }) => {
     let s: ReturnType<typeof seedDay>
     const { errors } = await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
     await setView(page, 'week')
@@ -39,6 +48,36 @@ test.describe('week, month, focus, settings', () => {
     expect(errors).toEqual([])
   })
 
+  test('desktop week: 7 spine columns at 36 px/h; each spine runs first node → last node', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'desktop Week view')
+    let s: ReturnType<typeof seedDay>
+    await openApp(page, context, { at: '09:00', seed: (x) => (s = seedDay(x)) })
+    await page.getByTestId('segmented').getByRole('tab', { name: 'Week' }).click()
+    await expect(page.getByTestId('week-col')).toHaveCount(7)
+    await expect(page.getByTestId('week-spine')).toHaveCount(7)
+    // lunch 13:00 and the migration plan 14:00: 60 min apart → 36 px apart
+    const lunch = (await page.locator(`[data-testid="week-block"][data-id="${s!.ids.lunch}"]`).boundingBox())!
+    const plan = (await page.locator(`[data-testid="week-block"][data-id="${s!.ids.plan}"]`).boundingBox())!
+    expect(Math.abs(plan.y - lunch.y - 36)).toBeLessThanOrEqual(1)
+    // 40 px discs (mockup 10, Eye P0-4); the 90 min plan is a 40-wide capsule 54 px tall (0.6 px/min)
+    expect(Math.abs(lunch.width - 40)).toBeLessThanOrEqual(1)
+    expect(Math.abs(plan.height - 54)).toBeLessThanOrEqual(1)
+    // the map is registered for the drop maths and agrees with the layout
+    const col = page.locator(`[data-testid="week-col"][data-day="${todayKey()}"]`)
+    const spine = (await col.getByTestId('week-spine').boundingBox())!
+    const nodes = col.locator('[data-testid="week-node"], [data-testid="week-block"]')
+    const boxes = await nodes.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ c: r.top + r.height / 2 })))
+    const cs = boxes.map((b) => b.c)
+    expect(Math.abs(spine.y - Math.min(...cs))).toBeLessThanOrEqual(1)
+    expect(Math.abs(spine.y + spine.height - Math.max(...cs))).toBeLessThanOrEqual(1)
+    expect(Math.abs(spine.width - 3)).toBeLessThanOrEqual(0.5)
+    if (process.env.EVIDENCE) {
+      await page.evaluate(() => (window as any).__optimo.repo.updateSettings({ theme: 'dark' }))
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+      await page.screenshot({ path: 'docs/evidence/arc6-slice-4-week-desktop.png' })
+    }
+  })
+
   test('theme toggle persists across reload', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
     await setView(page, 'settings')
@@ -55,15 +94,22 @@ test.describe('week, month, focus, settings', () => {
   test('recurrence: a weekday series materialises; completing one occurrence completes only that one', async ({ page, context }) => {
     await openApp(page, context)
     await (await quickAdd(page)).fill('Stand-up every day at 9:15am for 15m')
-    await expect(page.getByTestId('parse-row')).toContainText('every day')
-    await (await quickAdd(page)).press('Enter')
+    // desktop command line's parse row, or the iPhone wizard's parse chips
+    await expect(page.locator('[data-testid="parse-row"], [data-testid="wizard-parse"]')).toContainText('every day')
+    await addTask(page, 'Stand-up every day at 9:15am for 15m')
     await setView(page, 'week')
     // the series starts today, so it fills today and the rest of this week
     const days = await page.getByTestId('week-col').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.day!))
     await expect(page.getByTestId('week-block').filter({ hasText: 'Stand-up' })).toHaveCount(days.filter((d) => d >= todayKey()).length)
-    await page.getByRole('button', { name: 'Next week' }).click()
+    // desktop: the ‹ › week buttons; iPhone: the strip swipe (±7 days) — set the date directly
+    const step = async (n: 1 | -1) => {
+      const btn = page.getByRole('button', { name: n > 0 ? 'Next week' : 'Previous week' })
+      if (await btn.isVisible()) await btn.click()
+      else await page.evaluate((k) => { const u = (window as any).__optimo.ui; const d = new Date(`${u.getState().date}T12:00:00`); d.setDate(d.getDate() + 7 * k); u.getState().set({ date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }) }, n)
+    }
+    await step(1)
     await expect(page.getByTestId('week-block').filter({ hasText: 'Stand-up' })).toHaveCount(7)
-    await page.getByRole('button', { name: 'Previous week' }).click()
+    await step(-1)
     await setView(page, 'day')
     const blk = page.locator('[data-testid="block"]', { hasText: 'Stand-up' })
     await blk.scrollIntoViewIfNeeded()
@@ -71,7 +117,7 @@ test.describe('week, month, focus, settings', () => {
     await blk.getByRole('button', { name: /^Mark .* done$/ }).click()
     await expect(blk).toHaveClass(/done/)
     await setView(page, 'week')
-    await expect(page.locator('.wblk.done', { hasText: 'Stand-up' })).toHaveCount(1)
+    await expect(page.locator('[data-testid="week-block"].done', { hasText: 'Stand-up' })).toHaveCount(1)
     expect(await page.evaluate(async () => (await (window as any).__optimo.db.exceptions.count()))).toBe(1)
   })
 
@@ -122,8 +168,7 @@ test.describe('week, month, focus, settings', () => {
     test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1')
     let s: ReturnType<typeof seedDay>
     await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
-    await (await quickAdd(page)).fill('Stretch every day at 7:45am for 15m #health')
-    await (await quickAdd(page)).press('Enter')
+    await addTask(page, 'Stretch every day at 7:45am for 15m #health')
     await setView(page, 'week')
     await page.locator('.wbody').evaluate((el) => (el.scrollTop = 6.5 * 40))
     await page.screenshot({ path: `docs/evidence/arc1-slice-5-week-${info.project.name}.png` })

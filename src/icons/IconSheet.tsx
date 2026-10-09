@@ -14,6 +14,13 @@ export function IconSheet() {
             {g.icons.map((n) => (
               <li key={n}>
                 <span className="icon-chip cat-meet" aria-hidden="true"><Icon name={n} size={18} /></span>
+                {/* arc 6: chrome glyphs are also checked at the tab size (24) and the meta size (13) */}
+                {g.id === 'chrome' && (
+                  <span className="icon-sizes" aria-hidden="true" data-testid="icon-sizes">
+                    <Icon name={n} size={24} />
+                    <Icon name={n} size={13} />
+                  </span>
+                )}
                 <span>{n}</span>
               </li>
             ))}

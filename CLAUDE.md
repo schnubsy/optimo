@@ -26,20 +26,17 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-**Arc 5a — closed and verified (2026-10-03).** Live build `4f04493` (merge `227d2d7`). optimo has no sign-in of its own:
-Family Wing session (`press:family:v1`), signed-out → `press/optimo.html?return=…`, gate `press_access_has('optimo.html')`
-("ask Mark" page). Sync button feedback; one role per calendar (Off · Show · Two-way); paint a block by dragging.
-`db/006_people.sql` applied (people table, person_id everywhere, all rows → Mark; family RLS held behind
-`planner_flags.family_access` = false). calendar-sync + calendar-connect v4 live. Supabase channel rule rewritten
-2026-10-03 (both surfaces operate Supabase; destructive SQL → Code only while bug #94450 is open).
-**Next:** Mark's on-device checks, then arc 5b (people picker, per-person sync + RLS flip, per-person iCloud, register
-plan-day as a monitored agent). Snags #67–#79 + #39–#65 open.
+Merge state: PR pending (branch arc/ui-round-spine)
+**Arc 6 — UI/UX round (2026-10-09), all 9 slices green.** The 2026-10-09 mockups shipped: spine timeline (one segment
+map `src/timeline/segments.ts` for every minute↔pixel), bookends Up / Lights out, compressed gaps, header + strip,
+4-tab bar + 58 px FAB, two-detent panel over the week overview, create wizard ①②③ (= the edit screen; TaskSheet
+gone), per-task time zone (`db/007_task_tz.sql` applied), AI subtasks (plan-day v7, ezbr `aab12198…`). Eye LITE: 0 P0;
+P1 → snag #81–#110. **Next:** Mark's on-device checks (HANDOFF), then arc 5b (people). Snags #81–#110, #67–#79, #39–#65 open.
 
 ## Project rules
 
 Global rules: council arc instrument
-- **Originality gate:** no Structured.app (or other planner's) copy, iconography, naming or color scheme.
-  Icons are drawn in-repo (`src/icons/`); fonts from Google Fonts only.
+- **Originality gate (rewritten 2026-10-09, arc 6):** structure, flow, sizes and colours may follow the 2026-10-09 mockups exactly; glyph artwork is always drawn in-repo on the 24 px grid (never traced from any icon set), copy strings are ours (free-time phrases, bookend names, suggestion seeds), the name stays optimo. Icons are drawn in-repo (`src/icons/set.ts`); fonts from Google Fonts only.
 - **Sync contract is the API.** Any client (web now, Swift later) speaks only: outbox + `field_ts` + pull
   cursor over PostgREST (`docs/spec.md` §5). No client-specific server logic.
 - **Only publishable keys in the client** (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). All other

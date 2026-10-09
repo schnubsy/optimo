@@ -319,7 +319,7 @@ export function Plan({ cats, settings }: { cats: Map<string, Category>; settings
         )}
       </div>
       <div className="plan-day" aria-label={`Timeline for ${planDay}`}>
-        <Timeline day={planDay} items={items} events={events} cats={cats} settings={settings} overlay={(hourPx) => <PlanGhosts ghosts={ghosts} hourPx={hourPx} clock24={settings.clock24} cats={cats} />} />
+        <Timeline day={planDay} items={items} events={events} cats={cats} settings={settings} overlay={(map) => <PlanGhosts ghosts={ghosts} map={map} clock24={settings.clock24} cats={cats} />} />
       </div>
     </section>
   )

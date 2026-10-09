@@ -52,8 +52,11 @@ test.describe('page-diff gate captures', () => {
       await set(page, { view: 'settings', mobileTab: 'board' })
       await shot('settings')
       await set(page, { view: 'day', mobileTab: 'board' })
-      const field = page.getByTestId('quickadd')
-      if (!(await field.isVisible())) await page.getByTestId('fab').click()
+      let field = page.getByTestId('quickadd')
+      if (!(await field.isVisible())) {
+        await page.getByTestId('fab').click() // arc 6: the FAB opens the create wizard (title keeps the parser)
+        field = page.getByTestId('wizard-title')
+      }
       await field.fill('Dentist tomorrow 3pm 30m every weekday')
       await shot('quickadd')
     })

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react'
 import * as repo from '../data/repo'
 import { useCategories, useSettings } from '../data/hooks'
-import type { Category } from '../data/types'
+import type { Category, SettingsData } from '../data/types'
 import { dateKey, fmtClock, fmtDur, formatDayTitle, todayKey } from '../lib/time'
 import { resolveIcon } from '../icons/set'
 import { Icon } from '../icons/Icon'
@@ -15,7 +15,27 @@ export function keyboardInset(innerHeight: number, vvHeight: number, vvOffsetTop
   return Math.max(0, Math.round(innerHeight - vvHeight - vvOffsetTop))
 }
 
-function resolveCategory(p: Parsed, cats: Category[]): Category | null {
+/**
+ * Keeps `el` above the on-screen keyboard: writes `--kb-inset` (px) while `active` — the visual viewport shrinks
+ * when the keyboard opens (A2-P0-4). Used by the wizard's floating Continue.
+ */
+export function useKeyboardInset(el: RefObject<HTMLElement | null>, active = true) {
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!active || !vv) return
+    const on = () => el.current?.style.setProperty('--kb-inset', `${keyboardInset(window.innerHeight, vv.height, vv.offsetTop)}px`)
+    on()
+    vv.addEventListener('resize', on)
+    vv.addEventListener('scroll', on)
+    return () => {
+      vv.removeEventListener('resize', on)
+      vv.removeEventListener('scroll', on)
+    }
+  }, [el, active])
+}
+
+/** The category a parse points at: `#name` → `@icon` → the keyword map's suggestion onto the default of that colour. */
+export function resolveCategory(p: Parsed, cats: Category[]): Category | null {
   if (p.category) {
     const q = p.category.toLowerCase()
     const hit = cats.find((c) => c.name.toLowerCase() === q) ?? cats.find((c) => c.name.toLowerCase().startsWith(q) || c.color === q)
@@ -45,34 +65,27 @@ export function toInput(p: Parsed, cat: Category | null, defaultDuration: number
   }
 }
 
+/** The parse preview's "when" chip: `13:00–13:30`, `Sat 26 Sep 09:00–09:15`, `today, all day` or `inbox`. */
+export function parseWhen(parsed: Parsed, settings: Pick<SettingsData, 'clock24' | 'default_duration'>): string {
+  if (!parsed.start) return 'inbox'
+  const day = dateKey(parsed.start) === todayKey()
+  if (parsed.dateOnly) return day ? 'today, all day' : `${formatDayTitle(parsed.start).slice(0, -5)}, all day`
+  const m = parsed.start.getHours() * 60 + parsed.start.getMinutes()
+  return `${day ? '' : formatDayTitle(parsed.start).slice(0, -5) + ' '}${fmtClock(m, settings.clock24)}–${fmtClock(m + (parsed.duration ?? settings.default_duration), settings.clock24)}`
+}
+
 /**
- * The command line: parse preview before commit, Enter adds, Tab edits fields in the sheet, Esc clears.
- * `sheet` = the mobile bottom sheet the FAB opens (focus lands in the field).
+ * The desktop header command line: parse preview before commit, Enter adds, Tab opens the create wizard prefilled,
+ * Esc clears. (The iPhone FAB opens the wizard, whose title field reuses this parser.)
  */
-export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?: boolean; onDone?: () => void }) {
+export function QuickAdd({ compact, onDone }: { compact?: boolean; onDone?: () => void }) {
   const [text, setText] = useState('')
   const [picking, setPicking] = useState(false)
   const input = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (sheet) input.current?.focus()
-  }, [sheet])
-  const wrap = useRef<HTMLDivElement>(null)
-  // A2-P0-4: keep the sheet above the on-screen keyboard — the visual viewport shrinks when it opens
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!sheet || !vv) return
-    const on = () => wrap.current?.style.setProperty('--kb-inset', `${keyboardInset(window.innerHeight, vv.height, vv.offsetTop)}px`)
-    on()
-    vv.addEventListener('resize', on)
-    vv.addEventListener('scroll', on)
-    return () => {
-      vv.removeEventListener('resize', on)
-      vv.removeEventListener('scroll', on)
-    }
-  }, [sheet])
   const cats = useCategories()
   const settings = useSettings()
   const set = useUI((s) => s.set)
+  const openWizard = useUI((s) => s.openWizard)
   const notify = useUI((s) => s.notify)
   const parsed = useMemo(() => (text.trim() ? parseQuickAdd(text) : null), [text])
   const cat = parsed ? resolveCategory(parsed, cats) : null
@@ -101,22 +114,17 @@ export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?
       onDone?.()
     } else if (e.key === 'Tab' && parsed && !e.shiftKey) {
       e.preventDefault()
-      set({ draft: toInput(parsed, cat, settings.default_duration) })
+      const draft = toInput(parsed, cat, settings.default_duration)
+      openWizard(draft.start_at ? 'timeline' : 'inbox', draft)
       setText('')
     }
   }
 
-  const when = parsed?.start
-    ? parsed.dateOnly
-      ? dateKey(parsed.start) === todayKey()
-        ? 'today, all day'
-        : `${formatDayTitle(parsed.start).slice(0, -5)}, all day`
-      : `${dateKey(parsed.start) === todayKey() ? '' : formatDayTitle(parsed.start).slice(0, -5) + ' '}${fmtClock(parsed.start.getHours() * 60 + parsed.start.getMinutes(), settings.clock24)}–${fmtClock(parsed.start.getHours() * 60 + parsed.start.getMinutes() + (parsed.duration ?? settings.default_duration), settings.clock24)}`
-    : 'inbox'
+  const when = parsed ? parseWhen(parsed, settings) : 'inbox'
   const unknownCat = parsed?.category && !cat
 
-  const form = (
-    <form className={`cmd ${compact ? 'compact' : ''} ${sheet ? 'in-sheet' : ''}`} onSubmit={commit} role="search" aria-label="Command line">
+  return (
+    <form className={`cmd ${compact ? 'compact' : ''}`} onSubmit={commit} role="search" aria-label="Command line">
       <div className="in">
         <span className="p" aria-hidden="true">
           +
@@ -130,14 +138,14 @@ export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKey}
-          placeholder={compact || sheet ? 'Lunch with Sam at 1pm' : 'Lunch with Sam at 1pm for 1h #personal !'}
+          placeholder={compact ? 'Lunch with Sam at 1pm' : 'Lunch with Sam at 1pm for 1h #personal !'}
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="done"
           data-testid="quickadd"
           aria-describedby="parse-row"
         />
-        {(compact || sheet) && (
+        {compact && (
           <button type="submit" className="go" disabled={!parsed?.title}>
             Add
           </button>
@@ -162,7 +170,7 @@ export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?
         ) : (
           <span className="muted">Type a task; time, “for 45m”, #category, ! priority and “every …” are understood.</span>
         )}
-        {!compact && !sheet && (
+        {!compact && (
           <span className="hint">
             <kbd>Enter</kbd> add <kbd>Tab</kbd> edit fields <kbd>Esc</kbd> clear
           </span>
@@ -170,14 +178,5 @@ export function QuickAdd({ compact, sheet, onDone }: { compact?: boolean; sheet?
       </div>
       {picking && parsed?.title && <GlyphPicker value={suggested ?? undefined} onPick={pickIcon} label={`Icon for ${parsed.title}`} />}
     </form>
-  )
-  if (!sheet) return form
-  return (
-    <div ref={wrap} className="sheet-wrap qa-wrap" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onDone?.()}>
-      <div className="sheet qa-sheet" role="dialog" aria-modal="true" aria-label="Add a task" data-testid="quickadd-sheet">
-        <i className="grabber" aria-hidden="true" />
-        {form}
-      </div>
-    </div>
   )
 }

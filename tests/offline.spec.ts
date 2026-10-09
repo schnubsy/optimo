@@ -22,9 +22,9 @@ test.describe('offline PWA', () => {
     await page.getByTestId('quickadd').fill('Written on a plane at 3pm')
     await page.getByTestId('quickadd').press('Enter')
     // move (keyboard nudge +5 min) and complete
-    const lunch = page.locator(`[data-testid="block"][data-id="${s!.ids.lunch}"] .blk-main`)
+    const lunch = page.locator(`[data-testid="block"][data-id="${s!.ids.lunch}"] [data-testid="chip"]`)
     await lunch.scrollIntoViewIfNeeded()
-    await lunch.click()
+    await lunch.focus() // arc 6: focusing the chip selects (a tap opens the editor)
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Escape')
     const standup = page.locator(`[data-testid="block"][data-id="${s!.ids.standup}"]`)

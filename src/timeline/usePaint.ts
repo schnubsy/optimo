@@ -9,11 +9,13 @@
 // the commit is recomputed from the release point, never from a value a render may not have caught up with.
 import { useEffect, useRef, type RefObject } from 'react'
 import { fmtClock } from '../lib/time'
-import { paintSpan, yToMin, type PaintSpan } from './paint'
+import { paintSpan, type PaintSpan } from './paint'
+import type { SegmentMap } from './segments'
 
 export interface PaintOpts {
   day: string
-  hourPx: number
+  /** the day's segment map — the only minute↔pixel conversion on the spine (arc 6 RULE) */
+  map: SegmentMap
   snap: number
   clock24: boolean
   onCommit: (start: number, len: number) => void
@@ -28,19 +30,22 @@ const EDGE_PX = 36 // auto-scroll zone at the top/bottom of the scroller
 const EDGE_SPEED = 14 // px per frame at the very edge
 
 /** Anything a press should leave alone: blocks, events, clusters, buttons, the free-gap label, the slot cursor. */
-const INTERACTIVE = '.pill, .blk, .evt, .cluster, .catpick, .handle, .free-label, .tl-slot, button, a, input, select, textarea, label, [role="button"], [role="slider"], [role="dialog"], [contenteditable]'
+const INTERACTIVE = '.node, .evt, .gap-in, .node-handle, .tl-slot, button, a, input, select, textarea, label, [role="button"], [role="slider"], [role="dialog"], [contenteditable]'
 
 export const rangeLabel = (s: PaintSpan, clock24: boolean) => `${fmtClock(s.start, clock24)}–${fmtClock(s.end, clock24)}`
 
-/** Write a span into the ghost: transforms + text only (no layout properties change per frame). */
-export function drawGhost(el: HTMLElement, s: PaintSpan, hourPx: number, clock24: boolean) {
-  const top = (s.start / 60) * hourPx
-  const h = ((s.end - s.start) / 60) * hourPx
+/** The fill is laid out 100 px tall and scaled to the span's height. */
+export const GHOST_FILL_PX = 100
+
+/** Write a span into the ghost: transforms + text only (no layout properties change per frame), placed by the map. */
+export function drawGhost(el: HTMLElement, s: PaintSpan, map: SegmentMap, clock24: boolean) {
+  const top = map.minToY(s.start)
+  const h = Math.max(2, map.minToY(s.end) - top)
   el.style.transform = `translate3d(0, ${top}px, 0)`
   const fill = el.querySelector<HTMLElement>('.paint-fill')
   const end = el.querySelector<HTMLElement>('.paint-end')
   const label = el.querySelector<HTMLElement>('.paint-label')
-  if (fill) fill.style.transform = `scaleY(${h / hourPx})`
+  if (fill) fill.style.transform = `scaleY(${h / GHOST_FILL_PX})`
   if (end) end.style.transform = `translate3d(0, ${h}px, 0)`
   if (label) {
     // update the existing text node in place (no node churn per frame)
@@ -83,7 +88,7 @@ export function usePaint(innerRef: RefObject<HTMLElement | null>, scrollRef: Ref
     let g: Gesture | null = null
     let suppressClick = false
 
-    const minAt = (clientY: number) => yToMin(clientY - el.getBoundingClientRect().top, o.current.hourPx)
+    const minAt = (clientY: number) => o.current.map.yToMin(clientY - el.getBoundingClientRect().top)
     const spanAt = (clientY: number) => paintSpan(g!.anchor, minAt(clientY), o.current.snap)
 
     const preventTouch = (e: TouchEvent) => {
@@ -109,7 +114,7 @@ export function usePaint(innerRef: RefObject<HTMLElement | null>, scrollRef: Ref
       const ghost = ghostRef.current
       if (ghost && key !== g.last) {
         g.last = key
-        drawGhost(ghost, s, o.current.hourPx, o.current.clock24)
+        drawGhost(ghost, s, o.current.map, o.current.clock24)
       }
       g.raf = requestAnimationFrame(frame)
     }
@@ -130,7 +135,7 @@ export function usePaint(innerRef: RefObject<HTMLElement | null>, scrollRef: Ref
       if (ghost) {
         g.last = ''
         const s = spanAt(g.y)
-        drawGhost(ghost, s, o.current.hourPx, o.current.clock24)
+        drawGhost(ghost, s, o.current.map, o.current.clock24)
         g.last = `${s.start}:${s.end}`
         showGhost(ghost)
       }

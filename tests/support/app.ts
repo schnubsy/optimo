@@ -90,10 +90,41 @@ export async function openApp(page: Page, context: BrowserContext, opts: { seed?
 
 export const row = (page: Page, id: string) => page.evaluate((i) => (window as any).__optimo.db.tasks.get(i), id)
 
-/** The quick-add field: on iPhone it lives in the FAB's bottom sheet, so open that first. */
+/**
+ * The plain-words field: the desktop header command line, or on iPhone the create wizard's title field (the FAB opens
+ * the wizard since arc 6 slice 6; its title keeps the parser).
+ */
 export async function quickAdd(page: Page) {
   const field = page.getByTestId('quickadd')
-  if (!(await field.isVisible()) && (await page.getByTestId('fab').isVisible())) await page.getByTestId('fab').click()
-  await expect(field).toBeVisible()
-  return field
+  if (await field.isVisible()) return field
+  const title = page.getByTestId('wizard-title')
+  if (!(await title.isVisible())) await page.getByTestId('fab').click()
+  await expect(title).toBeVisible()
+  return title
+}
+
+/** Walk an open wizard from its current step to Create (① Continue → ② Continue → ③ Create Task). */
+export async function commitWizard(page: Page, opts: { inbox?: boolean } = {}) {
+  const w = page.getByTestId('wizard')
+  if ((await w.getAttribute('data-step')) === '1') {
+    await page.getByTestId('wizard-continue').click()
+    await expect(w).not.toHaveAttribute('data-step', '1')
+  }
+  if ((await w.getAttribute('data-step')) === '2') {
+    if (opts.inbox) {
+      await page.getByTestId('time-more').click()
+      await page.getByRole('menuitem', { name: 'Add to Inbox' }).click()
+    } else await page.getByTestId('wizard-continue').click()
+    await expect(w).toHaveAttribute('data-step', '3')
+  }
+  await page.getByTestId('wizard-create').click()
+  await expect(w).toHaveCount(0)
+}
+
+/** Add a task in plain words: Enter on the desktop command line; on iPhone FAB → wizard → Create (`inbox`: Add to Inbox). */
+export async function addTask(page: Page, text: string, opts: { inbox?: boolean } = {}) {
+  const f = await quickAdd(page)
+  await f.fill(text)
+  if ((await f.getAttribute('data-testid')) === 'quickadd') return f.press('Enter')
+  await commitWizard(page, opts)
 }
