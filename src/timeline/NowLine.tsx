@@ -11,10 +11,11 @@ export function useNow(intervalMs = 30_000): number {
   return now
 }
 
-export function NowLine({ now, hourPx, clock24 }: { now: number; hourPx: number; clock24: boolean }) {
+/** Now marker (decision 6): a 10 px accent disc on the spine and a 2 px hairline to the right edge, at the map's y. */
+export function NowLine({ now, y, clock24 }: { now: number; y: number; clock24: boolean }) {
   return (
-    <div className="now" style={{ transform: `translateY(${(now / 60) * hourPx}px)` }} data-testid="now-line">
-      <b className="mono">{fmtClock(now, clock24)}</b>
+    <div className="now" style={{ transform: `translateY(${y}px)` }} data-testid="now-line" data-min={now}>
+      <span className="sr-only">Now {fmtClock(now, clock24)}</span>
     </div>
   )
 }

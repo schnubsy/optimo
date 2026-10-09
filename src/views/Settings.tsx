@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useSettings } from '../data/hooks'
 import { updateSettings } from '../data/repo'
-import type { SettingsData } from '../data/types'
+import { BOOKEND_NAMES, type SettingsData } from '../data/types'
 import { downloadJson, exportAll, importAll, type ExportFile } from '../data/export'
 import { signOut } from '../auth/session'
 import { fmtClock, todayKey } from '../lib/time'
@@ -27,6 +27,24 @@ function TimeSelect({ label, value, clock24, onChange, testid }: { label: string
           </option>
         ))}
       </select>
+    </label>
+  )
+}
+
+/** A bookend name: saved on blur / Enter (one synced write, not one per keystroke); empty = the default. */
+function NameField({ label, value, fallback, onChange, testid }: { label: string; value?: string; fallback: string; onChange: (v: string) => void; testid: string }) {
+  return (
+    <label className="set-row">
+      <span>{label}</span>
+      <input
+        key={value ?? ''}
+        defaultValue={value ?? ''}
+        placeholder={fallback}
+        maxLength={40}
+        onBlur={(e) => e.target.value.trim() !== (value ?? '') && onChange(e.target.value.trim())}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        data-testid={testid}
+      />
     </label>
   )
 }
@@ -63,9 +81,18 @@ export function Settings() {
 
       <Seg name="theme" label="Theme" value={s.theme} options={[['system', 'System'], ['dark', 'Dark'], ['light', 'Light']]} onChange={(v) => up({ theme: v })} />
 
+      {/* arc 6: the day's bookends — the two anchor rows at the top and bottom of the spine */}
+      <fieldset className="set-row set-day" id="set-day" aria-labelledby="set-day-label" data-testid="set-day">
+        <h3 id="set-day-label">Day</h3>
+        <div className="set-grid">
+          <TimeSelect label="Day starts" value={s.day_start} clock24={s.clock24} onChange={(m) => up({ day_start: m })} testid="set-day-start" />
+          <NameField label="Morning bookend" value={s.day_start_name} fallback={BOOKEND_NAMES.start} onChange={(v) => up({ day_start_name: v })} testid="set-day-start-name" />
+          <TimeSelect label="Day ends" value={s.day_end} clock24={s.clock24} onChange={(m) => up({ day_end: m })} testid="set-day-end" />
+          <NameField label="Evening bookend" value={s.day_end_name} fallback={BOOKEND_NAMES.end} onChange={(v) => up({ day_end_name: v })} testid="set-day-end-name" />
+        </div>
+      </fieldset>
+
       <div className="set-grid">
-        <TimeSelect label="Day starts" value={s.day_start} clock24={s.clock24} onChange={(m) => up({ day_start: m })} testid="set-day-start" />
-        <TimeSelect label="Day ends" value={s.day_end} clock24={s.clock24} onChange={(m) => up({ day_end: m })} testid="set-day-end" />
         <label className="set-row">
           <span>Default duration (min)</span>
           <input type="number" min={5} step={5} value={s.default_duration} onChange={(e) => up({ default_duration: Math.max(5, Number(e.target.value)) })} />

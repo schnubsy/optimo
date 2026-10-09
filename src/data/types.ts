@@ -76,6 +76,11 @@ export interface SettingsData {
   plan_research?: boolean
   /** arc 6: the wizard's duration quick row + the Duration sheet's editable presets (minutes); unset = the defaults */
   duration_presets?: number[]
+  /** arc 6: the day bookends' names (the anchor rows at day_start / day_end); defaults "Up" / "Lights out" */
+  day_start_name?: string
+  day_end_name?: string
+  /** arc 6: bookend rings ticked per day — `{ 'YYYY-MM-DD': { start?: true, end?: true } }`, last 14 days kept */
+  bookend_done?: Record<string, { start?: boolean; end?: boolean }>
 }
 
 export const DEFAULT_DURATION_PRESETS: readonly number[] = [1, 15, 30, 45, 60, 90]
@@ -84,6 +89,8 @@ export function durationPresets(s: Pick<SettingsData, 'duration_presets'>): numb
   const p = s.duration_presets
   return Array.isArray(p) && p.every((n) => typeof n === 'number' && n > 0) ? [...p] : [...DEFAULT_DURATION_PRESETS]
 }
+
+export const BOOKEND_NAMES = { start: 'Up', end: 'Lights out' } as const
 
 export const DEFAULT_SETTINGS: SettingsData = {
   theme: 'system',

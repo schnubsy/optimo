@@ -23,9 +23,9 @@ test.describe('snags #1–#12', () => {
     const b = block(page, id)
     await b.scrollIntoViewIfNeeded()
     await expect(b).toHaveAttribute('data-late', 'true')
-    await expect(b.locator('.blk-main')).toHaveAccessibleName(/, late/)
-    // the cue is text, not colour alone
-    expect(await b.locator('.time b').evaluate((el) => getComputedStyle(el, '::after').content)).toContain('late')
+    await expect(b.getByTestId('chip')).toHaveAccessibleName(/, late/)
+    // the cue is text, not colour alone (arc 6: in the meta line)
+    await expect(b.locator('.node-meta')).toContainText('late')
   })
 
   test('#2 priority is a label, not an unlabeled inner rule', async ({ page, context }) => {
@@ -34,7 +34,7 @@ test.describe('snags #1–#12', () => {
     const deep = block(page, ids!.deep)
     await deep.scrollIntoViewIfNeeded()
     expect(await deep.evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none')
-    await expect(deep.locator('.blk-main')).toHaveAccessibleName(/P1/)
+    await expect(deep.getByTestId('chip')).toHaveAccessibleName(/P1/)
   })
 
   test('#3 inbox category reads as a whole name, never cut mid-word', async ({ page, context }) => {
@@ -81,12 +81,13 @@ test.describe('snags #1–#12', () => {
     await expect(page.getByTestId('wizard-parse')).toContainText('13:00')
   })
 
-  test('#7 hour lines do not run through the free-time label', async ({ page, context }) => {
+  test('#7 the spine never runs through the free-time sentence', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
-    // arc 2: free time is a dotted rule with an opaque sage label pill that sits above the dashed hour lines
-    const label = page.getByTestId('free-row').filter({ has: page.locator('.free-label') }).first().locator('.free-label')
-    await label.scrollIntoViewIfNeeded()
-    expect(await label.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)')
+    // arc 6: free time is a sentence in the text column, right of the spine (no hour lines cross it)
+    const say = page.getByTestId('free-row').locator('.gap-say').first()
+    await say.scrollIntoViewIfNeeded()
+    const spine = (await page.getByTestId('spine').first().boundingBox())!
+    expect((await say.boundingBox())!.x).toBeGreaterThan(spine.x + spine.width + 24)
   })
 
   test('#8 no native checkboxes in the editor or focus — subtasks toggle on their own chip', async ({ page, context }) => {

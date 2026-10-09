@@ -213,6 +213,7 @@
   --spine: var(--n-300);
   --tab-active: var(--n-100);
   --accent-on-tint: var(--accent-ink); /* accent text on --accent-tint (the light accent is 4.2:1 there) */
+  --accent-on-node: var(--accent-ink); /* accent text on --node ("Add Task" pill) */
 
   /* category glyph + ring, editor header and week past-chip formulas: oklch(L C <category hue>) */
   --glyph-l: 0.55; --glyph-c: 0.10;
@@ -297,6 +298,7 @@
   --accent-hover: oklch(0.80 0.103 23.4); --accent-active: oklch(0.71 0.103 23.4);
   --accent-tint: oklch(0.391 0.025 18.3); /* #524040 */
   --accent-on-tint: var(--accent);
+  --accent-on-node: var(--accent);
   --focus-ring: 0 0 0 3px oklch(0.761 0.103 23.4 / 0.55);
   --now-line: var(--accent); --now-flag-bg: var(--accent);
   --tab-active: oklch(0.18 0 0);

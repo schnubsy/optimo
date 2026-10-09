@@ -36,6 +36,3 @@ export function paintSpan(anchor: number, cur: number, step: number, dayLen = MI
   }
   return { start, end }
 }
-
-/** Minutes after midnight for a y offset (px) inside the timeline. */
-export const yToMin = (y: number, hourPx: number) => (y / hourPx) * 60

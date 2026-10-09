@@ -104,8 +104,9 @@ test.describe('iCloud calendar (read-only)', () => {
     const dentist = events(page).filter({ hasText: 'Dentist check-up' })
     await dentist.scrollIntoViewIfNeeded()
     const deep = page.locator('[data-testid="block"]', { hasText: 'Deep work' })
-    const a = (await dentist.boundingBox())!
-    const b = (await deep.boundingBox())!
+    // arc 6: concurrent rows put their chips in side-by-side spine columns
+    const a = (await dentist.locator('.node-chip').boundingBox())!
+    const b = (await deep.getByTestId('chip').boundingBox())!
     expect(Math.abs(a.x - b.x)).toBeGreaterThan(20)
     void server
   })

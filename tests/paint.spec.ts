@@ -6,19 +6,32 @@ import { AxeBuilder } from '@axe-core/playwright'
 import { at, openApp, seedDay } from './support/app'
 import { buildSeed } from '../scripts/seed'
 
-const hourPx = (page: Page) => page.evaluate(() => (matchMedia('(max-width: 899px)').matches ? 66 : 72))
 const untitled = (page: Page) =>
   page.evaluate(async () => {
     const rows = await (window as any).__optimo.db.tasks.toArray()
     return rows.filter((r: any) => r.title === '' && !r.deleted_at).map((r: any) => ({ id: r.id, start_at: r.start_at, duration_min: r.duration_min }))
   })
 
-/** Scroll so `min` sits mid-viewport, then return the page coordinates of a minute on the empty left side. */
+/** The open day's segment map, sampled: minute → y inside .tl-inner (arc 6: the only conversion on the spine). */
+const mapYs = (page: Page, mins: number[]) =>
+  page.evaluate((ms) => {
+    const o = (window as any).__optimo
+    const map = o.maps.get(o.ui.getState().date)
+    return Object.fromEntries(ms.map((m) => [m, map.minToY(m)])) as Record<number, number>
+  }, mins)
+
+/** Scroll so `min` sits mid-viewport, then return page coordinates of minutes on the empty right side of the spine. */
 async function slotPoint(page: Page, min: number) {
-  const px = await hourPx(page)
-  await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y - el.clientHeight / 2), (min / 60) * px)
+  const mins = Array.from({ length: 24 * 12 + 1 }, (_, i) => i * 5)
+  const ys = await mapYs(page, [...mins, min])
+  await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y - el.clientHeight / 2), ys[min])
   const inner = (await page.locator('.tl-inner').boundingBox())!
-  return { x: inner.x + inner.width * 0.22, y: (m: number) => inner.y + (m / 60) * px }
+  const yAt = (m: number) => {
+    const a = Math.floor(m / 5) * 5
+    const b = Math.min(1440, a + 5)
+    return ys[a] + ((m - a) / 5) * (ys[b] - ys[a])
+  }
+  return { x: inner.x + inner.width - 40, y: (m: number) => inner.y + yAt(m) }
 }
 
 test.describe('paint a block', () => {
@@ -50,8 +63,8 @@ test.describe('paint a block', () => {
     await expect(page.getByTestId('toast')).toContainText('Untitled block added')
     const blk = page.locator(`[data-testid="block"][data-id="${t.id}"]`)
     await expect(blk).toHaveAttribute('data-selected', 'true')
-    await expect(blk.locator('.tt')).toHaveText('Untitled')
-    await blk.locator('.blk-main').click()
+    await expect(blk.locator('.node-title')).toHaveText('Untitled')
+    await blk.getByTestId('chip').click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await expect(page.getByTestId('sheet-time')).toHaveValue('17:00')
     expect(errors).toEqual([])
@@ -106,7 +119,7 @@ test.describe('paint a block', () => {
     expect(t.start_at).toBe(at('12:15'))
     expect(t.duration_min).toBe(30)
     // focus hands over to the new block; Enter opens its editor
-    await expect(page.locator(`[data-testid="block"][data-id="${t.id}"] .blk-main`)).toBeFocused()
+    await expect(page.locator(`[data-testid="block"][data-id="${t.id}"] [data-testid="chip"]`)).toBeFocused()
     expect(await scan()).toEqual([])
     await page.keyboard.press('Enter')
     await expect(page.getByRole('dialog')).toBeVisible()

@@ -23,7 +23,7 @@ test.describe('Eye P0 guards (arc 2)', () => {
       expect(await page.locator('.pane-title h1').evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
     })
 
-  test('A2-P0-2 a half-width overlap pill gives its width to the title (time moves to the accessible name)', async ({ page, context }) => {
+  test('A2-P0-2 concurrent tasks sit side by side on the spine; each title keeps room and the time is in the name', async ({ page, context }) => {
     await openApp(page, context, {
       seed: (s) => {
         seedTask(s, { title: 'Standup, platform team', start_at: at('11:00'), duration_min: 30, category_id: CAT.meet })
@@ -31,14 +31,15 @@ test.describe('Eye P0 guards (arc 2)', () => {
       },
     })
     const pill = page.locator('[data-testid="block"]', { hasText: 'Standup' })
+    const other = page.locator('[data-testid="block"]', { hasText: 'Dentist call back' })
     await pill.scrollIntoViewIfNeeded()
-    const w = (await pill.boundingBox())!.width
-    const time = pill.locator('.time')
-    if (w <= 220) await expect(time).toBeHidden()
-    const tt = pill.locator('.tt')
-    // at least ~9 characters of the title are visible (was 2–3 before the fix)
-    expect((await tt.boundingBox())!.width).toBeGreaterThan(Math.min(w - 60, 90))
-    await expect(pill.locator('.blk-main')).toHaveAccessibleName(/Standup, platform team, 11:00/)
+    // the second node takes the next column, 64 px right of the spine
+    const a = (await pill.getByTestId('chip').boundingBox())!
+    const b = (await other.getByTestId('chip').boundingBox())!
+    expect(Math.round(b.x - a.x)).toBe(64)
+    // at least ~9 characters of each title are visible
+    expect((await pill.locator('.node-title').boundingBox())!.width).toBeGreaterThan(90)
+    await expect(pill.getByTestId('chip')).toHaveAccessibleName(/Standup, platform team, 11:00/)
   })
 
   test('A2-P0-3 the floating bar actually blurs what scrolls beneath it', async ({ page, context }, info) => {

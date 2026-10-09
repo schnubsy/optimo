@@ -69,3 +69,32 @@ export function weekStart(key: string, startsOn: 0 | 1): string {
   const diff = (d.getDay() - startsOn + 7) % 7
   return addDays(key, -diff)
 }
+
+// ---------- arc 6: spine copy formats (mockups 01 / 08) ----------
+
+/** Gutter label: "9:00" / "10:30" (12 h, no meridiem) or "09:00" (24 h). */
+export function fmtGutter(min: number, clock24 = true): string {
+  return clock24 ? fmtClock(min, true) : fmtClock(min, false).replace(/ [AP]M$/, '')
+}
+/** "8:00–9:30 PM", "11:30 AM–12:30 PM", "20:00–21:30". */
+export function fmtRange(start: number, end: number, clock24 = true): string {
+  if (clock24) return `${fmtClock(start, true)}–${fmtClock(end, true)}`
+  const a = fmtClock(start, false)
+  const b = fmtClock(end, false)
+  return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`
+}
+/** "1 hr, 30 min" / "15 min" / "2 hr". */
+export function fmtDurWords(min: number): string {
+  const m = Math.max(0, Math.round(min))
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  if (!h) return `${r} min`
+  return r ? `${h} hr, ${r} min` : `${h} hr`
+}
+/** "13h 29m" / "1h" / "45m" — the free-time duration. */
+export function fmtGap(min: number): string {
+  const m = Math.max(0, Math.round(min))
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`
+}

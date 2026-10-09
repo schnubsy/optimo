@@ -41,11 +41,12 @@ test.describe('iPhone chrome', () => {
     expect(p.y + p.height).toBeLessThanOrEqual(b.y) // not covered by the floating bar
   })
 
-  test('the timeline scrolls beneath the header and the bar (full-height scroller)', async ({ page, context }) => {
+  test('arc 6: the day panel starts under the header and runs to the bottom edge (the bar floats over it)', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
     const tl = (await page.getByTestId('timeline').boundingBox())!
+    const hdr = (await page.getByTestId('header').boundingBox())!
     const vp = page.viewportSize()!
-    expect(tl.y).toBeLessThanOrEqual(1)
+    expect(Math.abs(tl.y - (hdr.y + hdr.height))).toBeLessThanOrEqual(1)
     expect(tl.y + tl.height).toBeGreaterThanOrEqual(vp.height - 1)
   })
 

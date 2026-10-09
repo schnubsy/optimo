@@ -29,10 +29,9 @@ test.describe('design review P0 guards', () => {
   test('P0-2 editor priority / reminder / scope chips show the selected option', async ({ page, context }) => {
     let s: ReturnType<typeof seedDay>
     await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
-    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.plan}"] .blk-main`)
+    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.plan}"] [data-testid="chip"]`)
     await b.scrollIntoViewIfNeeded()
-    await b.click()
-    await b.click()
+    await b.click() // arc 6: one tap on the chip opens the editor
     const high = page.getByRole('dialog').getByRole('button', { name: 'High' })
     await expect(high).toHaveAttribute('aria-pressed', 'true')
     expect(await high.evaluate(bg)).toBe(await accent(page))
@@ -95,9 +94,8 @@ test.describe('design review P0 guards', () => {
     await setView(page, 'settings')
     await page.screenshot({ path: `docs/evidence/arc1-slice-7-settings-${info.project.name}.png` })
     await setView(page, 'day')
-    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.plan}"] .blk-main`)
+    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.plan}"] [data-testid="chip"]`)
     await b.scrollIntoViewIfNeeded()
-    await b.click()
     await b.click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.screenshot({ path: `docs/evidence/arc1-slice-7-editor-${info.project.name}.png` })

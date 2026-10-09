@@ -42,11 +42,11 @@ import { applyTheme } from './lib/theme'
 import { keyBefore, inboxOrder } from './inbox/virtual'
 import { useItems, type Item } from './timeline/items'
 import { useCalendarSync, useEvents, type EventItem } from './calendar/events'
-import { timelineEls } from './timeline/Timeline'
+import { segmentMaps, timelineEls } from './timeline/Timeline'
 import { clampStart, MIN_DURATION, pxToMin, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
 import { addDays, fromKey, nowMinutes, todayKey } from './lib/time'
-import { useHourPx, useIsMobile } from './lib/useMedia'
+import { useIsMobile } from './lib/useMedia'
 import { deleteItem, moveItem, resizeItem, schedule, toggleComplete, unschedule } from './actions'
 import { seedCategories } from './categories/defaults'
 import './styles/app.css'
@@ -62,7 +62,7 @@ function useSyncEngine(userId: string) {
     // seed after the first sync attempt so a device never out-votes categories it has not pulled yet
     void engine.start().then(() => engine.run()).then(seedCategories)
     try {
-      if (localStorage.getItem('optimo.test') === '1') Object.assign(window, { __optimo: { db, repo, engine, ui: useUI } })
+      if (localStorage.getItem('optimo.test') === '1') Object.assign(window, { __optimo: { db, repo, engine, ui: useUI, maps: segmentMaps } })
     } catch {
       /* no storage */
     }
@@ -96,7 +96,6 @@ export function Planner({ userId }: { userId: string }) {
   }, [draft, quickAdd, openWizard])
   const nearBar = useDrag((s) => s.nearBar)
   const isMobile = useIsMobile()
-  const hourPx = useHourPx()
   const now = useNow()
   const days = useMemo(() => [date], [date])
   const itemsByDay = useItems(days)
@@ -130,21 +129,23 @@ export function Planner({ userId }: { userId: string }) {
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 10 } }),
   )
+  // arc 6 RULE: the day's segment map is the only minute↔pixel conversion on the spine
   const dropMinute = useCallback(
     (e: DragMoveEvent | DragEndEvent, day: string): number | null => {
       const a = e.active.data.current as { type: string; item?: Item; task?: Task } | undefined
-      if (!a) return null
+      const map = segmentMaps.get(day)
+      if (!a || !map) return null
       if (a.type === 'block' && a.item) {
-        const base = a.item.start
-        return clampStart(snap(base + pxToMin(e.delta.y, hourPx), settings.snap), a.item.task.duration_min)
+        const y = map.minToY(a.item.start) + e.delta.y
+        return clampStart(snap(map.yToMin(y), settings.snap), a.item.task.duration_min)
       }
       const el = timelineEls.get(day)
       const r = e.active.rect.current.translated
       if (!el || !r) return null
-      const min = pxToMin(r.top - el.getBoundingClientRect().top, hourPx)
+      const min = map.yToMin(r.top - el.getBoundingClientRect().top)
       return clampStart(snap(min, settings.snap), a.task?.duration_min ?? settings.default_duration)
     },
-    [hourPx, settings.snap, settings.default_duration],
+    [settings.snap, settings.default_duration],
   )
   const onDragStart = (e: DragStartEvent) => {
     useDrag.getState().set({ activeId: String(e.active.id) })

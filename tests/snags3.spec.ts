@@ -44,7 +44,8 @@ test.describe('snags #29–#37 (arc 3)', () => {
       await expect(page.locator('.mday.today .dots em')).toHaveText('+6')
     })
 
-  test('#32 the now line stops at a running pill instead of striking its title', async ({ page, context }) => {
+  // arc 6: the now marker is a disc on the spine + a hairline; the running task's chip carries a 2 px accent ring
+  test('#32 the running task is marked on its chip and the now marker crosses its row', async ({ page, context }) => {
     await openApp(page, context, {
       at: '14:30',
       seed: (s) => seedTask(s, { title: 'Write the migration plan', start_at: at('14:00'), duration_min: 90, category_id: CAT.work }),
@@ -53,18 +54,21 @@ test.describe('snags #29–#37 (arc 3)', () => {
     await pill.scrollIntoViewIfNeeded()
     const line = page.getByTestId('now-line')
     await expect(line).toBeVisible()
-    // what is painted where the now line crosses the middle of the pill: the pill, not the line
     const hit = await page.evaluate(() => {
       const p = document.querySelector('[data-testid="block"][data-running="true"]')!.getBoundingClientRect()
-      const nl = document.querySelector('[data-testid="now-line"]') as HTMLElement
-      const l = nl.getBoundingClientRect()
-      nl.style.pointerEvents = 'auto' // hit-testing skips pointer-events:none; the paint order is what we ask about
-      nl.style.height = '2px'
-      const el = document.elementFromPoint(p.left + p.width / 2, l.top + 1)
-      return { inPill: !!el?.closest('[data-testid="block"]'), lineInside: l.top > p.top && l.top < p.bottom }
+      const l = document.querySelector('[data-testid="now-line"]')!.getBoundingClientRect()
+      return { lineInside: l.top > p.top && l.top < p.bottom }
     })
     expect(hit.lineInside).toBe(true)
-    expect(hit.inPill).toBe(true)
+    const accent = await page.evaluate(() => {
+      const i = document.createElement('i')
+      i.style.color = 'var(--accent)'
+      document.body.append(i)
+      const c = getComputedStyle(i).color
+      i.remove()
+      return c
+    })
+    expect(await pill.getByTestId('chip').evaluate((el) => getComputedStyle(el).boxShadow)).toContain(accent)
     if (process.env.EVIDENCE) {
       await page.evaluate(() => ((document.querySelector('[data-testid="now-line"]') as HTMLElement).style.cssText += ';pointer-events:none;height:0'))
       await page.screenshot({ path: `docs/evidence/ai-planner-slice-5-running-pill-${test.info().project.name}.png` })

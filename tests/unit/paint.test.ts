@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { paintMin, paintSpan, yToMin } from '../../src/timeline/paint'
+import { paintMin, paintSpan } from '../../src/timeline/paint'
 
 describe('paintSpan (arc 5a slice 4)', () => {
   it('snaps both ends to the grid', () => {
@@ -24,9 +24,5 @@ describe('paintSpan (arc 5a slice 4)', () => {
     expect(paintSpan(23 * 60, 26 * 60, 15)).toEqual({ start: 23 * 60, end: 1440 })
     expect(paintSpan(1440, 1450, 15)).toEqual({ start: 1425, end: 1440 })
     expect(paintSpan(-3, -1, 5)).toEqual({ start: 0, end: 5 })
-  })
-  it('maps pixels to minutes at both densities', () => {
-    expect(yToMin(72 * 9.25, 72)).toBeCloseTo(555)
-    expect(yToMin(66 * 9.25, 66)).toBeCloseTo(555)
   })
 })

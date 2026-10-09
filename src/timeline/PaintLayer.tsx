@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useRef, useState, type KeyboardEvent as RKeyboar
 import { fmtClock, MIN_PER_DAY } from '../lib/time'
 import { paintSpan } from './paint'
 import { drawGhost, hideGhost, rangeLabel, showGhost } from './usePaint'
+import type { SegmentMap } from './segments'
 
 /**
  * The paint ghost. Always mounted and hidden; usePaint / PaintSlot write its transform and label directly
@@ -27,8 +28,8 @@ export const PaintGhost = forwardRef<HTMLDivElement>(function PaintGhost(_p, ref
  * ↑/↓ then move its end, Enter creates it, Esc cancels. Keys are handled here and stopped, so the window keyboard map
  * (move/resize the selection, Enter to edit) never sees them while the slot has focus.
  */
-export function PaintSlot({ hourPx, snap, clock24, startAt, ghostRef, busy, onCommit }: {
-  hourPx: number
+export function PaintSlot({ map, snap, clock24, startAt, ghostRef, busy, onCommit }: {
+  map: SegmentMap
   snap: number
   clock24: boolean
   /** where the cursor lands when the slot takes focus (minutes) */
@@ -53,10 +54,10 @@ export function PaintSlot({ hourPx, snap, clock24, startAt, ghostRef, busy, onCo
     const g = ghostRef.current
     if (!g) return
     if (span) {
-      drawGhost(g, span, hourPx, clock24)
+      drawGhost(g, span, map, clock24)
       showGhost(g)
     } else hideGhost(g)
-  }, [span?.start, span?.end, hourPx, clock24, ghostRef]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [span?.start, span?.end, map, clock24, ghostRef]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // keep the cursor (or the painted end) in view
   useEffect(() => {
@@ -102,7 +103,8 @@ export function PaintSlot({ hourPx, snap, clock24, startAt, ghostRef, busy, onCo
     }
   }
 
-  const y = paint && span ? (span.end / 60) * hourPx : (at / 60) * hourPx
+  const y = paint && span ? map.minToY(span.end) : map.minToY(at)
+  const slotH = Math.max(4, map.minToY(at + snap) - map.minToY(at))
   return (
     <>
       <div
@@ -112,7 +114,7 @@ export function PaintSlot({ hourPx, snap, clock24, startAt, ghostRef, busy, onCo
         tabIndex={0}
         aria-label={paint && span ? `New block ${rangeLabel(span, clock24)}` : slotText}
         aria-describedby="tl-slot-help"
-        style={{ transform: `translate3d(0, ${y}px, 0)`, height: (snap / 60) * hourPx }}
+        style={{ transform: `translate3d(0, ${y}px, 0)`, height: slotH }}
         onFocus={() => {
           if (cursor === null) {
             const s = Math.min(MIN_PER_DAY - snap, Math.max(0, Math.round(startAt() / snap) * snap))

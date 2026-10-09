@@ -6,17 +6,26 @@ import { at, openApp, seedDay } from './support/app'
 
 test.use({ browserName: 'chromium' })
 
-const hourPx = (page: Page) => page.evaluate(() => (matchMedia('(max-width: 899px)').matches ? 66 : 72))
 const untitled = (page: Page) =>
   page.evaluate(async () => {
     const rows = await (window as any).__optimo.db.tasks.toArray()
     return rows.filter((r: any) => r.title === '' && !r.deleted_at).map((r: any) => ({ id: r.id, start_at: r.start_at, duration_min: r.duration_min }))
   })
+/** Minute → page coordinates on the empty right side of the spine, through the day's segment map (arc 6). */
 async function slotPoint(page: Page, min: number) {
-  const px = await hourPx(page)
-  await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y - el.clientHeight / 2), (min / 60) * px)
+  const mins = Array.from({ length: 24 * 12 + 1 }, (_, i) => i * 5)
+  const ys = await page.evaluate((ms) => {
+    const o = (window as any).__optimo
+    const map = o.maps.get(o.ui.getState().date)
+    return ms.map((m) => map.minToY(m)) as number[]
+  }, [...mins, min])
+  await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y - el.clientHeight / 2), ys[ys.length - 1])
   const inner = (await page.locator('.tl-inner').boundingBox())!
-  return { x: inner.x + inner.width * 0.22, y: (m: number) => inner.y + (m / 60) * px }
+  const yAt = (m: number) => {
+    const i = Math.floor(m / 5)
+    return ys[i] + ((m - i * 5) / 5) * (ys[Math.min(mins.length - 1, i + 1)] - ys[i])
+  }
+  return { x: inner.x + inner.width - 40, y: (m: number) => inner.y + yAt(m) }
 }
 
 test.describe('paint a block — real touch (Chromium, iPhone 15 profile)', () => {
@@ -58,7 +67,7 @@ test.describe('paint a block — real touch (Chromium, iPhone 15 profile)', () =
     expect(await tl.evaluate((el) => el.scrollTop)).toBe(topPainting)
     await expect(page.getByRole('dialog')).toHaveCount(0)
     // tap the new (selected) block → the editor
-    await page.locator(`[data-testid="block"][data-id="${t.id}"] .blk-main`).tap()
+    await page.locator(`[data-testid="block"][data-id="${t.id}"] [data-testid="chip"]`).tap()
     await expect(page.getByRole('dialog')).toBeVisible()
   })
 

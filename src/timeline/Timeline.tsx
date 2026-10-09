@@ -1,67 +1,64 @@
+// The day spine (arc 6 slice 3, mockups 01 / 08 / 09). Every row — bookend anchors, tasks, calendar events, free gaps,
+// the now marker, the drop / paint ghosts and the gutter — is placed by ONE segment map (segments.ts). Planner's drop
+// maths reads the same map through `segmentMaps`.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { useDroppable } from '@dnd-kit/core'
-import type { Category, SettingsData } from '../data/types'
-import { fmtClock, isoAt, todayKey } from '../lib/time'
-import { useHourPx } from '../lib/useMedia'
+import { BOOKEND_NAMES, type Category, type SettingsData } from '../data/types'
+import { updateSettings } from '../data/repo'
+import { addDays, fmtClock, isoAt, todayKey } from '../lib/time'
+import { useIsMobile } from '../lib/useMedia'
 import { useDrag } from '../state/drag'
 import { useUI } from '../state/ui'
-import { paintBlock, patchItem, resizeItem, toggleComplete } from '../actions'
+import { paintBlock, resizeItem, toggleComplete } from '../actions'
 import { AllDayStrip } from './AllDayStrip'
-import { Block, pillHeight } from './Block'
-import { FreeGap } from './FreeGap'
-import { HourRail } from './HourRail'
+import { AnchorRow } from './AnchorRow'
+import { CAPSULE_MIN, NodeRow } from './NodeRow'
+import { Gap } from './Gap'
+import { Rail } from './Rail'
 import { NowLine, useNow } from './NowLine'
 import type { Item } from './items'
-import { clusterShort, freeRows, isLate, isOutOfBounds, layoutColumns } from './layout'
-import { visibleWindow } from './virtual'
+import { isLate, layoutColumns, snap as snapTo } from './layout'
+import { ANCHOR_END, ANCHOR_START, buildSegments, railLabels, type SegmentMap } from './segments'
 import { taskIcon } from '../quickadd/suggest'
 import { EventBlock } from './EventBlock'
 import type { EventItem } from '../calendar/events'
 import { PaintGhost, PaintSlot } from './PaintLayer'
 import { usePaint } from './usePaint'
+import './spine.css'
 
 /** Timeline inner elements by day — drop maths reads their live rect. */
 export const timelineEls = new Map<string, HTMLElement>()
+/** The segment map each mounted day is laid out with — drop maths converts with it (arc 6 RULE: one map). */
+export const segmentMaps = new Map<string, SegmentMap>()
 
-function DropGhost({ day, hourPx, clock24 }: { day: string; hourPx: number; clock24: boolean }) {
+/** Space under the last row: the floating tab bar on iPhone, a little air on the desktop. */
+const PAD_BOTTOM_MOBILE = 140
+const PAD_BOTTOM_DESKTOP = 48
+
+function DropGhost({ day, map, clock24 }: { day: string; map: SegmentMap; clock24: boolean }) {
   const ghost = useDrag((s) => (s.ghost?.day === day ? s.ghost : null))
   if (!ghost) return null
+  const top = map.minToY(ghost.start)
   return (
-    <div className="ghost" style={{ transform: `translateY(${(ghost.start / 60) * hourPx}px)`, height: (ghost.len / 60) * hourPx }} data-testid="drop-ghost">
-      <i className="mono">{fmtClock(ghost.start, clock24)}</i>
+    <div className="ghost" style={{ transform: `translateY(${top}px)`, height: Math.max(8, map.minToY(ghost.start + ghost.len) - top) }} data-testid="drop-ghost">
+      <i className="tnum">{fmtClock(ghost.start, clock24)}</i>
     </div>
   )
 }
 
-/** "+n" pill standing in for three or more short pills within 30 min; opens a list (design spec §4). */
-function ClusterPill({ items, hourPx, clock24, cats }: { items: Item[]; hourPx: number; clock24: boolean; cats: Map<string, Category> }) {
-  const [open, setOpen] = useState(false)
-  const set = useUI((s) => s.set)
-  const first = items[0]
-  const end = Math.max(...items.map((i) => i.end))
-  return (
-    <div className="cluster" style={{ top: (first.start / 60) * hourPx, height: pillHeight(end - first.start, hourPx) }} data-testid="cluster">
-      <button type="button" className="cluster-btn" aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen(!open) }} aria-label={`${items.length} short tasks from ${fmtClock(first.start, clock24)}`}>
-        <span className="tnum">{fmtClock(first.start, clock24)}</span>
-        <b>+{items.length}</b>
-      </button>
-      {open && (
-        <ul className="cluster-list" onClick={(e) => e.stopPropagation()}>
-          {items.map((i) => (
-            <li key={i.key}>
-              <button type="button" className={`cluster-row cat-${cats.get(i.task.category_id ?? '')?.color ?? 'errand'} ${i.task.completed_at ? 'done' : ''}`} onClick={() => set({ editingId: i.key, selectedId: i.key })}>
-                <span className="tnum">{fmtClock(i.start, clock24)}</span> {i.task.title || 'Untitled'}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
+/** Keep the last 14 days of bookend ticks (settings is one synced row; it must not grow forever). */
+export function nextBookendDone(cur: SettingsData['bookend_done'], day: string, which: 'start' | 'end'): NonNullable<SettingsData['bookend_done']> {
+  const out: NonNullable<SettingsData['bookend_done']> = {}
+  const floor = addDays(todayKey(), -14)
+  for (const [d, v] of Object.entries(cur ?? {})) if (d >= floor) out[d] = { ...v }
+  const was = !!out[day]?.[which]
+  out[day] = { ...out[day], [which]: !was }
+  if (!out[day].start && !out[day].end) delete out[day]
+  return out
 }
 
-export function Timeline({ day, items, events = [], cats, settings, overlay }: { day: string; items: Item[]; events?: EventItem[]; cats: Map<string, Category>; settings: SettingsData; overlay?: (hourPx: number) => ReactNode }) {
-  const hourPx = useHourPx()
+export function Timeline({ day, items, events = [], cats, settings, overlay }: { day: string; items: Item[]; events?: EventItem[]; cats: Map<string, Category>; settings: SettingsData; overlay?: (map: SegmentMap) => ReactNode }) {
+  const mobile = useIsMobile()
   const now = useNow()
   const isToday = day === todayKey()
   const selectedKey = useUI((s) => s.selectedId)
@@ -83,34 +80,70 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
   const allDay = useMemo(() => items.filter((i) => i.task.all_day).map((i) => i.task), [items])
   const timedEvents = useMemo(() => events.filter((e) => !e.event.all_day), [events])
   const allDayEvents = useMemo(() => events.filter((e) => e.event.all_day), [events])
-  // tasks and calendar events share the overlap columns
-  const placedAll = useMemo(
-    () => layoutColumns([...timed.map((i) => ({ id: i.key, start: i.start, end: i.end })), ...timedEvents.map((e) => ({ id: e.key, start: e.start, end: e.end }))]),
+
+  // the one map: tasks + events + the two bookends
+  const map = useMemo(
+    () =>
+      buildSegments(
+        timed.map((i) => ({ key: i.key, start: i.start, end: i.start + Math.max(1, i.task.duration_min) })),
+        timedEvents.map((e) => ({ key: e.key, start: e.start, end: e.end })),
+        settings.day_start,
+        settings.day_end,
+        { padBottom: mobile ? PAD_BOTTOM_MOBILE : PAD_BOTTOM_DESKTOP },
+      ),
+    [timed, timedEvents, settings.day_start, settings.day_end, mobile],
+  )
+  useEffect(() => {
+    segmentMaps.set(day, map)
+    return () => {
+      if (segmentMaps.get(day) === map) segmentMaps.delete(day)
+    }
+  }, [day, map])
+  const mapRef = useRef(map)
+  useEffect(() => {
+    mapRef.current = map
+  }, [map])
+
+  // concurrent tasks / events: side-by-side columns (column k sits k × 64 px right of the spine)
+  const placed = useMemo(
+    () => layoutColumns([...timed.map((i) => ({ id: i.key, start: i.start, end: i.start + Math.max(1, i.task.duration_min) })), ...timedEvents.map((e) => ({ id: e.key, start: e.start, end: e.end }))]),
     [timed, timedEvents],
   )
-  const placed = useMemo(() => placedAll.filter((p) => !p.id.startsWith('ev:')), [placedAll])
-  const placedEvents = useMemo(() => placedAll.filter((p) => p.id.startsWith('ev:')), [placedAll])
-  const eventByKey = useMemo(() => new Map(timedEvents.map((e) => [e.key, e])), [timedEvents])
+  const colOf = useMemo(() => new Map(placed.map((p) => [p.id, p.col])), [placed])
   const byKey = useMemo(() => new Map(timed.map((i) => [i.key, i])), [timed])
-  // gaps ≥ 10 min, and tall enough to show beside a min-height pill above them (≥ 28px)
-  const free = useMemo(
-    () => freeRows([...timed, ...timedEvents], settings.day_start, settings.day_end, 10).filter((r) => (r.len / 60) * hourPx >= 28),
-    [timed, timedEvents, settings.day_start, settings.day_end, hourPx],
-  )
-  const catList = useMemo(() => [...cats.values()], [cats])
-  // three or more short pills within 30 min collapse into a "+n" pill (the selected one stays out)
-  const clusters = useMemo(
-    () => clusterShort(placed.filter((p) => p.id !== selectedKey)).map((ids) => ids.map((id) => byKey.get(id)!)),
-    [placed, byKey, selectedKey],
-  )
-  const clustered = useMemo(() => new Set(clusters.flat().map((i) => i.key)), [clusters])
+  // concurrent clusters: texts stack one 56 px line apart, right of the cluster's last chip column
+  const stacked = useMemo(() => {
+    const out = new Map<string, { cols: number; y: number }>()
+    for (const seg of map.segments) {
+      const keys = seg.keys.filter((k) => k !== ANCHOR_START && k !== ANCHOR_END)
+      if (seg.kind !== 'node' || keys.length < 2) continue
+      const cols = Math.max(...keys.map((k) => colOf.get(k) ?? 0))
+      keys.forEach((k, i) => out.set(k, { cols, y: seg.y + 36 + i * 56 }))
+    }
+    return out
+  }, [map, colOf])
 
-  // virtualise: only blocks within the viewport ± one screen are mounted (slice 6)
+  const anchorSeg = (key: string) => map.segments.find((s) => s.keys.includes(key))
+  const startSeg = anchorSeg(ANCHOR_START)
+  const endSeg = anchorSeg(ANCHOR_END)
+  const labels = useMemo(() => {
+    const rows = [
+      { start: settings.day_start, end: settings.day_start + 1, capsule: false },
+      { start: settings.day_end, end: settings.day_end + 1, capsule: false },
+      ...timed.map((i) => ({ start: i.start, end: i.start + i.task.duration_min, capsule: i.task.duration_min >= CAPSULE_MIN })),
+      ...timedEvents.map((e) => ({ start: e.start, end: e.end, capsule: e.end - e.start >= CAPSULE_MIN })),
+    ]
+    return railLabels(map, rows)
+  }, [map, timed, timedEvents, settings.day_start, settings.day_end])
+
+  // virtualise by segment y: rows within the viewport ± two screens are mounted (a spine day is short — compressed
+  // gaps — so this is most of a normal day and only trims dense libraries)
   const [view, setView] = useState({ top: 0, h: 0 })
-  const win = visibleWindow(view.top, view.h, hourPx)
-  const visible = placed.filter((p) => p.end >= win.from && p.start <= win.to && !clustered.has(p.id))
+  const winTop = view.h ? view.top - 2 * view.h : -Infinity
+  const winBottom = view.h ? view.top + 3 * view.h : Infinity
+  const visible = timed.filter((i) => map.minToY(i.start + i.task.duration_min) >= winTop && map.minToY(i.start) <= winBottom)
 
-  // perf budget probe: data ready → blocks committed and painted (docs/spec.md §2.9)
+  // perf budget probe: data ready → rows committed and painted (docs/spec.md §2.9)
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
       performance.mark('optimo:day-paint')
@@ -123,21 +156,24 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
     return () => cancelAnimationFrame(raf)
   }, [items])
 
-  // initial scroll: an hour before now on today, else the day start
+  // initial scroll: a little above now on today, else the top (the morning bookend). The day's rows arrive after the
+  // first render and re-lay the map, so the auto position follows the map until the user scrolls away from it.
+  const auto = useRef<{ day: string; y: number } | null>(null)
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const target = isToday ? Math.max(0, now - 60) : settings.day_start
-    el.scrollTop = (target / 60) * hourPx
+    if (auto.current?.day === day && Math.abs(el.scrollTop - auto.current.y) > 1) return // the user has scrolled
+    el.scrollTop = isToday ? Math.max(0, map.minToY(now) - 160) : 0
+    auto.current = { day, y: el.scrollTop }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day, hourPx])
+  }, [day, map])
 
-  // track the viewport (rAF-throttled) so virtualisation follows scrolling
+  // track the viewport (rAF-throttled) in the inner element's coordinates
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     let raf = 0
-    const read = () => setView({ top: el.scrollTop, h: el.clientHeight })
+    const read = () => setView({ top: el.scrollTop - (innerRef.current?.offsetTop ?? 0), h: el.clientHeight })
     const on = () => {
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(read)
@@ -153,28 +189,28 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
     }
   }, [])
 
-  const onSelect = useCallback(
-    (item: Item) => {
-      const s = useUI.getState()
-      if (s.selectedId === item.key) set({ editingId: item.key })
-      else set({ selectedId: item.key })
-    },
-    [set],
-  )
+  const onOpen = useCallback((item: Item) => set({ editingId: item.key, selectedId: item.key }), [set])
+  const onFocusItem = useCallback((item: Item) => {
+    if (useUI.getState().selectedId !== item.key) useUI.getState().set({ selectedId: item.key })
+  }, [])
   const onToggle = useCallback((item: Item) => void toggleComplete(item), [])
   const onResize = useCallback((item: Item, d: number) => void resizeItem(item, d), [])
-  const onCategory = useCallback((item: Item, category_id: string) => void patchItem(item, { category_id }, 'Category changed'), [])
+  const openDaySettings = useCallback(() => {
+    set({ view: 'settings', mobileTab: 'board', selectedId: null })
+    requestAnimationFrame(() => document.getElementById('set-day')?.scrollIntoView({ block: 'start' }))
+  }, [set])
+  const onBookend = useCallback((which: 'start' | 'end') => void updateSettings({ bookend_done: nextBookendDone(settings.bookend_done, day, which) }), [settings.bookend_done, day])
 
-  // paint a block (arc 5a slice 4): press-drag on empty space; the keyboard slot shares the ghost and the commit
+  // paint a block (arc 5a): press-drag on empty space; the keyboard slot shares the ghost and the commit
   const ghostRef = useRef<HTMLDivElement>(null)
   const onPaint = useCallback((start: number, len: number) => void paintBlock(day, start, len), [day])
-  usePaint(innerRef, scrollRef, ghostRef, { day, hourPx, snap: settings.snap, clock24: settings.clock24, onCommit: onPaint })
+  usePaint(innerRef, scrollRef, ghostRef, { day, map, snap: settings.snap, clock24: settings.clock24, onCommit: onPaint })
   const onSlotPaint = useCallback(
     async (start: number, len: number) => {
       const row = await paintBlock(day, start, len)
-      // hand focus to the new block so Enter opens its editor
+      // hand focus to the new row's chip so Enter opens its editor
       for (let i = 0; i < 30; i++) {
-        const btn = innerRef.current?.querySelector<HTMLElement>(`[data-id="${row.id}"] .blk-main`)
+        const btn = innerRef.current?.querySelector<HTMLElement>(`[data-id="${row.id}"] .node-chip`)
         if (btn) return btn.focus()
         await new Promise((r) => requestAnimationFrame(r))
       }
@@ -189,11 +225,21 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
     },
     [timed, timedEvents],
   )
-  const slotStart = useCallback(() => (isToday ? now : Math.max(settings.day_start, ((scrollRef.current?.scrollTop ?? 0) / hourPx) * 60)), [isToday, now, settings.day_start, hourPx])
+  const slotStart = useCallback(() => (isToday ? now : mapRef.current.yToMin(view.top)), [isToday, now, view.top])
 
-  function createAt(min: number, len = settings.default_duration) {
-    set({ draft: { start_at: isoAt(day, min), duration_min: len }, selectedId: null })
-  }
+  const createAt = useCallback(
+    (min: number, room = settings.default_duration) => {
+      useUI.getState().openWizard('timeline', { start_at: isoAt(day, min), duration_min: Math.min(settings.default_duration, room) })
+    },
+    [day, settings.default_duration],
+  )
+  const onGapAdd = useCallback(
+    (start: number) => {
+      const seg = map.segments.find((s) => s.kind === 'gap' && s.from === start)
+      createAt(start, seg ? seg.to - seg.from : settings.default_duration)
+    },
+    [map, createAt, settings.default_duration],
+  )
   function onBackground(e: MouseEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget) return
     if (useUI.getState().selectedId) {
@@ -201,62 +247,57 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
       return
     }
     const y = e.clientY - e.currentTarget.getBoundingClientRect().top
-    createAt(Math.floor(((y / hourPx) * 60) / 15) * 15)
+    createAt(Math.floor(snapTo(map.yToMin(y), 1) / 15) * 15)
   }
 
+  const names = { start: settings.day_start_name?.trim() || BOOKEND_NAMES.start, end: settings.day_end_name?.trim() || BOOKEND_NAMES.end }
+  const ticked = settings.bookend_done?.[day] ?? {}
   return (
-    <div className="tl" ref={scrollRef} data-testid="timeline" data-day={day}>
+    <div className="tl spine-tl" ref={scrollRef} data-testid="timeline" data-day={day}>
       <AllDayStrip tasks={allDay} events={allDayEvents.map((e) => e.event)} cats={cats} />
-      <div
-        className="tl-inner"
-        ref={setInner}
-        style={{ height: 24 * hourPx, ['--hour' as string]: `${hourPx}px` }}
-        onClick={onBackground}
-        role="presentation"
-      >
-        <PaintSlot hourPx={hourPx} snap={settings.snap} clock24={settings.clock24} startAt={slotStart} ghostRef={ghostRef} busy={busyAt} onCommit={onSlotPaint} />
-        <HourRail hourPx={hourPx} dayStart={settings.day_start} dayEnd={settings.day_end} clock24={settings.clock24} now={isToday ? now : null} />
-        {free.map((r) => (
-          <FreeGap key={`${r.start}`} gap={r} day={day} hourPx={hourPx} clock24={settings.clock24} defaultDuration={settings.default_duration} onAdd={createAt} />
-        ))}
-        {placedEvents
-          .filter((p) => p.end >= win.from && p.start <= win.to)
-          .map((p) => (
-            <EventBlock key={p.id} item={eventByKey.get(p.id)!} col={p.col} cols={p.cols} hourPx={hourPx} clock24={settings.clock24} />
+      <div className="tl-inner" ref={setInner} style={{ height: map.height }} onClick={onBackground} role="presentation">
+        <PaintSlot map={map} snap={settings.snap} clock24={settings.clock24} startAt={slotStart} ghostRef={ghostRef} busy={busyAt} onCommit={onSlotPaint} />
+        <Rail map={map} labels={labels} clock24={settings.clock24} />
+        {map.segments
+          .filter((s) => s.kind === 'gap')
+          .map((s) => (
+            <Gap key={`${s.from}`} day={day} from={s.from} to={s.to} y={s.y} h={s.h} clock24={settings.clock24} onAdd={onGapAdd} />
           ))}
-        {clusters.map((c) => (
-          <ClusterPill key={c[0].key} items={c} hourPx={hourPx} clock24={settings.clock24} cats={cats} />
-        ))}
-        {visible.map((p) => {
-          const item = byKey.get(p.id)!
+        {startSeg && <AnchorRow which="start" min={settings.day_start} y={startSeg.y} h={startSeg.kind === 'anchor' ? startSeg.h : 72} name={names.start} done={!!ticked.start} clock24={settings.clock24} onOpen={openDaySettings} onToggle={onBookend} />}
+        {endSeg && <AnchorRow which="end" min={settings.day_end} y={endSeg.kind === 'anchor' ? endSeg.y : map.minToY(settings.day_end)} h={endSeg.kind === 'anchor' ? endSeg.h : 72} name={names.end} done={!!ticked.end} clock24={settings.clock24} onOpen={openDaySettings} onToggle={onBookend} />}
+        {timedEvents
+          .filter((e) => map.minToY(e.end) >= winTop && map.minToY(e.start) <= winBottom)
+          .map((e) => (
+            <EventBlock key={e.key} item={e} map={map} col={colOf.get(e.key) ?? 0} textCols={stacked.get(e.key)?.cols} textTop={stacked.has(e.key) ? stacked.get(e.key)!.y - map.minToY(e.start) : undefined} clock24={settings.clock24} />
+          ))}
+        {visible.map((item) => {
+          const cat = cats.get(item.task.category_id ?? '')
           return (
-            <Block
-              key={p.id}
-              item={item}
-              col={p.col}
-              cols={p.cols}
-              hourPx={hourPx}
-              cat={cats.get(item.task.category_id ?? '')}
-              cats={catList}
-              icon={taskIcon(item.task.title, cats.get(item.task.category_id ?? '')?.icon, settings.iconOverrides)}
+            <NodeRow
+              key={item.key}
+              item={byKey.get(item.key)!}
+              map={map}
+              col={colOf.get(item.key) ?? 0}
+              textCols={stacked.get(item.key)?.cols}
+              textTop={stacked.has(item.key) ? stacked.get(item.key)!.y - map.minToY(item.start) : undefined}
+              cat={cat}
+              icon={taskIcon(item.task.title, cat?.icon, settings.iconOverrides)}
               selected={selectedKey === item.key}
               running={isToday && !item.task.completed_at && now >= item.start && now < item.end}
               late={isLate(item.end, !!item.task.completed_at, isToday ? now : null)}
-              dim={isOutOfBounds(item, settings.day_start, settings.day_end)}
               clock24={settings.clock24}
               snap={settings.snap}
-              now={now}
-              onSelect={onSelect}
+              onOpen={onOpen}
+              onFocusItem={onFocusItem}
               onToggle={onToggle}
               onResize={onResize}
-              onCategory={onCategory}
             />
           )
         })}
-        {isToday && <NowLine now={now} hourPx={hourPx} clock24={settings.clock24} />}
-        <DropGhost day={day} hourPx={hourPx} clock24={settings.clock24} />
+        {isToday && <NowLine now={now} y={map.minToY(now)} clock24={settings.clock24} />}
+        <DropGhost day={day} map={map} clock24={settings.clock24} />
         <PaintGhost ref={ghostRef} />
-        {overlay?.(hourPx)}
+        {overlay?.(map)}
       </div>
     </div>
   )

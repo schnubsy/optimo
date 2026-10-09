@@ -50,6 +50,7 @@ test.describe('performance at 5k tasks', () => {
       day.push((await lastMeasure(page, 'optimo:day-ready'))!)
     }
     const dayMax = Math.max(...day)
+    const dayMed = [...day].sort((a, b) => a - b)[Math.floor(day.length / 2)]
 
     // inbox filter
     const inboxCount = await page.getByTestId('inbox').locator('.n').textContent()
@@ -71,13 +72,15 @@ test.describe('performance at 5k tasks', () => {
     })
     const blk = page.getByTestId('block').first()
     await blk.scrollIntoViewIfNeeded()
-    const b = (await blk.locator('.blk-main').boundingBox())!
-    await page.mouse.move(b.x + 20, b.y + 5)
+    const b = (await blk.getByTestId('chip').boundingBox())!
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
     await page.mouse.down()
     const frames = await page.evaluate(() => {
       ;(window as any).__frames = 0
-      const tick = () => {
+      ;(window as any).__ts = [] as number[]
+      const tick = (t: number) => {
         ;(window as any).__frames++
+        ;(window as any).__ts.push(t)
         if ((window as any).__frames < 1000) requestAnimationFrame(tick)
       }
       requestAnimationFrame(tick)
@@ -85,27 +88,35 @@ test.describe('performance at 5k tasks', () => {
     })
     let transformOnly = true
     for (let i = 1; i <= 60; i++) {
-      await page.mouse.move(b.x + 20, b.y + 5 + i * 3)
-      if (i === 30) transformOnly = await page.locator('.blk.grab').evaluate((el) => (el as HTMLElement).style.transform.startsWith('translate3d'))
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + i * 3)
+      if (i === 30) transformOnly = await page.locator('.node.grab').evaluate((el) => (el as HTMLElement).style.transform.startsWith('translate3d'))
     }
     await page.mouse.up()
     const long = (await page.evaluate(() => (window as any).__long as number[])).filter((d) => d > 50)
     const rafFrames = (await page.evaluate(() => (window as any).__frames)) - frames
+    // arc 6: frame-time p95 while dragging on the spine (60 fps budget → ≤ 20 ms)
+    const ts = await page.evaluate(() => (window as any).__ts as number[])
+    const deltas = ts.slice(1).map((t, i) => t - ts[i]).sort((a, b) => a - b)
+    const p95 = deltas.length ? deltas[Math.floor(deltas.length * 0.95)] : 0
 
     const table = [
       '| budget | measured | limit | result |',
       '|---|---|---|---|',
       `| day view ready after data (max of 6 day switches) | ${dayMax.toFixed(1)} ms | < 200 ms | ${dayMax < 200 ? '🟢' : '🔴'} |`,
       `| inbox filter → rendered (max of 4 queries over ${inboxCount?.trim()}) | ${filterMax.toFixed(1)} ms | < 50 ms | ${filterMax < 50 ? '🟢' : '🔴'} |`,
+      `| day view ready after data (median of 6, arc 6 spine) | ${dayMed.toFixed(1)} ms | ≤ 50 ms | ${dayMed <= 50 ? '🟢' : '🔴'} |`,
       `| drag: 60 pointer moves, long tasks > 50 ms | ${long.length} | 0 | ${long.length === 0 ? '🟢' : '🔴'} |`,
+      `| drag frame time p95 | ${p95.toFixed(1)} ms | ≤ 20 ms | ${p95 <= 20 ? '🟢' : '🔴'} |`,
       `| drag moves the slab by transform only | ${transformOnly ? 'yes' : 'no'} | yes | ${transformOnly ? '🟢' : '🔴'} |`,
       `| rAF frames delivered during the drag | ${rafFrames} | — | info |`,
       `| library | ${n} rows (5 000 tasks + 200 series) + 670 calendar events | 5 200 + 670 | 🟢 |`,
     ].join('\n')
     console.log(table)
-    if (process.env.EVIDENCE) writeFileSync(`docs/evidence/arc2-slice-7-perf-${info.project.name}.md`, `# perf.spec.ts — ${new Date().toISOString()}\n\nday switches (ms): ${day.map((d) => d.toFixed(1)).join(', ')}\n\nfilter (ms): ${filt.map((d) => d.toFixed(1)).join(', ')}\n\n${table}\n`)
+    if (process.env.EVIDENCE) writeFileSync(`docs/evidence/arc6-slice-3-perf-${info.project.name}.md`, `# perf.spec.ts — ${new Date().toISOString()}\n\nday switches (ms): ${day.map((d) => d.toFixed(1)).join(', ')}\n\nfilter (ms): ${filt.map((d) => d.toFixed(1)).join(', ')}\n\n${table}\n`)
 
     expect(dayMax).toBeLessThan(200)
+    expect(dayMed).toBeLessThanOrEqual(50)
+    expect(p95).toBeLessThanOrEqual(20)
     expect(filterMax).toBeLessThan(50)
     expect(long).toEqual([])
     expect(transformOnly).toBe(true)

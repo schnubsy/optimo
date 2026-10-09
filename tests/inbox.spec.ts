@@ -100,10 +100,16 @@ test.describe('inbox & quick-add', () => {
     let s: ReturnType<typeof seedDay>
     const { errors } = await openApp(page, context, { seed: (x) => (s = seedDay(x)) })
     const tl = page.getByTestId('timeline')
-    await tl.evaluate((el) => (el.scrollTop = 16 * 72))
+    // arc 6: the day's segment map gives 17:00's y (inside the compressed 16:45–18:00 gap)
+    const y17 = await page.evaluate(() => {
+      const o = (window as any).__optimo
+      const m = o.maps.get(o.ui.getState().date)
+      return [m.minToY(17 * 60), m.minToY(17 * 60 + 12)] as [number, number]
+    })
+    await tl.evaluate((el, y) => (el.scrollTop = y - 200), y17[0])
     const src = (await inboxRow(page, 'Reply to Ellen').locator('.irow-main').boundingBox())!
     const inner = (await page.locator('.tl-inner').boundingBox())!
-    const targetY = inner.y + 17 * 72 + 10 // 17:00 + a little
+    const targetY = inner.y + y17[1] // the dragged row's top (10 px above the pointer) lands just after 17:00
     await page.mouse.move(src.x + 40, src.y + 10)
     await page.mouse.down()
     for (let i = 1; i <= 12; i++) await page.mouse.move(src.x + 40 + ((inner.x + 200 - src.x - 40) * i) / 12, src.y + 10 + ((targetY - src.y - 10) * i) / 12)
@@ -115,7 +121,7 @@ test.describe('inbox & quick-add', () => {
     await expect(inboxRow(page, 'Reply to Ellen')).toHaveCount(0)
 
     // and back: drag the new block onto the inbox rail
-    const blk = (await page.locator(`[data-testid="block"][data-id="${s!.inbox.ellen}"] .blk-main`).boundingBox())!
+    const blk = (await page.locator(`[data-testid="block"][data-id="${s!.inbox.ellen}"] [data-testid="chip"]`).boundingBox())!
     const rail = (await page.getByTestId('inbox').boundingBox())!
     await page.mouse.move(blk.x + 20, blk.y + 5)
     await page.mouse.down()
@@ -129,9 +135,8 @@ test.describe('inbox & quick-add', () => {
   test('unschedule from the editor (mobile path)', async ({ page, context }) => {
     let s: ReturnType<typeof seedDay>
     await openApp(page, context, { seed: (x) => (s = seedDay(x)), at: '12:00' })
-    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.guitar}"] .blk-main`)
+    const b = page.locator(`[data-testid="block"][data-id="${s!.ids.guitar}"] [data-testid="chip"]`)
     await b.scrollIntoViewIfNeeded()
-    await b.click()
     await b.click()
     await page.getByRole('switch', { name: 'On the timeline (off = inbox)' }).click()
     await page.getByTestId('sheet-save').click()
