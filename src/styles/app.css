@@ -173,6 +173,9 @@
 .toast { pointer-events: auto; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-2) 0 var(--sp-5); min-height: 48px; background: var(--ink); color: var(--canvas); border-radius: var(--r-pill); font-size: var(--fs-14); font-weight: var(--fw-semibold); box-shadow: var(--shadow-float); }
 .toast button { height: 36px; padding: 0 var(--sp-4); background: color-mix(in oklch, var(--canvas) 16%, transparent); border: 0; border-radius: var(--r-pill); font-weight: var(--fw-bold); color: inherit; }
 .is-mobile .toast-wrap { bottom: 96px; width: calc(100% - 32px); }
+/* arc 7 slice 3: toasts name their task — a long title wraps inside the pill instead of pushing Undo off it */
+.toast > span { flex: 1; min-width: 0; padding-block: var(--sp-2); overflow-wrap: anywhere; }
+.toast { max-width: min(560px, calc(100vw - 32px)); }
 
 /* ---------- mobile ---------- */
 .is-mobile .body { grid-template-columns: minmax(0, 1fr); }
@@ -272,7 +275,11 @@
 /* #20: h3 + aria-labelledby replaces <legend> (WebKit mobile straddled the legend across the card's top edge) */
 .settings .set-row > span, .settings legend, .settings h3 { float: left; width: 100%; margin: 0 0 var(--sp-1); padding: 0; font-size: var(--fs-13); font-weight: var(--fw-semibold); color: var(--ink-2); }
 .settings select, .settings input:not([type='file']) { min-height: 48px; padding: 0 var(--sp-3); background: var(--surface); border: 0; border-radius: var(--r-sm); box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-15); font-variant-numeric: tabular-nums; max-width: 240px; color: var(--ink); }
-.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+/* arc 7 slice 3: a field fills its card up to 240px and never past it (a number field's intrinsic width ran over the
+   card's right edge at 1024–1440); the grid's floor shrinks with a narrow card instead of overflowing it */
+.settings .set-row select, .settings .set-row input:not([type='file']) { box-sizing: border-box; width: 100%; min-width: 0; }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: var(--sp-3); }
+.set-grid > .set-row { min-width: 0; }
 .settings .seg > div { display: flex; flex-wrap: wrap; gap: var(--sp-1); clear: both; }
 .settings .seg button { min-height: var(--tap-min); padding: 0 var(--sp-4); background: var(--surface); border: 0; border-radius: var(--r-pill); font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink-2); }
 .settings .seg button[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
@@ -310,6 +317,8 @@
 .is-mobile .pane { min-height: 0; }
 .is-mobile .pane > * { padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); }
 .is-mobile .pane.m-day > .day { padding-top: 0; }
+/* arc 7 slice 3: AI / Settings (and its sub-pages) carry no date header on iPhone — content starts under the safe area */
+.is-mobile .pane.no-hdr > :not(.sr-only) { padding-top: calc(16px + env(safe-area-inset-top)); }
 .is-mobile .tl { padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); padding-bottom: var(--scroll-pad-bottom); scroll-padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); }
 .is-mobile .backlog .ilist, .is-mobile .month, .is-mobile .page { padding-bottom: var(--scroll-pad-bottom); }
 .is-mobile .allday { top: calc(var(--header-h-mobile) + env(safe-area-inset-top) - 8px); }
@@ -338,6 +347,25 @@
 .gear { flex: none; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink-2); }
 .gear.on { background: var(--accent); color: var(--ink-on-accent); }
 .pane-hdr .sync-badge { flex: none; }
+
+/* arc 7 slice 3 (P0 at 1024): the header never pushes AI + Settings off-screen. The title and controls keep their size;
+   the quick-add pill gives way — down to 160px, then (narrow panes) a 44px "+" circle that opens the command line
+   across the header while it has focus. The placeholder is picked to fit whole (QuickAdd `fit`). */
+.pane-hdr { container: panehdr / inline-size; }
+.pane-qa { min-width: 160px; }
+@container panehdr (max-width: 820px) {
+  .pane-qa { position: static; flex: 0 0 44px; min-width: 44px; max-width: 44px; }
+  .pane-qa .cmd .in { position: relative; width: 44px; padding: 0; gap: 0; }
+  .pane-qa .cmd .in .p { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .pane-qa .cmd input { width: 100%; padding: 0; color: transparent; cursor: pointer; border-radius: var(--r-pill); }
+  .pane-qa .cmd input::placeholder { color: transparent; }
+  /* open: the command line spans the header (the pane header is the containing block) */
+  .pane-qa:focus-within .cmd { position: absolute; z-index: 5; left: var(--sp-4); right: var(--sp-4); top: 50%; translate: 0 -50%; }
+  .pane-qa:focus-within .cmd .in { width: auto; padding: 0 6px 0 var(--sp-4); gap: 10px; box-shadow: var(--focus-ring), var(--shadow-float); }
+  .pane-qa:focus-within .cmd .in .p { position: static; display: inline; }
+  .pane-qa:focus-within .cmd input { padding: 0; color: var(--ink); cursor: text; }
+  .pane-qa:focus-within .cmd input::placeholder { color: var(--ink-2); }
+}
 
 /* quick-add: suggested glyph chip + picker; the FAB's bottom sheet */
 .parse-glyph { pointer-events: auto; flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); position: relative; }

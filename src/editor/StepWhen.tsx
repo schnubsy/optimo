@@ -71,15 +71,15 @@ export interface StepWhenProps {
   settings: SettingsData
   presets: number[]
   onChange: (patch: Partial<WizardDraft>) => void
-  onContinue: () => void
   /** Add to Inbox: unscheduled, straight to ③ */
   onInbox: () => void
   /** Set Timezone — slice 7 opens the picker; until then the wizard toasts */
   onTimezone: () => void
 }
 
-/** ② When (mockups 02 / 05 / 03): date row, Time (••• menu + wheel), Duration (••• sheet + presets row), Continue. */
-export function StepWhen({ draft, settings, presets, onChange, onContinue, onInbox, onTimezone }: StepWhenProps) {
+/** ② When (mockups 02 / 05 / 03): date row, Time (••• menu + wheel), Duration (••• sheet + presets row); Continue is
+ *  the wizard's docked footer (arc 7 slice 3). */
+export function StepWhen({ draft, settings, presets, onChange, onInbox, onTimezone }: StepWhenProps) {
   const [menu, setMenu] = useState(false)
   const [sheet, setSheet] = useState(false)
   const dateInput = useRef<HTMLInputElement>(null)
@@ -164,12 +164,6 @@ export function StepWhen({ draft, settings, presets, onChange, onContinue, onInb
           </div>
         </div>
       </section>
-
-      <div className="wiz-foot">
-        <button type="button" className="wiz-cta" onClick={onContinue} data-testid="wizard-continue">
-          Continue
-        </button>
-      </div>
 
       {sheet && (
         <DurationSheet

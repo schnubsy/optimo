@@ -40,6 +40,8 @@ test.describe('Plan tab (arc 3)', () => {
     await ask(page, 'Forecast draft, swim, email')
     await expect(page.getByTestId('plan-down')).toContainText('Planner isn’t connected yet')
     expect(server.planCalls[0]).toMatchObject({ action: 'propose', status: 503 })
+    // arc 7 slice 3: the iPhone AI tab has no date header (and so no sync dot) — read it on the Timeline tab
+    if (!(await page.getByTestId('sync-badge').count())) await page.getByTestId('tab-timeline').click()
     await expect(page.getByTestId('sync-badge')).toHaveAttribute('data-state', 'synced')
     // the browser logs the 503 itself; anything else is a bug
     expect(errors.filter((e) => !/status of 503/.test(e))).toEqual([])
@@ -142,7 +144,9 @@ test.describe('Plan tab (arc 3)', () => {
       d.setDate(d.getDate() + 1)
       return { day: d.getDate(), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
     })
-    await expect(page.getByTestId('hdr-title')).toContainText(String(tomorrow.day))
+    // arc 7 slice 3: the iPhone AI tab carries no date header — there the plan's own day control says Tomorrow
+    if (await page.getByTestId('hdr-title').count()) await expect(page.getByTestId('hdr-title')).toContainText(String(tomorrow.day))
+    else await expect(page.getByTestId('plan-day-tomorrow')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.plan-day')).toHaveAttribute('aria-label', `Timeline for ${tomorrow.key}`)
     await ask(page, 'Forecast draft, swim, email')
     await expect(page.getByTestId('plan-block')).toHaveCount(3)

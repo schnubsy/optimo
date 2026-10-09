@@ -1,4 +1,5 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef } from 'react'
+import { useEscapeClose } from './Sheet'
 import * as repo from '../data/repo'
 import { DEFAULT_DURATION_PRESETS } from '../data/types'
 import { Icon } from '../icons/Icon'
@@ -17,23 +18,17 @@ export function DurationSheet({ value, presets, onChange, onClose }: { value: nu
     ref.current?.querySelector<HTMLElement>('.wheel-scroll')?.focus()
   }, [])
   const save = (list: number[]) => repo.updateSettings({ duration_presets: list })
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      e.stopPropagation()
-      onClose()
-    }
-  }
+  useEscapeClose(onClose)
   const canAdd = value > 0 && !presets.includes(value)
   return (
     <div className="dur-wrap" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} className="dur-sheet" role="dialog" aria-modal="true" aria-labelledby="dur-h" onKeyDown={onKey} data-testid="duration-sheet">
-        <header className="dur-hd">
+      <div ref={ref} className="dur-sheet" role="dialog" aria-modal="true" aria-labelledby="dur-h" data-testid="duration-sheet">
+        <div className="dur-hd">
           <h2 id="dur-h">Duration</h2>
           <button type="button" className="dur-x" aria-label="Close duration" onClick={onClose}>
             <Icon name="ui-close" size={20} />
           </button>
-        </header>
+        </div>
         <div className="dur-wheels">
           <Wheel
             className="dur-wheel"

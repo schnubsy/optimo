@@ -186,10 +186,8 @@ export function Week({ date, cats, settings, overview = false, hidden = false }:
     <section className={`week spine-week ${overview ? 'wov' : ''} ${hidden ? 'is-hidden' : ''}`} aria-label="Week" data-testid="week" aria-hidden={hidden || undefined}>
       {!overview && (
         <div className="whead">
-          <div className="wnav">
-            <button type="button" className="nav" aria-label="Previous week" onClick={() => set({ date: addDays(date, -7) })}>‹</button>
-            <button type="button" className="nav" aria-label="Next week" onClick={() => set({ date: addDays(date, 7) })}>›</button>
-          </div>
+          {/* arc 7 slice 3: the pane header's ‹ › step by week here — one set of arrows; the cell keeps the rail column */}
+          <div className="wnav" aria-hidden="true" />
           {days.map((d) => (
             <button type="button" key={d} className={`wday ${d === today ? 'today' : ''} ${d === date ? 'sel' : ''}`} onClick={() => set({ date: d, view: 'day', mobileTab: 'board' })} data-testid="week-day">
               <b>{shortDay(fromKey(d))}</b>
