@@ -8,6 +8,8 @@ title field keeps the parser · **4** day bookends as anchor rows, names in Sett
 **7** header stats line dropped · **8** AI subtasks + Set Timezone built now · **9** light mode mirrors dark ·
 **10** this arc runs before arc 5b.
 
+Plan-mode answers (Mark, 2026-10-09): bookends show the ring — a per-day tick stored in settings `bookend_done`, never a task row (images 01/09 win over the sheet) · category hues unchanged, glyph/ring move to L 0.66 / C 0.10 (blue delta → P1) · slices 2/5/6 run as parallel worktree agents with per-slice CSS files.
+
 RULE: originality (rewrites the CLAUDE.md rule + lessons 2026-09-26 / 2026-09-27 in slice 1): structure, flow, sizes and
 colours may follow the 2026-10-09 mockups exactly; glyph artwork is always drawn in-repo on the 24 px grid (never traced
 from any icon set), copy strings are ours (free-time phrases, bookend names, suggestion seeds), the name stays optimo.
@@ -19,6 +21,7 @@ RULE: `db/007_task_tz.sql` is additive (nullable column) — applied inside the 
 destructive SQL anywhere in this arc.
 
 === SLICE 1 — Tokens, glyphs, originality rule ===
+Status: done 3ffe2d3
 Scope: palette + type + geometry tokens per `mockups.md` → Palette; new glyphs; the rule rewrite.
 Files: src/styles/tokens.css, tokens-a11y.css, src/icons/set.ts (+ filled variants), src/icons/README.md, CLAUDE.md (Project rules), docs/lessons.md, docs/spec.md §6.
 Implementation: dark `--canvas` → pure black, `--panel #1C1C1E`, new `--card`, `--node`, `--spine`, `--accent oklch(0.75 0.095 26)`, `--accent-tint`, category glyph/ring lightness 0.66 / C 0.10, editor-header formula (cat hue at L 0.58 C 0.08), week past-chip formula (L 0.78 C 0.08); light mode mirrored (canvas warm white, panel `--n-0`, card `--n-100`, node `--n-200`, accent as today). Type: 30/800 title, 22/700 row title, 20/600 list title, 18/600 numeral, 17 body, 15/600 meta, 13/600 weekday, 11/600 tab. Geometry tokens: `--node-size 56`, `--node-size-week 48`, `--spine-x 78`, `--gutter-right 41`, `--text-col 119`, `--ring 22`, `--min-px 2`, `--week-hour-px 36`, `--gap-cap 120`, `--tabbar-h 60`, `--fab-size 58`. Draw: ui-inbox (tray), ui-timeline (spine-list), ui-ai (four-point sparkle), ui-settings restyled, ui-grid-2x3, ui-more, ui-repeat, ui-timer, ui-bell-off, ui-palette, ui-globe, ui-clock, ui-plus-circle; 64 + filled set stays consistent in weight. Rewrite the originality rule (CLAUDE.md Project rules, lessons RULE lines, spec §6) to the RULE above.
