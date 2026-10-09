@@ -1,0 +1,46 @@
+/* arc 6 slice 2 — header + date strip (mockups 01 / 08 / 10). This file loads before app.css (Header is imported
+   ahead of it in Planner.tsx), so every rule carries an element or doubled class to win over the arc-2 header rules. */
+
+/* the mobile header is a solid 131px canvas band now (title 8..46 · weekday 48..62 · disc 66..98 · chips 107..119) */
+:root:root { --header-h-mobile: 131px; }
+
+header.hdr {
+  box-sizing: border-box;
+  height: calc(131px + env(safe-area-inset-top));
+  padding: calc(8px + env(safe-area-inset-top)) 0 0;
+  background: var(--canvas);
+  border: 0;
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+header.hdr .hdr-top { display: flex; align-items: center; gap: var(--sp-2); height: 38px; padding: 0 16px 0 24px; }
+header.hdr .hdr-title { margin: 0; min-width: 0; font: var(--type-title); letter-spacing: var(--ls-display); white-space: nowrap; }
+header.hdr .hdr-title-btn { padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; color: var(--ink); text-align: left; }
+.hdr-md { color: var(--ink); }
+header .hdr-year { color: var(--accent); }
+header.hdr .hdr-today { margin-left: auto; height: 28px; }
+
+/* sync state = a 12px dot at the right edge; words stay for screen readers (and the specs' toContainText) */
+header.hdr .sync-badge { flex: none; width: 12px; height: 12px; justify-content: center; margin-left: auto; }
+header.hdr .hdr-today + .sync-badge { margin-left: 0; }
+header.hdr .sync-badge i { width: 8px; height: 8px; }
+header.hdr .sync-badge .sb-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* strip: 7 columns across 20px side gutters (Sun centre x≈46, Sat centre x≈355 at 402 wide) */
+header.hdr .hdr-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; margin-top: 2px; padding: 0 20px; touch-action: pan-y; }
+header.hdr .hdr-day { height: auto; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-3); }
+header.hdr .hdr-day .wd { display: block; height: 14px; font: var(--type-weekday); line-height: 14px; color: var(--ink-3); }
+header.hdr .hdr-day b { display: grid; place-items: center; width: 32px; height: 32px; margin-top: 4px; border-radius: 50%; font: var(--type-numeral); color: var(--ink); }
+header.hdr .hdr-day.today:not(.sel) b { color: var(--accent-ink); }
+header.hdr .hdr-day.sel b { background: var(--accent); color: var(--ink-on-accent); }
+
+/* mini-chips: 12px --node discs, glyph in the category glyph colour, −3px overlap, max 4 then +n */
+.hdr-chips { display: flex; align-items: center; justify-content: center; height: 12px; margin-top: 9px; }
+.hdr-chip { flex: none; display: grid; place-items: center; width: 12px; height: 12px; border-radius: 50%; background: var(--node); color: var(--cat-glyph); }
+.hdr-chip + .hdr-chip { margin-left: -3px; }
+.hdr-chip .ic { display: block; }
+.hdr-more { margin-left: 2px; font-size: 9px; font-weight: var(--fw-bold); line-height: 12px; color: var(--ink-3); }
+
+/* desktop: same title grammar (accent year), no chevron — the ‹ › buttons carry the day nav */
+header.pane-hdr .pane-title h1 { color: var(--ink); }

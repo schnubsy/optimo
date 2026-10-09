@@ -17,8 +17,7 @@ async function dragBy(page: Page, from: { x: number; y: number }, dy: number) {
 test.describe('day timeline', () => {
   test('renders the day with free rows, overlap columns and the now line', async ({ page, context }) => {
     const { errors } = await openApp(page, context, { seed: seedDay })
-    // virtualised: only blocks near the viewport are mounted; the strip counts the whole day
-    await expect(page.getByTestId('stat-done')).toHaveText('1/10')
+    // virtualised: only blocks near the viewport are mounted
     await page.getByTestId('timeline').evaluate((el, y) => (el.scrollTop = y), 15 * (await hourPx(page)))
     expect(await page.getByTestId('block').count()).toBeGreaterThanOrEqual(4)
     await expect(page.getByTestId('free-row').first()).toBeVisible()
@@ -162,7 +161,6 @@ test.describe('day timeline', () => {
     await st.scrollIntoViewIfNeeded()
     await st.getByRole('button', { name: /^Mark .* done$/ }).click()
     await expect(st).toHaveClass(/done/)
-    await expect(page.getByTestId('stat-done')).toHaveText('2/10')
     await page.getByTestId('toast').getByRole('button', { name: 'Undo' }).click()
     await expect(st).not.toHaveClass(/done/)
     expect(errors).toEqual([])

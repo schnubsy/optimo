@@ -142,7 +142,7 @@ test.describe('Plan tab (arc 3)', () => {
       d.setDate(d.getDate() + 1)
       return { day: d.getDate(), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
     })
-    await expect(page.locator('.hdr-date, .hdr-title').first()).toContainText(String(tomorrow.day))
+    await expect(page.getByTestId('hdr-title')).toContainText(String(tomorrow.day))
     await expect(page.locator('.plan-day')).toHaveAttribute('aria-label', `Timeline for ${tomorrow.key}`)
     await ask(page, 'Forecast draft, swim, email')
     await expect(page.getByTestId('plan-block')).toHaveCount(3)

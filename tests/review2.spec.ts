@@ -8,23 +8,17 @@ const overlap = (a: { x: number; width: number; y: number; height: number }, b: 
 
 test.describe('Eye P0 guards (arc 2)', () => {
   for (const width of [1024, 1280])
-    test(`A2-P0-1 desktop header: title, stats and now pill never overprint (${width}px)`, async ({ page, context }, info) => {
+    test(`A2-P0-1 desktop header: title, now pill and quick-add never overprint (${width}px)`, async ({ page, context }, info) => {
       test.skip(info.project.name !== 'desktop', 'desktop header')
       await page.setViewportSize({ width, height: 800 })
       await openApp(page, context, { seed: seedDay })
       const title = (await box(page, '.pane-title h1'))!
-      const stats = (await box(page, '.pane-hdr .hdr-stats'))!
       const now = await box(page, '.hdr-now')
       const qa = (await box(page, '.pane-qa'))!
-      expect(overlap(title, stats)).toBe(false)
-      expect(overlap(stats, qa)).toBe(false)
-      if (now) expect(overlap(now, stats) || overlap(now, title)).toBe(false)
-      // the stats line keeps planned + free readable
-      expect(stats.width).toBeGreaterThan(110)
-      // …and nothing in it is clipped ("8h10" without its "free" is ambiguous)
-      expect(await page.locator('.pane-hdr .hdr-stats').evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
-      await expect(page.getByTestId('stat-planned')).toBeVisible()
-      await expect(page.getByTestId('stat-free')).toBeVisible()
+      expect(overlap(title, qa)).toBe(false)
+      if (now) expect(overlap(now, title) || overlap(now, qa)).toBe(false)
+      // arc 6: the stats line is gone from the header (decision 7)
+      await expect(page.locator('.hdr-stats')).toHaveCount(0)
       // the title is shown whole, not clipped
       expect(await page.locator('.pane-title h1').evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
     })

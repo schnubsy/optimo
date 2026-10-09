@@ -358,9 +358,6 @@
 .plan-learned p { margin: 0 0 var(--sp-2); }
 
 /* ================= chrome (design spec §5.5–5.8) ================= */
-.hdr-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: var(--fs-12); font-weight: var(--fw-semibold); color: var(--ink-2); white-space: nowrap; }
-.hdr-stats b { color: var(--ink); font-weight: var(--fw-bold); }
-.hdr-stats .hdr-late b { color: var(--danger-ink); }
 .hdr-date { font-weight: var(--fw-semibold); color: var(--accent-ink); }
 .hdr-today { height: 32px; padding: 0 var(--sp-3); border: 0; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-ink); font-size: var(--fs-12); font-weight: var(--fw-bold); }
 
@@ -372,8 +369,6 @@
 .hdr-top .sync-badge { margin-left: auto; pointer-events: auto; }
 .hdr-title { margin: 0; font-size: var(--fs-22); font-weight: var(--fw-black); letter-spacing: var(--ls-display); line-height: 1.2; }
 .hdr-title-btn { padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; color: var(--ink); text-align: left; }
-.hdr .hdr-stats { margin: 2px 0 6px; transition: opacity var(--dur-tab) var(--ease-standard); }
-.hdr.scrolled .hdr-stats { opacity: 0; }
 .hdr-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; pointer-events: auto; touch-action: pan-y; }
 .hdr-day { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-2); }
 .hdr-day .wd { font-size: var(--fs-10); font-weight: var(--fw-semibold); line-height: 1; }
@@ -407,7 +402,7 @@
   display: grid; place-items: center; background: var(--accent); color: var(--ink-on-accent); box-shadow: var(--shadow-fab); transition: transform var(--dur-instant) ease; }
 .fab:active { transform: scale(var(--scale-press)); }
 
-/* desktop pane header: segmented pill, title, stats, quick-add pill, gear, sync */
+/* desktop pane header: segmented pill, title, quick-add pill, gear, sync */
 .pane-hdr { position: relative; z-index: 15; display: flex; align-items: center; gap: var(--sp-3); min-height: var(--header-h-desktop); padding: 0 var(--sp-4); background: var(--header-fade); flex-wrap: nowrap; min-width: 0; }
 .segmented { flex: none; display: flex; gap: 2px; padding: 3px; background: var(--surface); border-radius: var(--r-pill); box-shadow: var(--shadow-bar); }
 .segmented button { height: 34px; padding: 0 var(--sp-4); border: 0; border-radius: var(--r-pill); background: none; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--ink-2); }
@@ -417,8 +412,6 @@
 .pane-title .nav { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-2); }
 .pane-title .nav:hover { background: var(--surface-hover); color: var(--ink); }
 .hdr-now { flex: none; margin-left: var(--sp-1); padding: 2px 8px; border-radius: var(--r-pill); background: var(--now-flag-bg); color: var(--now-flag-fg); font-size: var(--fs-11); font-weight: var(--fw-black); }
-.pane-hdr .hdr-stats { flex: 1 1 0; min-width: 160px; flex-wrap: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pane-hdr .hdr-stats span { flex: none; }
 /* arc 3: the Plan button joins the gear — quick-add gives up 40px of its floor so the sync badge stays on screen */
 .pane-qa { flex: 0 1 280px; min-width: 140px; max-width: 520px; margin-left: auto; position: relative; }
 /* desktop header: the sync state is its dot (words kept for screen readers, full text in the tooltip) */
@@ -430,8 +423,6 @@
 .gear { flex: none; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink-2); }
 .gear.on { background: var(--accent); color: var(--ink-on-accent); }
 .pane-hdr .sync-badge { flex: none; }
-/* narrower desktops keep planned + free; done / late / inbox live in their own views */
-@media (max-width: 1366px) { .pane-hdr .hdr-stats span:nth-child(n + 3) { display: none; } }
 
 /* quick-add: suggested glyph chip + picker; the FAB's bottom sheet */
 .parse-glyph { pointer-events: auto; flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); position: relative; }

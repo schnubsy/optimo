@@ -89,6 +89,12 @@ describe('dayStats', () => {
     const st = dayStats(items, 360, 1320, 650)
     expect(st).toEqual({ planned: 180, free: 780, done: 1, total: 3, late: 1 })
   })
+  it('calendar events take free time but are not planned (moved here from the arc-2 header stats spec)', () => {
+    const items = [{ key: 'a', start: 540, end: 660, task: { completed_at: null, all_day: false } }] as never
+    const st = dayStats(items, 360, 1320, null, [{ start: 630, end: 675 }])
+    expect(st.planned).toBe(120)
+    expect(st.free).toBe(960 - 135)
+  })
 })
 
 describe('visibleWindow', () => {

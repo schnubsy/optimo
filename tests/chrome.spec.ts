@@ -186,3 +186,127 @@ test.describe('desktop chrome', () => {
     await page.screenshot({ path: 'docs/evidence/arc2-slice-3-icon-sheet-desktop.png', fullPage: true })
   })
 })
+
+// Arc 6 slice 2 — header + date strip (mockups 01 / 08 / 10): title grammar, accent disc, mini-chips, no stats line.
+test.describe('arc 6 header', () => {
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const settle = (page: Page) => expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0)
+  /** A token as the browser resolves it, in the header's own cascade. */
+  const resolved = (page: Page, prop: 'color' | 'backgroundColor', token: string) =>
+    page.getByTestId('header').evaluate(
+      (h, [p, t]) => {
+        const probe = document.createElement('span')
+        probe.style[p as 'color'] = `var(${t})`
+        h.appendChild(probe)
+        const c = getComputedStyle(probe)[p as 'color']
+        probe.remove()
+        return c
+      },
+      [prop, token],
+    )
+  const accent = (page: Page) => resolved(page, 'color', '--accent')
+  const oneTask = (s: Parameters<typeof seedTask>[0]) => {
+    seedTask(s, { title: 'Watch a movie', start_at: at('20:00'), duration_min: 90, category_id: CAT.personal })
+  }
+
+  test('title reads "Month D, YYYY" with the year in the accent; no stats line', async ({ page, context }, info) => {
+    await openApp(page, context, { at: '09:00', seed: oneTask })
+    const today = await page.evaluate(() => {
+      const d = new Date()
+      return [d.getMonth(), d.getDate(), d.getFullYear()]
+    })
+    const mobile = info.project.name === 'iphone-15'
+    const title = page.getByTestId('hdr-title')
+    await expect(title).toHaveText(`${MONTHS[today[0]]} ${today[1]}, ${today[2]}${mobile ? ' ›' : ''}`)
+    const year = page.getByTestId('hdr-year')
+    await expect(year).toHaveText(`${today[2]}${mobile ? ' ›' : ''}`)
+    expect(await year.evaluate((e) => getComputedStyle(e).color)).toBe(await accent(page))
+    expect(await title.locator('.hdr-md').evaluate((e) => getComputedStyle(e).color)).toBe(await resolved(page, 'color', '--ink'))
+    await expect(page.locator('.hdr-stats')).toHaveCount(0)
+    for (const id of ['stat-planned', 'stat-free', 'stat-done', 'stat-unplaced']) await expect(page.getByTestId(id)).toHaveCount(0)
+  })
+
+  test.describe('iPhone strip', () => {
+    test.beforeEach(({ browserName: _b }, info) => test.skip(info.project.name !== 'iphone-15', 'mobile strip'))
+
+    test('the selected day sits on a 32px accent disc', async ({ page, context }) => {
+      await openApp(page, context, { at: '09:00' })
+      await settle(page)
+      const sel = page.locator('[data-testid="strip-day"][aria-pressed="true"]')
+      await expect(sel).toHaveCount(1)
+      const [bg, w, h, ink] = await sel.locator('b').evaluate((e) => {
+        const cs = getComputedStyle(e)
+        const r = e.getBoundingClientRect()
+        return [cs.backgroundColor, r.width, r.height, cs.color] as const
+      })
+      expect(bg).toBe(await accent(page))
+      expect(Math.abs(w - 32)).toBeLessThanOrEqual(1)
+      expect(Math.abs(h - 32)).toBeLessThanOrEqual(1)
+      expect(ink).toBe(await resolved(page, 'color', '--ink-on-accent'))
+      // the other days have no disc
+      const other = page.locator('[data-testid="strip-day"][aria-pressed="false"] b').first()
+      expect(await other.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)')
+    })
+
+    test('a day with one timed task shows 3 mini-chips: wake bookend, the task, lights-out bookend', async ({ page, context }) => {
+      await openApp(page, context, { at: '09:00', seed: oneTask })
+      const day = page.locator('[data-testid="strip-day"][aria-pressed="true"]')
+      const chips = day.getByTestId('mini-chip')
+      await expect(chips).toHaveCount(3)
+      await expect(chips.first()).toHaveAttribute('data-icon', 'rest-alarm')
+      await expect(chips.last()).toHaveAttribute('data-icon', 'rest-moon')
+      await expect(chips.first()).toHaveClass(/cat-accent/)
+      await expect(chips.nth(1)).toHaveClass(/cat-personal/)
+      await expect(chips.last()).toHaveClass(/cat-errand/)
+      const a = (await chips.nth(0).boundingBox())!
+      const b = (await chips.nth(1).boundingBox())!
+      expect(Math.abs(b.width - 12)).toBeLessThanOrEqual(0.5)
+      expect(Math.round(b.x - (a.x + a.width))).toBe(-3) // −3px overlap
+      // the glyph takes the category glyph colour on a --node disc
+      expect(await chips.nth(1).evaluate((e) => getComputedStyle(e).backgroundColor)).toBe(await resolved(page, 'backgroundColor', '--node'))
+      // a quiet day keeps just the bookends
+      await expect(page.locator('[data-testid="strip-day"][aria-pressed="false"]').first().getByTestId('mini-chip')).toHaveCount(2)
+    })
+
+    test('a busy day caps the chips at 4 then +n', async ({ page, context }) => {
+      await openApp(page, context, { at: '09:00', seed: seedDay })
+      const day = page.locator('[data-testid="strip-day"][aria-pressed="true"]')
+      await expect(day.getByTestId('mini-chip')).toHaveCount(4)
+      // seedDay = 10 timed tasks + 2 bookends → 4 shown, 8 more
+      await expect(day.getByTestId('mini-more')).toHaveText('+8')
+    })
+
+    test('header is 131px tall at 402px wide, on the canvas, borderless; title on the 24px pad', async ({ page, context }) => {
+      await page.setViewportSize({ width: 402, height: 874 })
+      await openApp(page, context, { at: '09:00', seed: oneTask })
+      await settle(page)
+      const hdr = page.getByTestId('header')
+      const box = (await hdr.boundingBox())!
+      expect(Math.abs(box.height - 131)).toBeLessThanOrEqual(1)
+      expect(await hdr.evaluate((h) => getComputedStyle(h).backgroundColor)).toBe(await resolved(page, 'backgroundColor', '--canvas'))
+      expect(await hdr.evaluate((h) => getComputedStyle(h).borderBottomWidth)).toBe('0px')
+      const t = (await page.getByTestId('hdr-title').boundingBox())!
+      expect(Math.abs(t.x - 24)).toBeLessThanOrEqual(1)
+      // the sync state is a 12px dot at the header's right edge
+      const sb = (await hdr.getByTestId('sync-badge').boundingBox())!
+      expect(Math.abs(sb.width - 12)).toBeLessThanOrEqual(0.5)
+      expect(402 - (sb.x + sb.width)).toBeLessThanOrEqual(17)
+    })
+
+    test('evidence: arc 6 header (dark, 402×874)', async ({ page, context }) => {
+      test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+      await page.setViewportSize({ width: 402, height: 874 })
+      await openApp(page, context, {
+        at: '09:00',
+        theme: 'dark',
+        seed: (s) => {
+          seedTask(s, { title: 'Watch a movie', start_at: at('20:00'), duration_min: 90, category_id: CAT.personal })
+          seedTask(s, { title: 'Morning run', start_at: at('07:00', -1), duration_min: 45, category_id: CAT.health })
+          seedTask(s, { title: 'Groceries', start_at: at('17:00', 1), duration_min: 60, category_id: CAT.errand })
+        },
+      })
+      await settle(page)
+      await page.screenshot({ path: 'docs/evidence/arc6-slice-2-header.png' })
+    })
+  })
+})

@@ -22,7 +22,7 @@ import { supabase } from './sync/remote'
 import { useSync } from './state/sync'
 import { useUI } from './state/ui'
 import { useDrag } from './state/drag'
-import { Header, PaneHeader, useScrolled } from './chrome/Header'
+import { Header, PaneHeader } from './chrome/Header'
 import { TabBar, type TabId } from './chrome/TabBar'
 import { Fab } from './chrome/Fab'
 import { Toast } from './components/Toast'
@@ -41,7 +41,6 @@ import { Focus } from './focus/Focus'
 import { startReminders } from './reminders/scheduler'
 import { applyTheme } from './lib/theme'
 import { keyBefore, inboxOrder } from './inbox/virtual'
-import { dayStats } from './views/stats'
 import { useItems, type Item } from './timeline/items'
 import { useCalendarSync, useEvents, type EventItem } from './calendar/events'
 import { timelineEls } from './timeline/Timeline'
@@ -92,7 +91,6 @@ export function Planner({ userId }: { userId: string }) {
   const catMap = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats])
   const { date, view, set, mobileTab: tab, quickAdd } = useUI()
   const nearBar = useDrag((s) => s.nearBar)
-  const scrolled = useScrolled()
   const isMobile = useIsMobile()
   const hourPx = useHourPx()
   const now = useNow()
@@ -103,10 +101,8 @@ export function Planner({ userId }: { userId: string }) {
     return itemsByDay?.[date] ?? []
   }, [itemsByDay, date])
   const inboxCount = useInboxCount()
-  const isToday = date === todayKey()
   const eventsByDay = useEvents(days)
   const dayEvents = useMemo(() => eventsByDay[date] ?? [], [eventsByDay, date])
-  const stats = dayStats(items, settings.day_start, settings.day_end, isToday ? now : null, dayEvents.filter((e) => !e.event.all_day))
   useCalendarSync(!!supabase())
   useEffect(() => applyTheme(settings.theme), [settings.theme])
   useEffect(() => startReminders(), [])
@@ -270,13 +266,13 @@ export function Planner({ userId }: { userId: string }) {
     if (t === 'inbox') set({ mobileTab: 'backlog' })
     else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t === 'week' ? 'week' : t === 'plan' ? 'plan' : 'settings' })
   }
-  const hdr = { date, view, stats, inboxCount, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
+  const hdr = { date, view, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
   return (
     <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => useDrag.getState().set({ ghost: null, activeId: null, nearBar: false })} autoScroll={{ threshold: { x: 0, y: 0.15 } }}>
       <div className={`app ${isMobile ? 'is-mobile' : 'is-desktop'}`}>
         {isMobile ? (
           <>
-            <Header {...hdr} scrolled={scrolled} />
+            <Header {...hdr} />
             <main className={`pane m-${tab === 'backlog' ? 'inbox' : view}`}>
               {tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />}
             </main>

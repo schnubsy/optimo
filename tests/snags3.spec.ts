@@ -110,8 +110,8 @@ test.describe('snags #29–#37 (arc 3)', () => {
     const h2 = page.locator('.mhead h2')
     await expect(h2).toBeVisible()
     const left = await h2.evaluate((e) => e.getBoundingClientRect().left)
-    const hdrLeft = await page.locator('.hdr-title').evaluate((e) => e.getBoundingClientRect().left)
-    expect(Math.abs(left - hdrLeft)).toBeLessThanOrEqual(1)
+    // arc 6: the day header's title moved to the mockups' 24px pad; the month title keeps its own 16pt gutter
+    expect(Math.abs(left - 16)).toBeLessThanOrEqual(1)
     expect(await page.locator('.mhead .nav').first().evaluate((e) => getComputedStyle(e).boxShadow)).toMatch(/inset/)
     if (process.env.EVIDENCE) await page.screenshot({ path: 'docs/evidence/ai-planner-slice-9-month-iphone-15-light.png' })
   })

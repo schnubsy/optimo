@@ -72,8 +72,7 @@ test.describe('snags #1–#12', () => {
     test.skip(test.info().project.name !== 'iphone-15', 'mobile chrome')
     await openApp(page, context, { seed: seedDay })
     // arc 2: the strip is replaced by the faded header (112pt + safe area) and a floating bar the board scrolls under
-    await expect(page.getByTestId('stat-unplaced')).toHaveCount(0)
-    expect((await page.getByTestId('header').boundingBox())!.height).toBeLessThanOrEqual(112 + 60)
+    expect((await page.getByTestId('header').boundingBox())!.height).toBeLessThanOrEqual(131 + 60)
     await expect(page.getByTestId('quickadd')).toHaveCount(0)
     const field = await quickAdd(page)
     await expect(page.getByTestId('parse-row')).toBeVisible()
