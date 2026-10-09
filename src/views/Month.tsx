@@ -1,11 +1,13 @@
 import type { Category, SettingsData } from '../data/types'
 import { addDays, dateKey, fromKey, monthTitle, todayKey, weekStart, weekdayName } from '../lib/time'
+import { useIsMobile } from '../lib/useMedia'
 import { useUI } from '../state/ui'
 import { useItems } from '../timeline/items'
 
 /** Month: dot density per day (one dot per task in chip colours, max 4 + "+n"); tap = jump to that day. */
 export function Month({ date, cats, settings }: { date: string; cats: Map<string, Category>; settings: SettingsData }) {
   const set = useUI((s) => s.set)
+  const mobile = useIsMobile()
   const d = fromKey(date)
   const first = dateKey(new Date(d.getFullYear(), d.getMonth(), 1))
   const gridStart = weekStart(first, settings.week_start)
@@ -17,11 +19,12 @@ export function Month({ date, cats, settings }: { date: string; cats: Map<string
 
   return (
     <section className="month" aria-labelledby="month-h">
-      <header className="mhead">
-        <button type="button" className="nav" aria-label="Previous month" onClick={() => shift(-1)}>‹</button>
+      {/* arc 7 slice 3: one set of arrows — desktop steps months with the pane header's ‹ ›; iPhone keeps these */}
+      <div className="mhead">
+        {mobile && <button type="button" className="nav" aria-label="Previous month" onClick={() => shift(-1)}>‹</button>}
         <h2 id="month-h">{monthTitle(d)}</h2>
-        <button type="button" className="nav" aria-label="Next month" onClick={() => shift(1)}>›</button>
-      </header>
+        {mobile && <button type="button" className="nav" aria-label="Next month" onClick={() => shift(1)}>›</button>}
+      </div>
       <div className="mgrid" role="grid" aria-labelledby="month-h">
         <div className="mrow" role="row">
           {days.slice(0, 7).map((k) => (

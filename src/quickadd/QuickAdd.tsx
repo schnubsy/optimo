@@ -34,6 +34,32 @@ export function useKeyboardInset(el: RefObject<HTMLElement | null>, active = tru
   }, [el, active])
 }
 
+/** Desktop command-line placeholders, longest first — the field shows the longest that fits whole (arc 7 slice 3). */
+export const PLACEHOLDERS = ['Lunch with Sam at 1pm for 1h #personal !', 'Lunch with Sam at 1pm for 1h', 'Lunch at 1pm for 1h', 'Add a task', '']
+
+/** The longest placeholder that fits the input's content box, never one clipped mid-word; re-picked on resize. */
+function useFittedPlaceholder(el: RefObject<HTMLInputElement | null>, active: boolean): string {
+  const [pick, setPick] = useState(PLACEHOLDERS[0])
+  useEffect(() => {
+    const input = el.current
+    if (!active || !input || typeof ResizeObserver === 'undefined') return
+    const ctx = document.createElement('canvas').getContext('2d')
+    const measure = () => {
+      const cs = getComputedStyle(input)
+      const room = input.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2
+      if (!ctx) return
+      ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+      setPick(PLACEHOLDERS.find((p) => ctx.measureText(p).width <= room) ?? '')
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(input)
+    void document.fonts?.ready.then(measure)
+    return () => ro.disconnect()
+  }, [el, active])
+  return pick
+}
+
 /** The category a parse points at: `#name` → `@icon` → the keyword map's suggestion onto the default of that colour. */
 export function resolveCategory(p: Parsed, cats: Category[]): Category | null {
   if (p.category) {
@@ -78,10 +104,11 @@ export function parseWhen(parsed: Parsed, settings: Pick<SettingsData, 'clock24'
  * The desktop header command line: parse preview before commit, Enter adds, Tab opens the create wizard prefilled,
  * Esc clears. (The iPhone FAB opens the wizard, whose title field reuses this parser.)
  */
-export function QuickAdd({ compact, onDone }: { compact?: boolean; onDone?: () => void }) {
+export function QuickAdd({ compact, fit, onDone }: { compact?: boolean; fit?: boolean; onDone?: () => void }) {
   const [text, setText] = useState('')
   const [picking, setPicking] = useState(false)
   const input = useRef<HTMLInputElement>(null)
+  const fitted = useFittedPlaceholder(input, !!fit)
   const cats = useCategories()
   const settings = useSettings()
   const set = useUI((s) => s.set)
@@ -138,7 +165,7 @@ export function QuickAdd({ compact, onDone }: { compact?: boolean; onDone?: () =
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKey}
-          placeholder={compact ? 'Lunch with Sam at 1pm' : 'Lunch with Sam at 1pm for 1h #personal !'}
+          placeholder={compact ? 'Lunch with Sam at 1pm' : fit ? fitted : PLACEHOLDERS[0]}
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="done"

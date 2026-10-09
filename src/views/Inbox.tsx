@@ -113,7 +113,8 @@ export function Inbox({ cats }: { cats: Map<string, Category> }) {
   return (
     <aside className={`backlog ${isOver && activeId?.startsWith('blk:') ? 'drop' : ''}`} ref={setNodeRef} aria-labelledby="inbox-h" data-testid="inbox">
       <div className="hd">
-        <h2 id="inbox-h">Inbox</h2>
+        {/* arc 7 slice 3: on iPhone the inbox screen has no date header — its title is the page's h1 (axe page-has-heading-one) */}
+        {isMobile ? <h1 id="inbox-h">Inbox</h1> : <h2 id="inbox-h">Inbox</h2>}
         {!isMobile && (
           <span className="n tnum">
             <b data-testid="stat-unplaced">{raw?.length ?? 0}</b> in inbox{total ? ` · ${fmtHours(total)}` : ''}

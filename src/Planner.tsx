@@ -291,14 +291,21 @@ export function Planner({ userId }: { userId: string }) {
   }
   const weekMode = isMobile && tab !== 'backlog' && view === 'day' && panel === 'week'
   const hdr = { date, view, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
+  // arc 7 slice 3: the iPhone date header + strip belong to the Timeline only (day / week / month) — AI, Settings and
+  // its sub-pages have their own titles, and a strip tap there would change the date out of sight
+  const timelineView = view === 'day' || view === 'week' || view === 'month' || view === 'focus'
+  const showHeader = tab !== 'backlog' && timelineView
   return (
     <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => useDrag.getState().set({ ghost: null, activeId: null, nearBar: false })} autoScroll={{ threshold: { x: 0, y: 0.15 } }}>
       <div className={`app ${isMobile ? 'is-mobile' : 'is-desktop'}`}>
         {isMobile ? (
           <>
             {/* mockup 07: the inbox screen carries its own title — no day header over it */}
-            {tab !== 'backlog' && <Header {...hdr} weekMode={weekMode} />}
-            <main className={`pane m-${tab === 'backlog' ? 'inbox' : view === 'week' ? 'day' : view}`}>
+            {showHeader && <Header {...hdr} weekMode={weekMode} />}
+            {/* without the date header (its title is the page h1) AI / Settings keep a page-level heading; the visible
+                page titles stay h2 so their h3 sections keep the heading order */}
+            <main className={`pane m-${tab === 'backlog' ? 'inbox' : view === 'week' ? 'day' : view} ${showHeader || tab === 'backlog' ? '' : 'no-hdr'}`}>
+              {!showHeader && tab !== 'backlog' && <h1 className="sr-only">optimo</h1>}
               {tab === 'backlog' ? (
                 <Inbox cats={catMap} />
               ) : view === 'day' || view === 'week' ? (

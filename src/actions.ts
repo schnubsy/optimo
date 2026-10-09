@@ -72,13 +72,15 @@ export async function toggleComplete(item: Pick<Item, 'task' | 'occurrence'>) {
   // "adjust to actual": offered, never automatic (spec §2.3)
   const actual = t.start_at ? Math.round((now.getTime() - new Date(t.start_at).getTime()) / 60000) : null
   const undo = () => patchItem(item, { completed_at: null })
+  // arc 7 slice 3: the toast names the task, like the delete toast ("Done · Review pull request")
+  const done = `Done · ${t.title || 'Untitled'}`
   if (actual !== null && actual > 0 && Math.abs(actual - t.duration_min) >= 5 && actual < 16 * 60) {
     notify({
-      text: `Done — ran ${fmtDur(actual)} vs ${fmtDur(t.duration_min)} planned`,
+      text: `${done} — ran ${fmtDur(actual)} vs ${fmtDur(t.duration_min)} planned`,
       action: { label: 'Adjust to actual', run: () => patchItem({ ...item, task: { ...t, completed_at: now.toISOString() } }, { duration_min: actual }) },
       undo,
     })
-  } else notify({ text: 'Done', undo })
+  } else notify({ text: done, undo })
 }
 
 export async function deleteItem(item: Pick<Item, 'task' | 'occurrence'>) {

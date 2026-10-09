@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { TaskInput } from '../data/repo'
 import { newId } from '../data/ids'
 import type { Category, SettingsData } from '../data/types'
 import { Icon } from '../icons/Icon'
@@ -10,15 +9,13 @@ import { fromKey } from '../lib/time'
 import { AlertSheet, alertSummary } from './AlertSheet'
 import { RepeatSheet } from './RepeatSheet'
 import { fmtLongDate, relDay } from './StepWhen'
-import { draftToInput, durLong, fmtRange, type WizardDraft } from './wizardModel'
+import { durLong, fmtRange, type WizardDraft } from './wizardModel'
 
 export interface StepDetailsProps {
   draft: WizardDraft
   settings: SettingsData
   cats: Category[]
   onChange: (patch: Partial<WizardDraft>) => void
-  /** Create (new) or Save (edit) with the finished input */
-  onCreate: (input: TaskInput & { start_at: string | null }) => void | Promise<void>
   /** back to ② (date / time rows) — absent in inbox mode */
   onEditWhen?: () => void
   /** edit mode (the screen that replaced TaskSheet) */
@@ -36,9 +33,10 @@ export interface StepDetailsProps {
 
 /**
  * ③ Details — also the edit screen (mockups 06): the rows card (date · time → ② · alerts), Repeat, the subtasks card with
- * the AI sparkle, notes, Create Task / Save; in edit mode Delete under the notes (Complete sits on the header ring).
+ * the AI sparkle, notes; in edit mode Delete under the notes (Complete sits on the header ring). Create Task / Save is
+ * the wizard's docked footer (arc 7 slice 3), so it never scrolls out of view.
  */
-export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, edit, ai }: StepDetailsProps) {
+export function StepDetails({ draft, settings, onChange, onEditWhen, edit, ai }: StepDetailsProps) {
   const [sheet, setSheet] = useState<'alerts' | 'repeat' | null>(null)
   const [dropped, setDropped] = useState<Set<number>>(new Set())
   const [newSub, setNewSub] = useState('')
@@ -65,7 +63,7 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
               <Icon name="ui-chevron-right" size={16} />
             </span>
           </button>
-          <button type="button" className="wiz-row" onClick={onEditWhen} disabled={!onEditWhen} data-testid="details-time">
+          <button type="button" className={`wiz-row ${zoned ? 'has-tz' : ''}`} onClick={onEditWhen} disabled={!onEditWhen} data-testid="details-time">
             <Icon name="ui-clock" size={24} className="wiz-row-glyph" />
             <span className="wiz-row-text tnum">
               {draft.all_day ? 'All day' : fmtRange(draft.start, draft.duration, settings.clock24)}
@@ -204,12 +202,6 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
           )}
         </div>
       )}
-
-      <div className="wiz-foot">
-        <button type="button" className="wiz-cta" onClick={() => void onCreate(draftToInput(draft, settings))} disabled={!draft.title.trim()} data-testid={edit ? 'wizard-save' : 'wizard-create'}>
-          {edit ? 'Save' : 'Create Task'}
-        </button>
-      </div>
 
       {sheet === 'alerts' && <AlertSheet value={leads} onChange={(r) => onChange({ reminders: r })} onClose={() => setSheet(null)} />}
       {sheet === 'repeat' && (

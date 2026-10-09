@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../data/db'
@@ -20,8 +20,11 @@ import { TimezonePicker } from './TimezonePicker'
 import { StepTitle } from './StepTitle'
 import { StepWhen } from './StepWhen'
 import { buildSuggestions, SUGGESTION_WINDOW_DAYS, type Suggestion } from './suggestions'
-import { fmtMeta, type WizardDraft, type WizardStep } from './wizardModel'
+import { draftToInput, fmtMeta, type WizardDraft, type WizardStep } from './wizardModel'
 import './wizard.css'
+
+/** Titles longer than this many characters set a step smaller in the header field (arc 7 slice 3). */
+const LONG_TITLE = 14
 
 /** The prefill (gap / paint / N / parsed command line) → the wizard's working draft. */
 export function initialDraft(w: WizardState, uiDate: string, settings: SettingsData): WizardDraft {
@@ -134,7 +137,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }
   const [text, setText] = useState(draft.title)
   const [confirm, setConfirm] = useState(false)
-  const titleRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   useKeyboardInset(sheetRef)
@@ -217,7 +220,9 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }
   function pick(s: Suggestion) {
     setText(s.title)
-    patch({ title: s.title, category_id: catOf(s)?.id ?? draft.category_id, start: s.start, duration: s.duration, all_day: false })
+    // arc 7 slice 3: an inbox-mode pick carries no time — only title, category and length (it stays unscheduled)
+    if (draft.inbox) patch({ title: s.title, category_id: catOf(s)?.id ?? draft.category_id, duration: s.duration })
+    else patch({ title: s.title, category_id: catOf(s)?.id ?? draft.category_id, start: s.start, duration: s.duration, all_day: false })
     setStep(draft.inbox ? 3 : 2)
   }
   async function create(input: Parameters<typeof repo.createTask>[0] & { start_at: string | null }) {
@@ -247,7 +252,15 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }
   const occurrence = edit?.occ ? { seriesId: edit.task.id, date: edit.occ } : undefined
 
-  const onTitleKey = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+  const titleShown = step === 1 ? text : draft.title
+  // the title field grows with its text (rows of its own line height), capped by CSS max-height
+  useLayoutEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [titleShown, step])
+  const onTitleKey = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (step === 1) continueFromTitle()
@@ -277,7 +290,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
         <h1 id="wiz-h" className="sr-only">
           {edit ? `Edit ${draft.title || 'task'}` : `New task, step ${step} of 3: ${stepName}`}
         </h1>
-        <header className={`wiz-hd ${step === 3 ? 'wiz-hd-3' : ''} ${cat ? `cat-${cat.color}` : 'cat-accent'}`}>
+        <div className={`wiz-hd ${step === 3 ? 'wiz-hd-3' : ''} ${cat ? `cat-${cat.color}` : 'cat-accent'}`}>
           <button type="button" className="wiz-x" aria-label="Close" onClick={requestClose} data-testid="wizard-close">
             <Icon name="ui-close" size={22} />
           </button>
@@ -306,12 +319,19 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               <label htmlFor="wiz-title" className="sr-only">
                 Title
               </label>
-              <input
+              {/* arc 7 slice 3: a one-line field that wraps (2 lines on ①②, 3 on ③) and steps down a size for long
+                  titles — "Write the migration plan" reads whole instead of "Write the migratior" */}
+              <textarea
                 id="wiz-title"
                 ref={titleRef}
-                className="wiz-title"
-                value={step === 1 ? text : draft.title}
-                onChange={(e) => (step === 1 ? setText(e.target.value) : patch({ title: e.target.value }))}
+                className={`wiz-title ${titleShown.length > LONG_TITLE ? 'long' : ''}`}
+                rows={1}
+                value={titleShown}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[\r\n]+/g, ' ')
+                  if (step === 1) setText(v)
+                  else patch({ title: v })
+                }}
                 onKeyDown={onTitleKey}
                 placeholder="What’s next?"
                 autoComplete="off"
@@ -337,17 +357,16 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
                 <span className="wiz-ring" aria-hidden="true" />
               ))}
           </div>
-        </header>
+        </div>
 
         <div ref={bodyRef} className="wiz-scroll" tabIndex={-1}>
-          {step === 1 && <StepTitle parsed={parsed} parsedCat={parsedCat} suggestions={suggestions} settings={settings} catOf={catOf} onPick={pick} />}
+          {step === 1 && <StepTitle parsed={parsed} parsedCat={parsedCat} suggestions={suggestions} settings={settings} catOf={catOf} onPick={pick} untimed={draft.inbox} />}
           {step === 2 && (
             <StepWhen
               draft={draft}
               settings={settings}
               presets={durationPresets(settings)}
               onChange={patch}
-              onContinue={() => setStep(3)}
               onInbox={() => {
                 patch({ inbox: true })
                 setStep(3)
@@ -361,7 +380,6 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               settings={settings}
               cats={cats}
               onChange={patch}
-              onCreate={create}
               onEditWhen={draft.inbox && !edit ? undefined : () => setStep(2)}
               ai={{
                 ...ai,
@@ -387,13 +405,25 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
           )}
         </div>
 
-        {step === 1 && (
-          <div className="wiz-foot wiz-float">
+        {/* arc 7 slice 3: the primary action is docked under the scroller on every step — always on screen, above the
+            home indicator (safe area) and the on-screen keyboard; Delete and the rest of ③ scroll above it */}
+        <div className="wiz-foot wiz-dock">
+          {step === 1 && (
             <button type="button" className="wiz-cta" onClick={continueFromTitle} disabled={!(parsed?.title ?? '').trim()} data-testid="wizard-continue">
               Continue
             </button>
-          </div>
-        )}
+          )}
+          {step === 2 && (
+            <button type="button" className="wiz-cta" onClick={() => setStep(3)} data-testid="wizard-continue">
+              Continue
+            </button>
+          )}
+          {step === 3 && (
+            <button type="button" className="wiz-cta" onClick={() => void create(draftToInput(draft, settings))} disabled={!draft.title.trim()} data-testid={edit ? 'wizard-save' : 'wizard-create'}>
+              {edit ? 'Save' : 'Create Task'}
+            </button>
+          )}
+        </div>
 
         {panel === 'tz' && <TimezonePicker value={draft.tz} onPick={(tz) => patch({ tz: tz && tz !== deviceZone() ? tz : null, all_day: false })} onClose={() => setPanel(null)} />}
         {panel === 'palette' && (
