@@ -98,15 +98,15 @@ button.wiz-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 /* duration quick row: a --card track holding the --accent-tint pill of presets */
 .dur-row { padding: 7px; border-radius: var(--r-pill); background: var(--card); }
 .dur-row-in { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); height: 44px; border-radius: var(--r-pill); background: var(--accent-tint); }
-.dur-q { position: relative; min-width: 0; height: 44px; padding: 0 4px; border: 0; border-radius: var(--r-pill); background: none; color: var(--accent-on-tint);
+.dur-q { position: relative; min-width: 0; height: 44px; padding: 0 4px; border: 0; border-radius: var(--r-pill); background: none; color: var(--ink-on-tint-muted);
   font: var(--fw-semibold) var(--fs-17) / 1 var(--font-time); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dur-q[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); font-weight: var(--fw-bold); }
 .dur-q:focus-visible { box-shadow: var(--focus-ring); }
 
 /* ---------- ••• menu (05) ---------- */
 .more-scrim { position: fixed; inset: 0; z-index: 5; }
-.more-menu { position: absolute; z-index: 6; top: -12px; right: 16px; width: 248px; padding: 8px 0; border-radius: var(--r-md);
-  background: color-mix(in oklch, var(--card) 92%, transparent); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+.more-menu { position: absolute; z-index: 6; top: -12px; right: 16px; width: 248px; padding: 8px 0; border-radius: var(--r-md); overflow: hidden;
+  background: var(--card);
   box-shadow: 0 18px 40px -16px oklch(0 0 0 / 0.6), inset 0 0 0 1px color-mix(in oklch, var(--ink) 8%, transparent);
   transform-origin: top right; animation: more-in var(--dur-tab) var(--ease-drawer); }
 @keyframes more-in { from { transform: scale(0.92); } }
@@ -120,11 +120,16 @@ button.wiz-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .more-item:focus-visible, .more-item:hover { outline: none; background: color-mix(in oklch, var(--ink) 8%, transparent); }
 
 /* ---------- Duration sheet (03) ---------- */
-.dur-wrap { position: absolute; inset: 0; z-index: 20; display: flex; align-items: flex-end; padding: 8px; background: oklch(0 0 0 / 0.35); }
+.dur-wrap { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; padding: 0 8px 6px; background: oklch(0 0 0 / 0.45);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.is-desktop .dur-wrap { align-items: center; justify-content: center; }
+.is-desktop .dur-sheet { max-width: 440px; }
 .dur-sheet { box-sizing: border-box; width: 100%; padding: 16px 12px calc(20px + env(safe-area-inset-bottom)) 12px; border-radius: 40px;
-  background: color-mix(in oklch, var(--card) 94%, transparent); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+  background: var(--card);
   box-shadow: 0 -12px 40px -20px oklch(0 0 0 / 0.7), inset 0 0 0 1px color-mix(in oklch, var(--ink) 8%, transparent);
   animation: wiz-up var(--dur-sheet) var(--ease-drawer); }
+/* Eye P0-3: the sheet and the ••• menu are opaque cards (a translucent card let the wheel text read through it; the
+   frost now lives on the scrim, which blurs what is behind the sheet) */
 .dur-hd { display: flex; align-items: center; justify-content: space-between; padding-left: 12px; }
 .dur-hd h2 { margin: 0; font: var(--fw-bold) var(--fs-24) / 1.2 var(--font-ui); color: var(--ink); }
 .dur-x { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--node); color: var(--ink); }
@@ -132,7 +137,7 @@ button.wiz-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .dur-wheels { position: relative; display: grid; grid-template-columns: 1fr 1fr; margin: 4px 0 8px; }
 .dur-band { position: absolute; left: 8px; right: 8px; top: 50%; height: 34px; transform: translateY(-50%); border-radius: var(--r-pill);
   background: color-mix(in oklch, var(--ink) 10%, transparent); pointer-events: none; }
-.dur-wheel { --wheel-h: 168px; }
+.dur-wheel { --wheel-h: 228px; } /* ±3 rows, as mockup 03 */
 .dur-wheel .wheel-row { font-family: var(--font-time); transform: translateX(-24px); }
 .dur-wheel .wheel-row[aria-selected='true'] { color: var(--ink); font-weight: var(--fw-semibold); }
 .dur-unit { transform: translateX(22px); font: var(--fw-semibold) var(--fs-17) / 1 var(--font-ui); color: var(--ink); }
@@ -165,7 +170,7 @@ button.wiz-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 /* ---------- ③ details / edit screen (arc 6 slice 7, mockups 06) ---------- */
 /* header: the task as a capsule on a stub of spine (dashed above, solid below), the palette button at its foot */
 .wiz-hd.wiz-hd-3 { height: 284px; overflow: hidden; }
-.wiz-hd-3 .wiz-hd-row { top: 60px; height: 190px; left: 16px; }
+.wiz-hd-3 .wiz-hd-row { top: 60px; height: 190px; left: 30px; }
 .wiz-capsule-wrap { position: relative; flex: none; width: 84px; align-self: stretch; display: grid; place-items: center; }
 .wiz-capsule-wrap::before { content: ''; position: absolute; left: calc(50% - 1.5px); width: 3px; top: -60px; bottom: -40px;
   background: repeating-linear-gradient(to bottom, oklch(0.2 0 0 / 0.55) 0 10px, transparent 10px 18px); }

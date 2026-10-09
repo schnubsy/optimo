@@ -69,6 +69,7 @@ describe.each(Object.entries(themes))('%s theme', (_name, v) => {
     ['--accent', '--panel'],
     ['--accent-on-tint', '--accent-tint'],
     ['--accent-on-node', '--node'],
+    ['--ink-on-tint-muted', '--accent-tint'],
   ])('%s on %s ≥ 4.5', (fg, bg) => {
     expect(wcagContrast(color(v, fg), color(v, bg))).toBeGreaterThanOrEqual(4.5)
   })

@@ -76,8 +76,11 @@ span.wnode { pointer-events: none; }
 .spine-week.wov .wbody { padding-bottom: calc(var(--tabbar-h) + var(--tabbar-inset) + 8px + 112px + 16px + env(safe-area-inset-bottom)); }
 .spine-week.wov .wgrid { grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 0 20px; }
 .spine-week.wov .wrail { position: absolute; z-index: 0; left: 0; top: 0; bottom: 0; width: 22px; }
-.spine-week.wov .wrail .hour b { left: 3px; right: auto; letter-spacing: -0.04em; }
+.spine-week.wov .wrail .hour b { left: 2px; right: auto; font-size: 10px; letter-spacing: -0.03em; }
+.spine-week.wov .wrail .hour sup { font-size: 7px; }
 
+/* collapsed: the peek is a card — its row moves inside the 20 px-margin card (sheet-relative, the sheet sits at 7 px) */
+.psheet[data-detent='week'] .tl.spine-tl { --sx: 61px; --tx: 101px; --rx: 52px; }
 /* collapsed: the peek is a card — gutter times sit outside its narrower clip, so they step out */
 .psheet[data-detent='week'] .tl .gutter, .psheet[data-detent='week'] .tl .now { visibility: hidden; }
 /* …and a short day must still be able to scroll its first row up to the peek's top */

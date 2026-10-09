@@ -7,7 +7,7 @@
   left: var(--tabbar-inset);
   /* measured (07): the bar stops 8 px before the FAB — right = FAB + its inset + 8 */
   right: calc(var(--fab-size-m) + var(--tabbar-inset) + 8px);
-  bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom));
+  bottom: max(var(--tabbar-inset), calc(env(safe-area-inset-bottom) - 12px));
   height: var(--tabbar-h);
   border-radius: var(--r-pill);
   background: var(--bar-bg);
@@ -38,7 +38,7 @@
 .fab {
   position: fixed; z-index: 30;
   right: var(--tabbar-inset);
-  bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom) + (var(--tabbar-h) - var(--fab-size-m)) / 2);
+  bottom: calc(max(var(--tabbar-inset), calc(env(safe-area-inset-bottom) - 12px)) + (var(--tabbar-h) - var(--fab-size-m)) / 2);
   width: var(--fab-size-m); height: var(--fab-size-m);
   padding: 0; border: 0; border-radius: 50%;
   display: grid; place-items: center;

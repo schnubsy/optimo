@@ -96,7 +96,8 @@ export function TimeWheel({ start, duration, clock24, onChange }: { start: numbe
       index={index}
       onIndex={(i) => onChange(i * STEP)}
       label={`Start time, ${range}`}
-      rowLabel={(i) => fmtClock(i * STEP, clock24)}
+      // mockups 02: rows above the pill are earlier starts; rows below continue from the end of the booked span
+      rowLabel={(i) => fmtClock(i * STEP + (i > index ? duration : 0), clock24)}
       rowH={32}
       idPrefix="tw"
       testid="time-wheel"

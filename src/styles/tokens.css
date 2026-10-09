@@ -193,7 +193,7 @@
 
   /* spine geometry (CSS px at 402 wide; x measured from the panel's left edge) */
   --node-size: 56px;       /* day disc / capsule width */
-  --node-size-week: 48px;  /* week overview disc */
+  --node-size-week: 40px;  /* week overview disc (measured in mockup 10; the sheet said 48) */
   --spine-x: 78px;         /* spine centre */
   --spine-w: 3px;
   --gutter-right: 41px;    /* right edge of the gutter times */
@@ -214,6 +214,7 @@
   --tab-active: var(--n-100);
   --accent-on-tint: var(--accent-ink); /* accent text on --accent-tint (the light accent is 4.2:1 there) */
   --accent-on-node: var(--accent-ink); /* accent text on --node ("Add Task" pill) */
+  --ink-on-tint-muted: oklch(0.48 0.02 40); /* unselected duration presets on --accent-tint (mockups 02: grey) */
 
   /* category glyph + ring, editor header and week past-chip formulas: oklch(L C <category hue>) */
   --glyph-l: 0.55; --glyph-c: 0.10;
@@ -299,6 +300,7 @@
   --accent-tint: oklch(0.391 0.025 18.3); /* #524040 */
   --accent-on-tint: var(--accent);
   --accent-on-node: var(--accent);
+  --ink-on-tint-muted: oklch(0.80 0.003 286); /* the mockup grey, lifted to 5.2:1 on the tint */
   --focus-ring: 0 0 0 3px oklch(0.761 0.103 23.4 / 0.55);
   --now-line: var(--accent); --now-flag-bg: var(--accent);
   --tab-active: oklch(0.18 0 0);
