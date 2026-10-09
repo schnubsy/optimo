@@ -77,6 +77,7 @@ Implementation: `subtasks` mode: title + notes + duration → 3–7 subtasks via
 Done: deno test covers the mode; Playwright with the plan fake: sparkle → 4 rows → Keep all → saved on the task; limit and offline states; ship proof in `arc6-slice-8-plan-day-deploy.md`.
 
 === SLICE 9 — Eye LITE vs mockups + Lighthouse ===
+Status: done 8f7d145 (0 P0 open; P1 → snag #81–#110; lighthouse 100/100 · 97/100)
 Scope: standard UI-arc close.
 Implementation: capture every mocked state at 402×874 (dark) + light; the Eye LITE critique compares each capture to its mockup number and lists deltas as P0 (geometry / colour / flow off) or P1 (polish); P0 → fix slice 9b; P1 → `snag` Issues. Lighthouse perf ≥ 85 / a11y ≥ 90 on day + inbox (target: hold 100 / 98). page-diff gate: declared layout change for all views.
 Done: `docs/evidence/arc6-eye-lite.md` with a per-mockup table (match / delta), 0 P0 open; Lighthouse JSON in evidence.
