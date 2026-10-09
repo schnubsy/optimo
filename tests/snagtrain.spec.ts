@@ -75,7 +75,7 @@ test.describe('snag train 2026-10', () => {
     await setView('day')
     const ev = page.getByTestId('timeline').getByTestId('event').filter({ hasText: 'Dentist check-up' })
     await ev.scrollIntoViewIfNeeded()
-    const chip = ev.locator('.evt-chip')
+    const chip = ev.getByTestId('event-chip') // arc 7: the disc is `.evt-disc` (the legacy 22 px `.evt-chip` rule shrank it)
     await expect(chip.locator('svg')).toHaveAttribute('data-icon', 'ui-calendar')
     // the fake CalDAV server's "Home" calendar is #5B8DEF — the chip ring must read that colour, not a category hue
     expect(await chip.evaluate((el) => getComputedStyle(el).boxShadow)).toContain('91, 141, 239')

@@ -12,7 +12,8 @@ import { useUI } from '../state/ui'
 import { paintBlock, resizeItem, toggleComplete } from '../actions'
 import { AllDayStrip } from './AllDayStrip'
 import { AnchorRow } from './AnchorRow'
-import { CAPSULE_MIN, NodeRow } from './NodeRow'
+import { CAPSULE_MIN, NODE, NodeRow } from './NodeRow'
+import { chipSpan, layoutLabels, type LabelBox, type LabelNode } from './labels'
 import { Gap } from './Gap'
 import { Rail } from './Rail'
 import { NowLine, useNow } from './NowLine'
@@ -34,6 +35,12 @@ export const segmentMaps = new Map<string, SegmentMap>()
 /** Space under the last row: the floating tab bar on iPhone, a little air on the desktop. */
 const PAD_BOTTOM_MOBILE = 140
 const PAD_BOTTOM_DESKTOP = 48
+/** iPhone: the panel grabber's 44 px band sits over the top of the spine — the first row's text starts below it. With
+ *  an all-day strip the strip itself clears the band (panel.css), so the spine keeps the usual 12 px. */
+const PAD_TOP_MOBILE = 28
+
+/** A label's y relative to its row's top (undefined = centred in the row). */
+const rel = (l: LabelBox | undefined, rowTop: number) => (l ? l.y - rowTop : undefined)
 
 function DropGhost({ day, map, clock24 }: { day: string; map: SegmentMap; clock24: boolean }) {
   const ghost = useDrag((s) => (s.ghost?.day === day ? s.ghost : null))
@@ -80,6 +87,7 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
   const allDay = useMemo(() => items.filter((i) => i.task.all_day).map((i) => i.task), [items])
   const timedEvents = useMemo(() => events.filter((e) => !e.event.all_day), [events])
   const allDayEvents = useMemo(() => events.filter((e) => e.event.all_day), [events])
+  const hasAllDay = allDay.length + allDayEvents.length > 0
 
   // the one map: tasks + events + the two bookends
   const map = useMemo(
@@ -89,9 +97,9 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
         timedEvents.map((e) => ({ key: e.key, start: e.start, end: e.end })),
         settings.day_start,
         settings.day_end,
-        { padBottom: mobile ? PAD_BOTTOM_MOBILE : PAD_BOTTOM_DESKTOP },
+        { padBottom: mobile ? PAD_BOTTOM_MOBILE : PAD_BOTTOM_DESKTOP, ...(mobile && !hasAllDay ? { padTop: PAD_TOP_MOBILE } : {}) },
       ),
-    [timed, timedEvents, settings.day_start, settings.day_end, mobile],
+    [timed, timedEvents, settings.day_start, settings.day_end, mobile, hasAllDay],
   )
   useEffect(() => {
     segmentMaps.set(day, map)
@@ -104,32 +112,66 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
     mapRef.current = map
   }, [map])
 
-  // concurrent tasks / events: side-by-side columns (column k sits k × 64 px right of the spine)
+  // concurrent tasks / events / bookends: side-by-side columns (column k sits k × 64 px right of the spine). The
+  // bookends take part, so a long evening task never covers "Lights out" (arc 7 slice 2).
   const placed = useMemo(
-    () => layoutColumns([...timed.map((i) => ({ id: i.key, start: i.start, end: i.start + Math.max(1, i.task.duration_min) })), ...timedEvents.map((e) => ({ id: e.key, start: e.start, end: e.end }))]),
-    [timed, timedEvents],
+    () =>
+      layoutColumns([
+        ...timed.map((i) => ({ id: i.key, start: i.start, end: i.start + Math.max(1, i.task.duration_min) })),
+        ...timedEvents.map((e) => ({ id: e.key, start: e.start, end: e.end })),
+        { id: ANCHOR_START, start: settings.day_start, end: settings.day_start + 1 },
+        { id: ANCHOR_END, start: settings.day_end, end: settings.day_end + 1 },
+      ]),
+    [timed, timedEvents, settings.day_start, settings.day_end],
   )
   const colOf = useMemo(() => new Map(placed.map((p) => [p.id, p.col])), [placed])
   const byKey = useMemo(() => new Map(timed.map((i) => [i.key, i])), [timed])
-  // concurrent clusters: texts stack one 56 px line apart, right of the cluster's last chip column
-  const stacked = useMemo(() => {
-    const out = new Map<string, { cols: number; y: number }>()
+
+  /** A bookend's row: its whole anchor segment, or (inside a cluster) a disc-sized row centred on its minute. */
+  const anchorBox = useCallback(
+    (key: string, min: number) => {
+      const seg = map.segments.find((s) => s.keys.includes(key))
+      if (seg?.kind === 'anchor') return { y: seg.y, h: seg.h }
+      const c = map.minToY(min + 0.5)
+      return { y: c - NODE / 2, h: NODE }
+    },
+    [map],
+  )
+
+  // every row's text + ring sit beside its OWN chip (labels.ts); concurrent rows are spaced ≥ LABEL_GAP apart
+  const labelOf = useMemo(() => {
+    const out = new Map<string, LabelBox>()
+    const evByKey = new Map(timedEvents.map((e) => [e.key, e]))
     for (const seg of map.segments) {
-      const keys = seg.keys.filter((k) => k !== ANCHOR_START && k !== ANCHOR_END)
-      if (seg.kind !== 'node' || keys.length < 2) continue
-      const cols = Math.max(...keys.map((k) => colOf.get(k) ?? 0))
-      keys.forEach((k, i) => out.set(k, { cols, y: seg.y + 36 + i * 56 }))
+      if (seg.kind !== 'node' && seg.kind !== 'anchor') continue
+      const nodes: LabelNode[] = []
+      for (const k of seg.keys) {
+        const col = colOf.get(k) ?? 0
+        if (k === ANCHOR_START || k === ANCHOR_END) {
+          const min = k === ANCHOR_START ? settings.day_start : settings.day_end
+          const b = anchorBox(k, min)
+          nodes.push({ key: k, col, start: min, chip: chipSpan(b.y, b.h, 0, false) })
+          continue
+        }
+        const it = byKey.get(k)
+        const ev = evByKey.get(k)
+        const start = it ? it.start : ev ? ev.start : seg.from
+        const end = it ? it.start + it.task.duration_min : ev ? ev.end : start + 1
+        const top = map.minToY(start)
+        const rowH = Math.max(1, map.minToY(Math.max(end, start + 1)) - top)
+        nodes.push({ key: k, col, start, chip: chipSpan(top, rowH, end - start, !!it && it.task.duration_min >= CAPSULE_MIN) })
+      }
+      for (const [k, v] of layoutLabels(nodes, seg.y, seg.y + seg.h)) out.set(k, v)
     }
     return out
-  }, [map, colOf])
+  }, [map, colOf, byKey, timedEvents, settings.day_start, settings.day_end, anchorBox])
 
-  const anchorSeg = (key: string) => map.segments.find((s) => s.keys.includes(key))
-  const startSeg = anchorSeg(ANCHOR_START)
-  const endSeg = anchorSeg(ANCHOR_END)
+  const startBox = anchorBox(ANCHOR_START, settings.day_start)
+  const endBox = anchorBox(ANCHOR_END, settings.day_end)
   const labels = useMemo(() => {
     const rows = [
-      { start: settings.day_start, end: settings.day_start + 1, capsule: false },
-      { start: settings.day_end, end: settings.day_end + 1, capsule: false },
+      { start: settings.day_start, end: settings.day_start + 1, capsule: false, anchor: true },
+      { start: settings.day_end, end: settings.day_end + 1, capsule: false, anchor: true },
       ...timed.map((i) => ({ start: i.start, end: i.start + i.task.duration_min, capsule: i.task.duration_min >= CAPSULE_MIN })),
       ...timedEvents.map((e) => ({ start: e.start, end: e.end, capsule: e.end - e.start >= CAPSULE_MIN })),
     ]
@@ -263,12 +305,12 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
           .map((s) => (
             <Gap key={`${s.from}`} day={day} from={s.from} to={s.to} y={s.y} h={s.h} clock24={settings.clock24} onAdd={onGapAdd} />
           ))}
-        {startSeg && <AnchorRow which="start" min={settings.day_start} y={startSeg.y} h={startSeg.kind === 'anchor' ? startSeg.h : 72} name={names.start} done={!!ticked.start} clock24={settings.clock24} onOpen={openDaySettings} onToggle={onBookend} />}
-        {endSeg && <AnchorRow which="end" min={settings.day_end} y={endSeg.kind === 'anchor' ? endSeg.y : map.minToY(settings.day_end)} h={endSeg.kind === 'anchor' ? endSeg.h : 72} name={names.end} done={!!ticked.end} clock24={settings.clock24} onOpen={openDaySettings} onToggle={onBookend} />}
+        <AnchorRow which="start" min={settings.day_start} y={startBox.y} h={startBox.h} col={colOf.get(ANCHOR_START) ?? 0} textCols={labelOf.get(ANCHOR_START)?.cols} labelY={rel(labelOf.get(ANCHOR_START), startBox.y)} name={names.start} done={!!ticked.start} clock24={settings.clock24} onOpen={openDaySettings} onToggle={onBookend} />
+        <AnchorRow which="end" min={settings.day_end} y={endBox.y} h={endBox.h} col={colOf.get(ANCHOR_END) ?? 0} textCols={labelOf.get(ANCHOR_END)?.cols} labelY={rel(labelOf.get(ANCHOR_END), endBox.y)} name={names.end} done={!!ticked.end} clock24={settings.clock24} onOpen={openDaySettings} onToggle={onBookend} />
         {timedEvents
           .filter((e) => map.minToY(e.end) >= winTop && map.minToY(e.start) <= winBottom)
           .map((e) => (
-            <EventBlock key={e.key} item={e} map={map} col={colOf.get(e.key) ?? 0} textCols={stacked.get(e.key)?.cols} textTop={stacked.has(e.key) ? stacked.get(e.key)!.y - map.minToY(e.start) : undefined} clock24={settings.clock24} />
+            <EventBlock key={e.key} item={e} map={map} col={colOf.get(e.key) ?? 0} textCols={labelOf.get(e.key)?.cols} labelY={rel(labelOf.get(e.key), map.minToY(e.start))} clock24={settings.clock24} />
           ))}
         {visible.map((item) => {
           const cat = cats.get(item.task.category_id ?? '')
@@ -278,8 +320,8 @@ export function Timeline({ day, items, events = [], cats, settings, overlay }: {
               item={byKey.get(item.key)!}
               map={map}
               col={colOf.get(item.key) ?? 0}
-              textCols={stacked.get(item.key)?.cols}
-              textTop={stacked.has(item.key) ? stacked.get(item.key)!.y - map.minToY(item.start) : undefined}
+              textCols={labelOf.get(item.key)?.cols}
+              labelY={rel(labelOf.get(item.key), map.minToY(item.start))}
               cat={cat}
               icon={taskIcon(item.task.title, cat?.icon, settings.iconOverrides)}
               selected={selectedKey === item.key}

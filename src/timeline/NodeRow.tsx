@@ -19,13 +19,43 @@ export function nodeMeta(start: number, dur: number, clock24: boolean): string {
   return dur >= CAPSULE_MIN ? `${fmtRange(start, start + dur, clock24)} (${fmtDurWords(dur)})` : fmtClock(start, clock24)
 }
 
+/**
+ * The time line in whole pieces (arc 7 slice 2): the range, then the duration, which drops out (never clipped
+ * mid-word) when the text column is too narrow; in a very narrow column the start time alone stands in for the range
+ * (spine.css container query). Discs show the start time only.
+ */
+export function MetaTime({ start, dur, clock24 }: { start: number; dur: number; clock24: boolean }) {
+  if (dur < CAPSULE_MIN) return <span className="m-range">{fmtClock(start, clock24)}</span>
+  return (
+    <>
+      <span className="m-range">{fmtRange(start, start + dur, clock24)}</span>{' '}
+      <span className="m-dur">({fmtDurWords(dur)})</span>
+      {' '}
+      <span className="m-start">{fmtClock(start, clock24)}</span>
+    </>
+  )
+}
+
+/**
+ * A label pushed off its own chip (labels.ts) keeps a visible tie to it: a thin elbow from the chip's edge, down (or
+ * up) to the label's row, then across to the text. Positions are px from the row top.
+ */
+export function Lead({ chipTop, chipH, labelY }: { chipTop: number; chipH: number; labelY: number }) {
+  const inset = 10
+  if (labelY >= chipTop + inset && labelY <= chipTop + chipH - inset) return null
+  const down = labelY > chipTop + chipH / 2
+  const from = down ? chipTop + chipH : chipTop
+  return <i className={`node-lead ${down ? 'down' : 'up'}`} aria-hidden="true" style={{ top: Math.min(from, labelY), height: Math.abs(labelY - from) }} data-testid="node-lead" />
+}
+
 export interface NodeRowProps {
   item: Item
   map: SegmentMap
   col: number
-  /** concurrent rows: the text column shifts past the cluster's chips and stacks (px from the row top) */
+  /** the text column starts this many overlap columns right of the base column (labels.ts) */
   textCols?: number
-  textTop?: number
+  /** the text + ring's centre, px from the row top (labels.ts); undefined = the row's middle */
+  labelY?: number
   cat?: Category
   icon: string
   selected: boolean
@@ -113,7 +143,7 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
         height: rowH,
         ['--col' as string]: p.col,
         ['--text-cols' as string]: p.textCols ?? p.col,
-        ['--text-top' as string]: p.textTop !== undefined ? `${p.textTop}px` : undefined,
+        ['--label-y' as string]: p.labelY !== undefined ? `${p.labelY}px` : undefined,
         ['--chip-h' as string]: `${chipH}px`,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
       }}
@@ -146,9 +176,10 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
       >
         <Icon name={p.icon} size={26} />
       </button>
-      <button type="button" className={`node-text ${p.textTop !== undefined ? 'stacked' : ''}`} tabIndex={-1} aria-hidden="true" onClick={(e) => (e.stopPropagation(), p.onOpen(item))} data-testid="node-title">
+      {p.labelY !== undefined && <Lead chipTop={(rowH - chipH) / 2} chipH={chipH} labelY={p.labelY} />}
+      <button type="button" className="node-text" tabIndex={-1} aria-hidden="true" onClick={(e) => (e.stopPropagation(), p.onOpen(item))} data-testid="node-title">
         <span className="node-meta tnum">
-          {meta}
+          <MetaTime start={item.start} dur={dur} clock24={p.clock24} />
           {repeats && <Icon name="ui-repeat" size={14} />}
           {/* a task kept in another zone (db/007): shown converted to this device, marked with the globe */}
           {zoned && <Icon name="ui-globe" size={14} title={`Set in ${zoneCity(t.tz!)} time`} className="node-tz" />}

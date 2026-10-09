@@ -102,6 +102,44 @@ describe('railLabels', () => {
     ]
     expect(railLabels(map, rows).map((l) => l.min)).toEqual([H(9), H(12), H(15), H(20), H(21), H(21, 30), H(22), H(22, 30)])
   })
+
+  it('arc 7: one label per minute (two rows at 16:00 → one "16:00"), every label ≥ 28 px apart', () => {
+    const spans = [
+      { key: 'a', start: H(16), end: H(16, 15) },
+      { key: 'b', start: H(16), end: H(17) },
+      { key: 'c', start: H(16, 15), end: H(16, 45) },
+    ]
+    const map = buildSegments(spans, [], H(6), H(22))
+    const rows = [
+      { start: H(6), end: H(6, 1), capsule: false, anchor: true },
+      { start: H(22), end: H(22, 1), capsule: false, anchor: true },
+      { start: H(16), end: H(16, 15), capsule: false },
+      { start: H(16), end: H(17), capsule: true },
+      { start: H(16, 15), end: H(16, 45), capsule: true },
+    ]
+    const out = railLabels(map, rows)
+    const mins = out.map((l) => l.min)
+    expect(new Set(mins).size).toBe(mins.length)
+    expect(mins.filter((m) => m === H(16))).toHaveLength(1)
+    for (let i = 1; i < out.length; i++) expect(out[i].y - out[i - 1].y).toBeGreaterThanOrEqual(28)
+    // the capsule's true start wins the minute over the disc's centre
+    expect(out.find((l) => l.min === H(16))!.y).toBe(map.minToY(H(16)))
+  })
+
+  it('arc 7: a compressed tick crowding a capsule end drops; the bookends always stay', () => {
+    // 16:00–17:00 then 17:00 → 22:00 compressed (ticks 18:00 / 19:00, 24 px apart)
+    const map = buildSegments([{ key: 'b', start: H(16), end: H(17) }], [], H(6), H(22))
+    const rows = [
+      { start: H(6), end: H(6, 1), capsule: false, anchor: true },
+      { start: H(22), end: H(22, 1), capsule: false, anchor: true },
+      { start: H(16), end: H(17), capsule: true },
+    ]
+    const mins = railLabels(map, rows).map((l) => l.min)
+    expect(mins).toContain(H(6))
+    expect(mins).toContain(H(22))
+    expect(mins).toContain(H(17))
+    expect(mins.includes(H(18)) && mins.includes(H(19))).toBe(false)
+  })
 })
 
 describe('visibleByY', () => {

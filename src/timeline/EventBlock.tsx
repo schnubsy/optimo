@@ -5,6 +5,8 @@ import { fmtRange } from '../lib/time'
 import { useIsMobile } from '../lib/useMedia'
 import type { EventItem } from '../calendar/events'
 import type { SegmentMap } from './segments'
+import { NODE_PX } from './labels'
+import { Lead, MetaTime } from './NodeRow'
 import '../editor/sheet.css'
 
 /** #19: the read-only details, shared by the desktop popover and the mobile bottom sheet. */
@@ -24,7 +26,7 @@ function EventDetails({ title, time, location, calendarName }: { title: string; 
  * time beside it — fixed in place (not draggable, no ring); tap shows its details — a popover on desktop, a read-only
  * bottom sheet below 900px (#19). Placed by the day's segment map like every other row.
  */
-export const EventBlock = memo(function EventBlock({ item, map, col, textCols, textTop, clock24, calendarName }: { item: EventItem; map: SegmentMap; col: number; textCols?: number; textTop?: number; clock24: boolean; calendarName?: string }) {
+export const EventBlock = memo(function EventBlock({ item, map, col, textCols, labelY, clock24, calendarName }: { item: EventItem; map: SegmentMap; col: number; textCols?: number; labelY?: number; clock24: boolean; calendarName?: string }) {
   const [open, setOpen] = useState(false)
   const mobile = useIsMobile()
   const e = item.event
@@ -42,17 +44,21 @@ export const EventBlock = memo(function EventBlock({ item, map, col, textCols, t
   return (
     <div
       className={`evt node disc ${open ? 'open' : ''}`}
-      style={{ top, height, ['--col' as string]: col, ['--text-cols' as string]: textCols ?? col, ['--text-top' as string]: textTop !== undefined ? `${textTop}px` : undefined, ['--chip-h' as string]: '56px', ['--evt-color' as string]: e.color ?? undefined }}
+      style={{ top, height, ['--col' as string]: col, ['--text-cols' as string]: textCols ?? col, ['--label-y' as string]: labelY !== undefined ? `${labelY}px` : undefined, ['--chip-h' as string]: `${NODE_PX}px`, ['--evt-color' as string]: e.color ?? undefined }}
       data-testid="event"
       data-uid={e.uid}
       onClick={(ev) => ev.stopPropagation()}
     >
-      <button type="button" className="node-chip evt-chip" aria-expanded={open} aria-label={`${title}, ${time}, calendar event`} onClick={() => setOpen(!open)}>
+      {/* the disc is a full 56 px node (arc 7: the legacy 22 px `.evt-chip` dot in app.css no longer applies) */}
+      <button type="button" className="node-chip evt-disc" aria-expanded={open} aria-label={`${title}, ${time}, calendar event`} onClick={() => setOpen(!open)} data-testid="event-chip">
         <Icon name="ui-calendar" size={22} />
       </button>
-      <button type="button" className={`node-text ${textTop !== undefined ? 'stacked' : ''}`} tabIndex={-1} aria-hidden="true" onClick={() => setOpen(!open)}>
-        <span className="node-meta tnum">{time}</span>
-        <span className="node-title evt-title">{title}</span>
+      {labelY !== undefined && <Lead chipTop={(height - NODE_PX) / 2} chipH={NODE_PX} labelY={labelY} />}
+      <button type="button" className="node-text" tabIndex={-1} aria-hidden="true" onClick={() => setOpen(!open)} data-testid="event-title">
+        <span className="node-meta tnum">
+          <MetaTime start={item.start} dur={item.end - item.start} clock24={clock24} />
+        </span>
+        <span className="node-title evt-name">{title}</span>
       </button>
       {open && !mobile && (
         <div className="evt-pop" role="dialog" aria-label={title} data-testid="event-details">
