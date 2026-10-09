@@ -1,7 +1,7 @@
 // arc 7 slice 2 — row labels on the spine (src/timeline/labels.ts): each label beside its own chip, ≥ LABEL_GAP apart,
 // inside its segment, with the text column past the chips that meet its line.
 import { describe, expect, it } from 'vitest'
-import { chipSpan, layoutLabels, LABEL_GAP, LABEL_HALF, stackLabels, type LabelNode } from '../../src/timeline/labels'
+import { chipSpan, labelWant, layoutLabels, LABEL_GAP, LABEL_HALF, stackLabels, type LabelNode } from '../../src/timeline/labels'
 import { buildSegments } from '../../src/timeline/segments'
 import { layoutColumns } from '../../src/timeline/layout'
 
@@ -80,10 +80,13 @@ describe('layoutLabels', () => {
     }
     // each label meets its own chip here (no push needed): the ring sits beside its own node
     for (const v of out.values()) expect(v.y >= v.chip.top && v.y <= v.chip.bottom).toBe(true)
-    // the text clears every chip on its line: Lunch (col 0) still meets Offsite's capsule (col 1) → starts past col 1;
-    // Deep work's line (10:00) meets Offsite too
-    expect(out.get('lunch')!.cols).toBe(1)
-    expect(out.get('deep')!.cols).toBe(1)
+    // Deep work's label sits on the part of its capsule Offsite (col 1) does not overlap (9:00–9:30): no chip right of
+    // it there, so its title takes the full row; likewise Lunch after Offsite ends; Offsite's line meets only its own
+    expect(out.get('deep')!.cols).toBe(0)
+    expect(out.get('lunch')!.cols).toBe(0)
+    expect(out.get('offsite')!.cols).toBe(1)
+    expect(out.get('deep')!.y).toBeLessThan(map.minToY(H(9, 30)))
+    expect(out.get('lunch')!.y).toBeGreaterThan(map.minToY(H(13, 30)))
   })
 
   it('three-way overlap (16:00 / 16:00–17:00 / 16:15): three distinct rows, the later one pushed down', () => {
@@ -97,8 +100,21 @@ describe('layoutLabels', () => {
     const sorted = [...ys].sort((a, b) => a - b)
     expect(sorted[1] - sorted[0]).toBeGreaterThanOrEqual(LABEL_GAP)
     expect(sorted[2] - sorted[1]).toBeGreaterThanOrEqual(LABEL_GAP)
-    // the disc (16:00, shortest wanted y) keeps the top line
+    // the disc (16:00, shortest wanted y) keeps the top line; Pay invoices stays on its own chip; Design review (the
+    // long capsule on the spine) takes the line below, where no other chip stands beside its text
     expect(out.get('inbox')!.y).toBe(sorted[0])
+    const inv = out.get('invoices')!
+    expect(inv.y >= inv.chip.top && inv.y <= inv.chip.bottom).toBe(true)
+    expect(out.get('review')!.y).toBe(sorted[2])
+    expect(out.get('review')!.cols).toBe(0)
+  })
+
+  it('labelWant: the middle of the longest run of the chip that no chip further right overlaps', () => {
+    const n: LabelNode = { key: 'r', col: 0, start: 0, chip: { top: 32, bottom: 152 } }
+    const others: LabelNode[] = [n, { key: 'a', col: 1, start: 0, chip: { top: -5, bottom: 51 } }, { key: 'b', col: 1, start: 15, chip: { top: 62, bottom: 122 } }]
+    expect(labelWant(n, others)).toBe(137) // 122–152
+    // fully covered: the chip's centre
+    expect(labelWant({ key: 'd', col: 0, start: 0, chip: { top: 100, bottom: 156 } }, [{ key: 'c', col: 1, start: 0, chip: { top: 0, bottom: 300 } }])).toBe(128)
   })
 
   it('the text column only skips chips that meet the label line', () => {

@@ -3,9 +3,11 @@
 // minute↔pixel conversion) — this module only spaces those pixels apart.
 //
 // Rule (deterministic):
-//   1. A row's label wants to sit level with its own chip's centre (the disc, or the middle of the capsule).
-//   2. Labels of one segment are taken in order (wanted y, then start, then key) and each sits at least LABEL_GAP
-//      below the previous one — a later row whose chip is too close to the one above is pushed down.
+//   1. A row's label wants to sit level with its own chip, on the part of it no chip further right overlaps (so the
+//      node beside the text is the row's own); a lone row's label sits on its chip's centre (the arc-6 look).
+//   2. Labels of one segment are taken in order (wanted y, then the shorter chip, then start, then key) and each sits
+//      at least LABEL_GAP below the previous one — a later row too close to the one above is pushed down (NodeRow then
+//      draws a lead from its chip to the pushed label).
 //   3. A backward pass pulls the tail up so no label leaves its segment (the segment map gives every concurrent row
 //      a 56 px line, so a cluster always has room for its stack).
 //   4. A label's text starts right of the right-most chip whose span meets the label's band (± LABEL_HALF): the title
@@ -59,12 +61,37 @@ export function stackLabels(wants: { key: string; want: number }[], gap: number,
   return out
 }
 
+/**
+ * Where a row's label wants to sit: level with the part of its chip that no chip further right overlaps (the middle of
+ * the longest such run), so the node right beside the text is the row's own; the chip's centre when it has no such run
+ * (a lone row: exactly the arc-6 look).
+ */
+export function labelWant(n: LabelNode, nodes: LabelNode[]): number {
+  const covers = nodes
+    .filter((m) => m.col > n.col && m.chip.top < n.chip.bottom && m.chip.bottom > n.chip.top)
+    .map((m) => m.chip)
+    .sort((a, b) => a.top - b.top)
+  let best: Span1D | null = null
+  let cur = n.chip.top
+  const consider = (top: number, bottom: number) => {
+    if (bottom - top >= 1 && (!best || bottom - top > best.bottom - best.top)) best = { top, bottom }
+  }
+  for (const c of covers) {
+    consider(cur, Math.min(c.top, n.chip.bottom))
+    cur = Math.max(cur, c.bottom)
+  }
+  consider(cur, n.chip.bottom)
+  const b = best as Span1D | null
+  return b ? (b.top + b.bottom) / 2 : (n.chip.top + n.chip.bottom) / 2
+}
+
 /** Labels for the rows of one segment (a cluster of concurrent rows, or a single row) spanning [segTop, segBottom]. */
 export function layoutLabels(nodes: LabelNode[], segTop: number, segBottom: number): Map<string, LabelBox> {
-  const ordered = [...nodes].sort((a, b) => a.start - b.start || a.key.localeCompare(b.key))
+  // equal wants: the shorter chip (a disc has no slack) keeps its line, then the earlier start
+  const ordered = [...nodes].sort((a, b) => a.chip.bottom - a.chip.top - (b.chip.bottom - b.chip.top) || a.start - b.start || a.key.localeCompare(b.key))
   const lo = Math.min(segTop + LABEL_HALF, (segTop + segBottom) / 2)
   const hi = Math.max(segBottom - LABEL_HALF, lo)
-  const placed = stackLabels(ordered.map((n) => ({ key: n.key, want: (n.chip.top + n.chip.bottom) / 2 })), LABEL_GAP, lo, hi)
+  const placed = stackLabels(ordered.map((n) => ({ key: n.key, want: labelWant(n, nodes) })), LABEL_GAP, lo, hi)
   const byKey = new Map(nodes.map((n) => [n.key, n]))
   const out = new Map<string, LabelBox>()
   for (const p of placed) {
