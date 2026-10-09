@@ -24,7 +24,7 @@ export interface Task extends SyncCols {
   notes: string
   category_id: string | null
   priority: Priority
-  start_at: string | null // ISO (UTC); null ⇒ inbox
+  start_at: string | null // ISO (UTC); null ⇒ unscheduled (inbox / planned / someday — see taskKind)
   duration_min: number
   all_day: boolean
   completed_at: string | null
@@ -36,10 +36,20 @@ export interface Task extends SyncCols {
   series_id: string | null // exception-override rows only
   /** arc 6 (db/007): the IANA zone the wall-clock time was set in; null/absent = the viewer's zone */
   tz?: string | null
-  /** local index: 'inbox' | 'sched' | 'series' | 'override' | 'gone' */
+  /** arc 7 (db/008): the day an unscheduled task is planned for, untimed — "to place" on that day (YYYY-MM-DD) */
+  plan_date: string | null
+  /** arc 7 (db/008): parked with no day (Someday) */
+  someday: boolean
+  /** arc 7 (db/008): false = no estimate yet; duration_min then holds the default used when painting */
+  estimated: boolean
+  /** local index, derived by taskKind (src/data/place.ts) — never synced */
   _kind?: TaskKind
 }
-export type TaskKind = 'inbox' | 'sched' | 'series' | 'override' | 'gone'
+/**
+ * A task's place, derived (ARC.md arc 7 RULE): deleted ⇒ 'gone'; series row ⇒ 'series'; override row ⇒ 'override';
+ * start_at ⇒ 'sched'; someday ⇒ 'someday'; plan_date ⇒ 'planned' ("to place" that day); else ⇒ 'inbox'.
+ */
+export type TaskKind = 'inbox' | 'planned' | 'someday' | 'sched' | 'series' | 'override' | 'gone'
 
 export interface Category extends SyncCols {
   id: string
@@ -181,6 +191,12 @@ export const REMOTE_TABLE: Record<TableName, string> = {
 
 /** Tables that exist only once db/004_ai.sql is applied — their pushes park instead of failing the sync. */
 export const OPTIONAL_TABLES: ReadonlySet<TableName> = new Set(['aiPlans', 'aiProfile'])
+
+/** Columns that exist only once their migration is applied (db/008_inbox_first.sql). A push the server answers with
+ *  "unknown column" re-sends those rows without them and re-sends them in full once the columns appear (sync engine). */
+export const OPTIONAL_COLUMNS: Partial<Record<TableName, readonly string[]>> = {
+  tasks: ['plan_date', 'someday', 'estimated'],
+}
 
 export interface OutboxRow {
   seq?: number

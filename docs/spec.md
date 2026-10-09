@@ -20,9 +20,24 @@ web client is load-bearing for them.
 
 ### 2.1 Task
 Fields: `title`, `notes` (markdown-lite), `category` (color + icon), `priority` (none / low /
-med / high), `start_at` (null ⇒ inbox), `duration_min` (default from settings, 30), `all_day`,
+med / high), `start_at` (null ⇒ unscheduled — see *Place* below), `duration_min` (default from settings, 30), `all_day`,
 `subtasks[]` (title, done), `reminders[]` (offset minutes before start — see *Reminders* below),
-`completed_at`, recurrence (§2.5), `tz` (arc 6, below).
+`completed_at`, recurrence (§2.5), `tz` (arc 6, below), `plan_date` / `someday` / `estimated` (arc 7, below).
+
+**Place (arc 7, `db/008_inbox_first.sql`) — derived, never stored twice.** `plan_date date null` (the day an untimed
+task is planned for), `someday bool` (parked, no day), `estimated bool` (false = no estimate yet; `duration_min` still
+holds the default used when painting). The place (`taskKind`, `src/data/place.ts`; local index `_kind`) is:
+`start_at` set ⇒ scheduled (`sched`, or `series` / `override` for recurrence rows); else `someday` ⇒ **Someday**; else
+`plan_date` set ⇒ **planned** ("to place" on that day); else ⇒ **Inbox**. Moving between places clears what no longer
+applies (a time clears day + Someday; Someday clears the day; a day clears Someday; unscheduling without naming a day
+goes to the inbox), and the client stamps `start_at` + `plan_date` + `someday` together in `field_ts`, so one place
+decision wins as a unit. A field-level mix from an older client is still resolved by the order above (no CHECK — it
+could reject a legitimate merge). Series / override rows never carry a day or Someday. Capture (`captureToInbox`) is
+untimed with `estimated = false` and `duration_min = settings.default_duration`; an explicit duration (setEstimate, a
+resize, the editor) sets `estimated = true`. "To place" trays: a day's planned items, priority then sort_key; today's
+tray also takes unfinished items planned for an earlier day (overdue roll-forward — they show on today only; a past
+day keeps just its finished ones). Plan-day (AI) reads only timed tasks of the day; planned / Someday items are not
+sent until the tray's "Fit with AI" (arc 7 slice 9).
 
 **Time zone (arc 6, `db/007_task_tz.sql`).** Optional IANA zone (`planner_tasks.tz text null`), set from the create /
 edit sheet (② ••• → Set Timezone; the picker lists `Intl.supportedValuesOf('timeZone')`, device zone first; picking
@@ -170,7 +185,10 @@ server-side (Edge Function secrets) in later arcs.
 - `planner_categories` (id uuid, user_id, name, color, icon, sort_key, …sync cols)
 - `planner_tasks` (id uuid, user_id, title, notes, category_id, priority int, start_at timestamptz null,
   duration_min int, all_day bool, completed_at, subtasks jsonb, reminders jsonb, sort_key,
-  rrule text null, dtstart timestamptz null, series_id uuid null, tz text null /* arc 6, db/007 */, …sync cols)
+  rrule text null, dtstart timestamptz null, series_id uuid null, tz text null /* arc 6, db/007 */,
+  plan_date date null, someday bool not null default false, estimated bool not null default true /* arc 7, db/008 */,
+  …sync cols). Place = derived from start_at → someday → plan_date → inbox (§2.1); `planner_merge()` merges the
+  arc-7 columns field-level unchanged (it loops over every column of the row).
 - `planner_exceptions` (series_id, occurrence_date date, task_id uuid null /* override */,
   skipped bool, …sync cols; PK (series_id, occurrence_date))
 - `planner_settings` (user_id PK, data jsonb, …sync cols)
@@ -187,6 +205,12 @@ server-side (Edge Function secrets) in later arcs.
   role); clients may read. `planner_calendar_accounts.write_calendar_href` is the one calendar optimo writes into.
   `planner_ai_plans` / `planner_ai_profile` are optional tables for a client: a push answered with PGRST205 / 42P01 (not applied yet) parks those
   outbox rows and retries every cycle; the core tables never wait on them.
+  Optional **columns** (`OPTIONAL_COLUMNS`, arc 7: `planner_tasks.plan_date / someday / estimated`): a push answered
+  PGRST204 / 42703 (008 not applied yet) is re-sent without those columns (and their `field_ts` keys, so the server
+  claims no timestamp for a value it never got); the row ids go to a local backlog (`meta.colBacklog`). Each later push
+  probes `select plan_date,someday,estimated limit 1`; once it passes, the backlog rows are re-queued in full from the
+  local store. Nothing counts as pending meanwhile, and pulls of pre-008 rows keep the local values (defaults for new
+  rows).
 
 **Sync cols on every row:** `version bigint` (server-incremented by trigger), `updated_at timestamptz`,
 `deleted_at timestamptz null` (tombstone; hard-purged after 30 days), `field_ts jsonb`

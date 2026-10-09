@@ -14,8 +14,8 @@ import {
   type SettingsData,
   type TableName,
   type Task,
-  type TaskKind,
 } from './types'
+import { PLACE_FIELDS, isDayKey, isRecurringRow, placeChanged, settleEstimate, settlePlace, taskKind } from './place'
 
 type Listener = () => void
 const listeners = new Set<Listener>()
@@ -26,12 +26,8 @@ export function onLocalWrite(fn: Listener): () => void {
 }
 const notify = () => listeners.forEach((fn) => fn())
 
-export function taskKind(t: Pick<Task, 'deleted_at' | 'rrule' | 'series_id' | 'start_at'>): TaskKind {
-  if (t.deleted_at) return 'gone'
-  if (t.rrule) return 'series'
-  if (t.series_id) return 'override'
-  return t.start_at ? 'sched' : 'inbox'
-}
+// taskKind lives in ./place (pure, shared with the Dexie upgrade); re-exported here for existing importers.
+export { taskKind }
 
 /** Strip local-only fields for the wire. */
 export function toPayload(row: object): Record<string, unknown> {
@@ -48,10 +44,12 @@ export function rowKey(table: TableName, row: { id?: string; series_id?: string 
 function stampRow<T extends { field_ts: Record<string, number>; device_id: string | null }>(
   before: T | undefined,
   after: T,
+  force: readonly string[] = [],
 ): T {
   const ts = stamp()
   const field_ts = { ...(before?.field_ts ?? {}) }
   for (const k of changedFields(before as Record<string, unknown> | undefined, after as Record<string, unknown>)) field_ts[k] = ts
+  for (const k of force) field_ts[k] = ts
   return { ...after, field_ts, device_id: deviceId(), updated_at: new Date(ts).toISOString() }
 }
 
@@ -88,6 +86,9 @@ export function blankTask(input: TaskInput = {}): Task {
     rrule: null,
     dtstart: null,
     series_id: null,
+    plan_date: null,
+    someday: false,
+    estimated: true,
     deleted_at: null,
     field_ts: {},
     device_id: null,
@@ -96,7 +97,7 @@ export function blankTask(input: TaskInput = {}): Task {
 }
 
 export async function createTask(input: TaskInput = {}, id?: string): Promise<Task> {
-  const base = blankTask(input)
+  const base = settleEstimate(undefined, input, settlePlace(undefined, input, blankTask(input)))
   if (id) base.id = id
   const row = stampRow(undefined, base)
   row._kind = taskKind(row)
@@ -113,9 +114,11 @@ export async function updateTask(id: string, patch: TaskInput): Promise<Task | u
   await db.transaction('rw', db.tasks, db.outbox, async () => {
     const before = await db.tasks.get(id)
     if (!before) return
-    const next = { ...before, ...patch }
+    // arc 7 place rule: the patch's place wins, fields that no longer apply are cleared; a place move stamps
+    // start_at + plan_date + someday together so one place decision wins as a unit under field-level LWW
+    const next = settleEstimate(before, patch, settlePlace(before, patch, { ...before, ...patch }))
     if (changedFields(before as never, next as never).length === 0) return
-    const after = stampRow(before, next)
+    const after = stampRow(before, next, placeChanged(before, next) ? PLACE_FIELDS : [])
     after._kind = taskKind(after)
     await db.tasks.put(after)
     await enqueue('tasks', after)
@@ -123,6 +126,63 @@ export async function updateTask(id: string, patch: TaskInput): Promise<Task | u
   })
   notify()
   return out
+}
+
+// ---------- arc 7: inbox-first places (db/008_inbox_first.sql) ----------
+// Each is an updateTask (field_ts + outbox in one transaction). Series / override rows have no inbox place: the
+// place actions leave them untouched and resolve to undefined.
+
+export type CaptureOpts = Partial<Pick<Task, 'notes' | 'category_id' | 'priority' | 'plan_date' | 'someday' | 'duration_min' | 'subtasks'>>
+
+/** Frictionless capture: an untimed inbox task with no estimate (duration_min = settings.default_duration for painting).
+ *  `opts.plan_date` / `opts.someday` file it straight into a day or Someday; `opts.duration_min` counts as an estimate. */
+export async function captureToInbox(title: string, opts: CaptureOpts = {}): Promise<Task> {
+  if (opts.plan_date != null && !isDayKey(opts.plan_date)) throw new Error(`plan_date must be YYYY-MM-DD, got ${opts.plan_date}`)
+  const s = await getSettings()
+  return createTask({
+    ...opts,
+    title: title.trim(),
+    start_at: null,
+    duration_min: opts.duration_min ?? s.default_duration,
+    estimated: opts.duration_min != null,
+    sort_key: Date.now(),
+  })
+}
+
+async function movePlace(id: string, patch: (t: Task) => TaskInput): Promise<Task | undefined> {
+  const t = await db.tasks.get(id)
+  if (!t || t.deleted_at || isRecurringRow(t)) return undefined
+  return (await updateTask(id, patch(t))) ?? t
+}
+
+/** Plan for a day, untimed ("to place" on `date`, YYYY-MM-DD). From the timeline this unschedules it. */
+export function planForDay(id: string, date: string): Promise<Task | undefined> {
+  if (!isDayKey(date)) throw new Error(`planForDay: date must be YYYY-MM-DD, got ${date}`)
+  return movePlace(id, (t) => ({ start_at: null, plan_date: date, someday: false, ...(t._kind === 'planned' && t.plan_date === date ? {} : { sort_key: Date.now() }) }))
+}
+
+/** Park in Someday (no day, no time). */
+export function toSomeday(id: string): Promise<Task | undefined> {
+  return movePlace(id, (t) => ({ start_at: null, plan_date: null, someday: true, ...(t._kind === 'someday' ? {} : { sort_key: Date.now() }) }))
+}
+
+/** Back to the inbox (clears time, day and Someday). */
+export function toInbox(id: string): Promise<Task | undefined> {
+  return movePlace(id, (t) => ({ start_at: null, plan_date: null, someday: false, ...(t._kind === 'inbox' ? {} : { sort_key: Date.now() }) }))
+}
+
+/** Set the estimate in minutes (estimated = true), or clear it with null (estimated = false; an unscheduled task's
+ *  duration_min goes back to settings.default_duration, a scheduled one keeps its block length). */
+export async function setEstimate(id: string, minutes: number | null): Promise<Task | undefined> {
+  const t = await db.tasks.get(id)
+  if (!t || t.deleted_at) return undefined
+  if (minutes === null) {
+    const s = await getSettings()
+    return (await updateTask(id, { estimated: false, ...(t.start_at ? {} : { duration_min: s.default_duration }) })) ?? t
+  }
+  const m = Math.round(minutes)
+  if (!Number.isFinite(m) || m < 1) throw new Error(`setEstimate: minutes must be ≥ 1, got ${minutes}`)
+  return (await updateTask(id, { duration_min: m, estimated: true })) ?? t
 }
 
 export async function deleteTask(id: string) {

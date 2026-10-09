@@ -23,6 +23,10 @@ const AI_TABLES = ['planner_ai_plans', 'planner_ai_profile'] as const
 /** server-owned tables written only by the (in-process) Edge Function handlers */
 const SERVER_TABLES = ['planner_calendar_accounts', 'planner_events', 'planner_push_subscriptions'] as const
 
+/** db/008_inbox_first.sql columns on planner_tasks — present only while `server.inboxCols` (the default) */
+export const INBOX_COLS = ['plan_date', 'someday', 'estimated'] as const
+const INBOX_DEFAULTS: Row = { plan_date: null, someday: false, estimated: true }
+
 const DEFAULTS: Record<string, Row> = {
   planner_categories: { color: 'work', icon: 'dot', sort_key: 0 },
   planner_tasks: {
@@ -62,6 +66,8 @@ export class FakeSupabase {
   rows: Record<string, Map<string, Row>> = Object.fromEntries([...TABLES, ...AI_TABLES, ...SERVER_TABLES].map((t) => [t, new Map()]))
   /** db/004_ai.sql applied? false ⇒ PostgREST answers PGRST205 for planner_ai_* (the pre-Cowork state) */
   ai = false
+  /** db/008_inbox_first.sql applied? false ⇒ PostgREST answers PGRST204 / 42703 for plan_date / someday / estimated */
+  inboxCols = true
   /** plan-day deployed? false ⇒ the functions gateway 404s it */
   planFn = false
   /** the scripted Messages API behind plan-day */
@@ -174,6 +180,17 @@ export class FakeSupabase {
         } else Object.assign(this.rows.planner_calendar_accounts.get(id) ?? {}, JSON.parse(req.postData() ?? '{}'))
         return route.fulfill({ status: 204, headers: cors })
       }
+      if (table === 'planner_tasks' && !this.inboxCols) {
+        // pre-008 schema: PostgREST rejects an unknown column on write (PGRST204) and on read (42703)
+        const sel = url.searchParams.get('select') ?? '*'
+        if (method === 'GET' && INBOX_COLS.some((c) => sel.split(',').includes(c)))
+          return json(400, { code: '42703', details: null, hint: null, message: `column planner_tasks.${INBOX_COLS.find((c) => sel.split(',').includes(c))} does not exist` })
+        if (method === 'POST') {
+          const body = JSON.parse(req.postData() ?? '[]') as Row[]
+          const bad = INBOX_COLS.find((c) => (Array.isArray(body) ? body : [body]).some((r) => c in r))
+          if (bad) return json(400, { code: 'PGRST204', details: null, hint: null, message: `Could not find the '${bad}' column of 'planner_tasks' in the schema cache` })
+        }
+      }
       if (method === 'POST' && ([...TABLES, ...AI_TABLES] as readonly string[]).includes(table)) {
         const body = JSON.parse(req.postData() ?? '[]')
         for (const r of Array.isArray(body) ? body : [body]) this.upsert(table, r)
@@ -188,11 +205,14 @@ export class FakeSupabase {
   upsert(table: string, incoming: Row) {
     const r: Row = { ...incoming, user_id: TEST_USER.id }
     const k = keyOf(table, r)
-    const stored = this.rows[table].get(k)
+    const prior = this.rows[table].get(k)
+    // once 008 is "applied" (inboxCols), rows written before it carry the column defaults, as `add column … default` does
+    const stored = prior && table === 'planner_tasks' && this.inboxCols ? { ...INBOX_DEFAULTS, ...prior } : prior
     let row: Row
     let op: 'insert' | 'update'
     if (!stored) {
-      row = { ...DEFAULTS[table], ...r, version: 1, updated_at: new Date().toISOString(), deleted_at: r.deleted_at ?? null, field_ts: r.field_ts ?? {} }
+      const defaults = table === 'planner_tasks' && this.inboxCols ? { ...DEFAULTS[table], ...INBOX_DEFAULTS } : DEFAULTS[table]
+      row = { ...defaults, ...r, version: 1, updated_at: new Date().toISOString(), deleted_at: r.deleted_at ?? null, field_ts: r.field_ts ?? {} }
       op = 'insert'
     } else {
       // ON CONFLICT DO UPDATE: NEW = stored overlaid with the sent columns, then planner_merge()
