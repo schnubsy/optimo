@@ -75,10 +75,7 @@
 .tl.spine-tl .allday { padding-left: var(--tx); background: var(--panel); }
 .tl.spine-tl .allday-k { width: calc(var(--gx)); }
 
-/* the panel: iPhone = a rounded sheet under the 131 px header (7 px margins, grabber); desktop = a rounded card */
-.is-mobile .pane.m-day > .day { position: relative; padding-top: 0; margin: calc(var(--header-h-mobile) + env(safe-area-inset-top)) var(--panel-margin) 0;
-  border-radius: var(--panel-radius) var(--panel-radius) 0 0; background: var(--panel); overflow: hidden; }
-.is-mobile .pane.m-day > .day::before { content: ''; position: absolute; z-index: 12; top: 12px; left: 50%; translate: -50% 0; width: 45px; height: 5px; border-radius: 3px; background: var(--spine); pointer-events: none; }
+/* the panel: on iPhone the day lives in PanelSheet (src/chrome/panel.css, slice 4); desktop = a rounded card */
 .is-mobile .tl.spine-tl { padding: 0; scroll-padding-top: 0; }
 .is-mobile .tl.spine-tl .allday { top: 0; }
 .is-desktop .day { margin: 0 var(--sp-4) var(--sp-4) 0; border-radius: var(--panel-radius); background: var(--panel); overflow: hidden; }
