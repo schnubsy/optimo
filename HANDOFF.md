@@ -26,7 +26,7 @@ Arc 5a — **Family Wing sign-in · sync feedback · calendar roles · paint a b
 - **migrations: DONE.** db/006 applied by Code via the Supabase connector (`optimo_006_people`, `20261004003931`). Mark = 1 person, 0 unassigned rows, `family_access` = false, max(version) is still 9. One new advisor WARN, by design: `planner_family_access()` is callable by authenticated.
 - **deploy (Edge: calendar-sync, calendar-connect): DONE.** Both moved v3 → v4. calendar-sync ezbr `4fa36d95…` → `3ee448f2…`; calendar-connect `b3532d49…` → `27d97ea7…`. Read-back is byte-identical to the repo (10/10 files each). The 00:45 UTC cron sync answered `200 {…,"events":12,"pushed":0}`.
 - **Inbox cleanup: N/A.** The main checkout is not a worktree. The three inbox files (ARC.md, the feedback backlog, verify-2026-10-03-2) were committed in slice 1, so no uncommitted copies remain.
-- **Agent worktrees left in place** (worktrees are never removed inside an order; all three commits are merged): `.claude/worktrees/agent-a370c47dae060ce82`, `agent-ab7dd340f3765ec38`, `agent-a07ccb21bbff20c5d`.
+- **Worktree sweep: DONE 2026-10-09** (council v4.11.4) — the 3 agent worktrees + 3 `worktree-agent-*` branches removed (all SAFE); `git worktree list` = main checkout only.
 - **Snags:** #67–#79 (Eye 5a: P1 #79, #67–#70; P2 #71–#78), plus #57, #59–#65 and #39–#54 carried.
 
 ## Exact next steps
