@@ -161,3 +161,88 @@ button.wiz-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .wiz-confirm-keep { background: var(--node); color: var(--ink); }
 .wiz-confirm-discard { background: var(--danger-tint); color: var(--danger-ink); }
 .wiz-confirm-btns button:focus-visible { box-shadow: var(--focus-ring); }
+
+/* ---------- ③ details / edit screen (arc 6 slice 7, mockups 06) ---------- */
+/* header: the task as a capsule on a stub of spine (dashed above, solid below), the palette button at its foot */
+.wiz-hd.wiz-hd-3 { height: 284px; overflow: hidden; }
+.wiz-hd-3 .wiz-hd-row { top: 60px; height: 190px; left: 16px; }
+.wiz-capsule-wrap { position: relative; flex: none; width: 84px; align-self: stretch; display: grid; place-items: center; }
+.wiz-capsule-wrap::before { content: ''; position: absolute; left: calc(50% - 1.5px); width: 3px; top: -60px; bottom: -40px;
+  background: repeating-linear-gradient(to bottom, oklch(0.2 0 0 / 0.55) 0 10px, transparent 10px 18px); }
+.wiz-capsule { position: relative; box-sizing: border-box; width: 84px; border-radius: 42px; border: 4px solid oklch(1 0 0); background: var(--node);
+  color: var(--cat-glyph); display: grid; place-items: center; transition: height var(--dur-base) var(--ease-standard); }
+.wiz-palette { position: absolute; left: -12px; bottom: calc(50% - 80px); width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: oklch(1 0 0 / 0.18); color: oklch(1 0 0); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.2); }
+.wiz-palette:focus-visible { box-shadow: 0 0 0 3px oklch(1 0 0 / 0.7); }
+button.wiz-ring { position: relative; padding: 0; background: none; color: var(--ink-on-accent); display: grid; place-items: center; }
+button.wiz-ring::before { content: ''; position: absolute; inset: -11px; }
+button.wiz-ring.done { background: var(--accent); border-color: var(--accent); }
+button.wiz-ring:focus-visible { box-shadow: 0 0 0 3px oklch(1 0 0 / 0.7); }
+
+.wiz-step3 { gap: 16px; }
+.det-rows .wiz-row:disabled { opacity: 1; cursor: default; }
+.det-tz { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font: var(--type-meta); color: var(--ink-3); }
+.det-repeat { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 22px 0 16px; border: 0; border-radius: var(--r-pill);
+  background: var(--node); color: var(--ink); font: var(--fw-regular) var(--fs-20) / 1 var(--font-ui); }
+.det-repeat .ic { color: var(--ink-3); }
+.det-repeat:focus-visible { box-shadow: var(--focus-ring); }
+.det-card { padding: 4px 0; }
+.det-subs { list-style: none; margin: 0; padding: 0 16px; }
+.det-sub { display: flex; align-items: center; gap: 14px; min-height: 52px; box-shadow: inset 0 -1px 0 var(--hair); }
+.det-box { flex: none; box-sizing: border-box; width: 24px; height: 24px; padding: 0; border: 2px solid var(--ink-3); border-radius: 6px; background: none;
+  color: var(--ink-on-accent); display: grid; place-items: center; position: relative; }
+button.det-box::before { content: ''; position: absolute; inset: -10px; }
+.det-sub.done .det-box { background: var(--accent); border-color: var(--accent); }
+.det-sub.done .det-sub-t { text-decoration: line-through; color: var(--ink-3); }
+.det-sub-t { flex: 1; min-width: 0; font: var(--type-body); color: var(--ink); overflow-wrap: anywhere; }
+.det-sub-x { flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-3); display: grid; place-items: center; }
+.det-add input { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0; background: none; color: var(--ink); font: var(--fw-regular) var(--fs-20) / 1 var(--font-ui); }
+.det-add input::placeholder { color: var(--ink-3); }
+.det-add input:focus-visible { outline: none; }
+.det-add:focus-within { box-shadow: inset 0 -2px 0 var(--accent); }
+.det-ai { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--accent); display: grid; place-items: center; }
+.det-ai:disabled { color: var(--ink-3); }
+.det-ai:focus-visible, .det-box:focus-visible, .det-sub-x:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+.det-spin { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); border-right-color: transparent; animation: det-spin 800ms linear infinite; }
+@keyframes det-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .det-spin { animation-duration: 2400ms; } }
+.det-notes textarea { box-sizing: border-box; width: 100%; min-height: 120px; padding: 14px 16px; border: 0; background: none; resize: vertical;
+  color: var(--ink); font: var(--fw-regular) var(--fs-20) / 1.35 var(--font-ui); }
+.det-notes textarea::placeholder { color: var(--ink-3); }
+.det-notes textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); border-radius: var(--r-md); }
+.det-edit-actions { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+.det-delete, .det-focus { height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-pill); background: none; font: var(--fw-semibold) var(--fs-17) / 1 var(--font-ui); }
+.det-delete { color: var(--danger-ink); }
+.det-focus { color: var(--ink-3); }
+.det-delete:focus-visible, .det-focus:focus-visible { box-shadow: var(--focus-ring); }
+
+/* sheets of ③ (alert · repeat · timezone · palette) share the Duration sheet's card */
+.wsheet { max-height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; }
+.opt-h { margin: 16px 12px 6px; font: var(--fw-bold) var(--fs-17) / 1.2 var(--font-ui); color: var(--ink); }
+.opt-list { list-style: none; margin: 8px 0 0; padding: 0; overflow-y: auto; }
+.opt-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 52px; padding: 0 16px; border: 0; border-radius: 16px; background: none;
+  color: var(--ink); font: var(--fw-regular) var(--fs-20) / 1 var(--font-ui); text-align: left; }
+.opt-row[aria-pressed='true'] { color: var(--accent); font-weight: var(--fw-semibold); }
+.opt-row .ic { color: var(--accent); }
+.opt-row:focus-visible { box-shadow: inset var(--focus-ring); outline: none; }
+.tz-search { display: flex; align-items: center; gap: 10px; margin: 12px 8px 4px; padding: 0 14px; height: 48px; border-radius: var(--r-pill); background: var(--node); color: var(--ink-3); }
+.tz-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; color: var(--ink); font: var(--fw-regular) var(--fs-17) / 1 var(--font-ui); }
+.tz-search input:focus-visible { outline: none; }
+.tz-search:focus-within { box-shadow: var(--focus-ring); }
+.tz-list { list-style: none; margin: 8px 0 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; }
+.tz-row { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; width: 100%; min-height: 56px; padding: 6px 16px; border: 0;
+  border-radius: 16px; background: none; text-align: left; }
+.tz-row[aria-pressed='true'] .tz-city { color: var(--accent); }
+.tz-row:focus-visible { box-shadow: inset var(--focus-ring); outline: none; }
+.tz-city { font: var(--fw-semibold) var(--fs-17) / 1.2 var(--font-ui); color: var(--ink); }
+.tz-meta { font: var(--type-meta); color: var(--ink-3); }
+.tz-empty { padding: 16px; color: var(--ink-3); }
+.pal-cats { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 8px; }
+.pal-cat { width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--node); color: var(--cat-glyph); display: grid; place-items: center; }
+.pal-cat[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--cat-glyph); }
+.pal-cat:focus-visible { box-shadow: var(--focus-ring); }
+.pal-seg { display: flex; gap: 6px; margin: 0 8px; padding: 4px; border-radius: var(--r-pill); background: var(--node); }
+.pal-seg button { flex: 1; height: 40px; border: 0; border-radius: var(--r-pill); background: none; color: var(--ink); font: var(--fw-semibold) var(--fs-15) / 1 var(--font-ui); }
+.pal-seg button[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
+.pal-seg button:focus-visible { box-shadow: var(--focus-ring); }
+.node-tz { opacity: 0.9; }

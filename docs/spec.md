@@ -22,7 +22,18 @@ web client is load-bearing for them.
 Fields: `title`, `notes` (markdown-lite), `category` (color + icon), `priority` (none / low /
 med / high), `start_at` (null ⇒ inbox), `duration_min` (default from settings, 30), `all_day`,
 `subtasks[]` (title, done), `reminders[]` (offset minutes before start — see *Reminders* below),
-`completed_at`, recurrence (§2.5).
+`completed_at`, recurrence (§2.5), `tz` (arc 6, below).
+
+**Time zone (arc 6, `db/007_task_tz.sql`).** Optional IANA zone (`planner_tasks.tz text null`), set from the create /
+edit sheet (② ••• → Set Timezone; the picker lists `Intl.supportedValuesOf('timeZone')`, device zone first; picking
+the device zone clears it). `start_at` stays the UTC instant; `tz` is the zone the wall-clock time was chosen in, so
+the editor shows and edits it there (`isoAtZone` / `zonedParts`, `src/lib/time.ts`) while the timeline converts to
+the device zone and marks the row with a globe. All-day and inbox tasks never carry a zone. Absent = the viewer's zone.
+
+**Editor (arc 6).** Create = the wizard ① title (plain-English parser) + suggestions → ② when (date, 15-min wheel,
+duration presets `settings.duration_presets`) → ③ details; edit = ③ of the same sheet (Save, Delete, the header ring
+completes). Day bookends (`settings.day_start_name` / `day_end_name`, default "Up" / "Lights out") are anchor rows,
+ticked per day in `settings.bookend_done` — never tasks.
 
 **Reminders (arc 2).** Web push on the installed PWA (iPhone Home Screen app, iOS 16.4+) and desktop browsers:
 Settings → Reminders asks permission, subscribes with the VAPID public key (`VITE_VAPID_PUBLIC_KEY`) and writes a
@@ -152,7 +163,7 @@ server-side (Edge Function secrets) in later arcs.
 - `planner_categories` (id uuid, user_id, name, color, icon, sort_key, …sync cols)
 - `planner_tasks` (id uuid, user_id, title, notes, category_id, priority int, start_at timestamptz null,
   duration_min int, all_day bool, completed_at, subtasks jsonb, reminders jsonb, sort_key,
-  rrule text null, dtstart timestamptz null, series_id uuid null, …sync cols)
+  rrule text null, dtstart timestamptz null, series_id uuid null, tz text null /* arc 6, db/007 */, …sync cols)
 - `planner_exceptions` (series_id, occurrence_date date, task_id uuid null /* override */,
   skipped bool, …sync cols; PK (series_id, occurrence_date))
 - `planner_settings` (user_id PK, data jsonb, …sync cols)

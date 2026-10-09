@@ -34,6 +34,8 @@ export interface Task extends SyncCols {
   rrule: string | null // series rows only
   dtstart: string | null
   series_id: string | null // exception-override rows only
+  /** arc 6 (db/007): the IANA zone the wall-clock time was set in; null/absent = the viewer's zone */
+  tz?: string | null
   /** local index: 'inbox' | 'sched' | 'series' | 'override' | 'gone' */
   _kind?: TaskKind
 }

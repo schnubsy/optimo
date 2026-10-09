@@ -66,7 +66,7 @@ test.describe('paint a block', () => {
     await expect(blk.locator('.node-title')).toHaveText('Untitled')
     await blk.getByTestId('chip').click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-time')).toHaveValue('17:00')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-start', String(17 * 60))
     expect(errors).toEqual([])
   })
 
@@ -123,7 +123,7 @@ test.describe('paint a block', () => {
     expect(await scan()).toEqual([])
     await page.keyboard.press('Enter')
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('sheet-time')).toHaveValue('12:15')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-start', String(12 * 60 + 15))
     expect(errors).toEqual([])
   })
 

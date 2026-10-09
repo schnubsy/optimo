@@ -27,6 +27,9 @@ export class OptimoDB extends Dexie {
     this.version(2).stores({ events: 'id, start_at, account_id' })
     // arc 3: AI plans (by day) and the learned planning profile — both speak the sync contract (spec §5)
     this.version(3).stores({ aiPlans: 'id, plan_date', aiProfile: 'id' })
+    // arc 6 (db/007): tasks gain an optional `tz` — not indexed, so the schema is unchanged; the bump records the shape
+    // and leaves every existing row as it is (no upgrade function: absent tz = the viewer's zone)
+    this.version(4).stores({})
   }
 }
 

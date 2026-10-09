@@ -276,7 +276,7 @@ test.describe('snag train 2026-10', () => {
       await setView('day')
       await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
       await expect(page.getByRole('dialog')).toBeVisible()
-      await expect(page.locator('[data-testid="sheet-category"] button').first()).toBeVisible()
+      await expect(page.getByTestId('wizard-title')).toHaveValue(/\S/)
       await page.screenshot({ path: `docs/evidence/snag-train-2026-10-slice-10-editor-iphone-15-${theme}.png` })
     })
 

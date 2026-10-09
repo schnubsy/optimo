@@ -3,14 +3,18 @@ import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../data/db'
 import * as repo from '../data/repo'
-import { durationPresets, type Category, type SettingsData } from '../data/types'
+import { durationPresets, type Category, type SettingsData, type Task } from '../data/types'
 import { Icon } from '../icons/Icon'
-import { dateKey, minutesInDay, nowMinutes, todayKey } from '../lib/time'
+import { dateKey, deviceZone, minutesInDay, nowMinutes, todayKey, zonedParts } from '../lib/time'
+import { deleteItem, patchItem, toggleComplete } from '../actions'
+import { editOccurrence, occurrenceStart, type Scope } from '../recurrence/exceptions'
 import { parseQuickAdd } from '../quickadd/parse'
 import { resolveCategory, useKeyboardInset } from '../quickadd/QuickAdd'
 import { CATEGORY_OF, suggestIcon, taskIcon } from '../quickadd/suggest'
 import { useUI, type Draft, type Wizard as WizardState } from '../state/ui'
 import { StepDetails } from './StepDetails'
+import { PaletteSheet } from './PaletteSheet'
+import { TimezonePicker } from './TimezonePicker'
 import { StepTitle } from './StepTitle'
 import { StepWhen } from './StepWhen'
 import { buildSuggestions, SUGGESTION_WINDOW_DAYS, type Suggestion } from './suggestions'
@@ -20,7 +24,7 @@ import './wizard.css'
 /** The prefill (gap / paint / N / parsed command line) → the wizard's working draft. */
 export function initialDraft(w: WizardState, uiDate: string, settings: SettingsData): WizardDraft {
   const p: Partial<Draft> = w.draft
-  const { title, category_id, start_at, duration_min, all_day, rrule, priority, dtstart: _dtstart, ...extra } = p
+  const { title, category_id, start_at, duration_min, all_day, rrule, priority, dtstart: _dtstart, notes, subtasks, reminders, tz, ...extra } = p
   void _dtstart
   let date = uiDate
   let start = date === todayKey() ? Math.min(23 * 60 + 45, Math.ceil(nowMinutes() / 15) * 15) : 9 * 60
@@ -38,33 +42,83 @@ export function initialDraft(w: WizardState, uiDate: string, settings: SettingsD
     inbox: w.mode === 'inbox',
     rrule: rrule ?? null,
     priority: priority ?? 0,
+    notes: notes ?? '',
+    subtasks: subtasks ?? [],
+    reminders: reminders ?? null,
+    tz: tz ?? null,
     extra,
   }
 }
 
-/** Mounted by Planner: renders the create wizard while `useUI().wizard` is set (portalled into the .app root). */
+/** Edit mode: an existing task (or one occurrence of a series) → the working draft, wall-clock in the task's zone. */
+export function draftFromTask(task: Task, occ: string | null, uiDate: string, settings: SettingsData): WizardDraft {
+  const shown = occ && task.dtstart && !(task as { _override?: boolean })._override ? { ...task, start_at: occurrenceStart(task, occ) } : task
+  const tz = shown.tz && !shown.all_day ? shown.tz : null
+  const at = shown.start_at ? zonedParts(shown.start_at, tz) : null
+  return {
+    title: shown.title,
+    category_id: shown.category_id,
+    date: at?.date ?? uiDate,
+    start: at ? (shown.all_day ? 9 * 60 : at.minutes) : 9 * 60,
+    duration: shown.duration_min || settings.default_duration,
+    all_day: !!shown.all_day,
+    inbox: !shown.start_at,
+    rrule: task.rrule,
+    priority: shown.priority,
+    notes: shown.notes ?? '',
+    subtasks: shown.subtasks ?? [],
+    reminders: shown.reminders ?? [],
+    tz,
+    extra: {},
+  }
+}
+
+/** The task an editing key points at (`id` or `seriesId@date`), occurrences showing their override row. */
+export function useEditTarget(editingId: string | null) {
+  return useLiveQuery(async () => {
+    if (!editingId) return null
+    const [id, date] = editingId.split('@')
+    const t = await db.tasks.get(id)
+    if (!t || t.deleted_at) return null
+    if (!date) return { task: t, occ: null as string | null }
+    const ex = await db.exceptions.get([id, date])
+    const o = ex?.task_id ? await db.tasks.get(ex.task_id) : undefined
+    const task = o && !o.deleted_at ? ({ ...o, id: t.id, rrule: t.rrule, dtstart: t.dtstart, _override: true } as Task) : t
+    return { task, occ: date }
+  }, [editingId])
+}
+
+/**
+ * Mounted by Planner: the create wizard while `useUI().wizard` is set, and the edit screen (③ of the same sheet, the
+ * TaskSheet replacement — slice 7) while `editingId` is set. Portalled into the .app root.
+ */
 export function Wizard({ settings, cats }: { settings: SettingsData; cats: Category[] }) {
   const wizard = useUI((s) => s.wizard)
-  if (!wizard) return null
+  const editingId = useUI((s) => s.editingId)
+  const target = useEditTarget(wizard ? null : editingId)
   const root = document.querySelector('.app') ?? document.body
-  return createPortal(<WizardSheet wizard={wizard} settings={settings} cats={cats} />, root)
+  if (wizard) return createPortal(<WizardSheet wizard={wizard} settings={settings} cats={cats} />, root)
+  if (editingId && target) return createPortal(<WizardSheet key={editingId} wizard={{ mode: target.task.start_at ? 'timeline' : 'inbox', draft: {} }} edit={{ ...target, key: editingId }} settings={settings} cats={cats} />, root)
+  return null
 }
 
 export interface WizardSheetProps {
   wizard: WizardState
   settings: SettingsData
   cats: Category[]
-  /** Set Timezone (② ••• menu). Slice 7 passes the picker; default = a toast. */
-  onTimezone?: () => void
+  /** edit mode: the task (or occurrence) being edited — the sheet opens on ③ with Save / Delete / Complete */
+  edit?: { task: Task; occ: string | null; key: string }
 }
 
 /** ① title + suggestions → ② when → ③ details (stub). Full-screen on iPhone, a centred sheet on desktop. */
-export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetProps) {
+export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) {
   const set = useUI((s) => s.set)
   const notify = useUI((s) => s.notify)
   const uiDate = useUI((s) => s.date)
-  const [draft, setDraft] = useState<WizardDraft>(() => initialDraft(wizard, uiDate, settings))
-  const [step, setStep] = useState<WizardStep>(1)
+  const [draft, setDraft] = useState<WizardDraft>(() => (edit ? draftFromTask(edit.task, edit.occ, uiDate, settings) : initialDraft(wizard, uiDate, settings)))
+  const [step, setStep] = useState<WizardStep>(edit ? 3 : 1)
+  const [panel, setPanel] = useState<'tz' | 'palette' | null>(null)
+  const [scope, setScope] = useState<Scope>('this')
   const [text, setText] = useState(draft.title)
   const [confirm, setConfirm] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -72,6 +126,14 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
   const sheetRef = useRef<HTMLDivElement>(null)
   useKeyboardInset(sheetRef)
   const patch = (p: Partial<WizardDraft>) => setDraft((d) => ({ ...d, ...p }))
+  // edit mode: a duration changed outside the editor (edge resize, Shift+↑/↓) shows here unless edited in the sheet
+  const seenDur = useRef(edit?.task.duration_min)
+  useEffect(() => {
+    if (!edit || edit.task.duration_min === seenDur.current) return
+    const prev = seenDur.current
+    seenDur.current = edit.task.duration_min
+    setDraft((d) => (d.duration === prev ? { ...d, duration: edit.task.duration_min } : d))
+  }, [edit])
 
   // ① live parse of the title field (the command-line grammar)
   const parsed = useMemo(() => (step === 1 && text.trim() ? parseQuickAdd(text) : null), [text, step])
@@ -102,12 +164,12 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
     else bodyRef.current?.focus({ preventScroll: true })
   }, [step])
 
-  const dirty = (step === 1 ? text : draft.title).trim().length > 0
-  const close = () => set({ wizard: null })
+  const dirty = !edit && (step === 1 ? text : draft.title).trim().length > 0
+  const close = () => (edit ? set({ editingId: null }) : set({ wizard: null }))
   const requestClose = () => (dirty ? setConfirm(true) : close())
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (e.key !== 'Escape' || e.defaultPrevented || panel) return
       e.preventDefault()
       if (confirm) setConfirm(false)
       else if (dirty) setConfirm(true)
@@ -147,11 +209,30 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
   }
   async function create(input: Parameters<typeof repo.createTask>[0] & { start_at: string | null }) {
     if (!input.title) return
+    if (edit) return save(input)
     const t = await repo.createTask(input)
     close()
     if (t.start_at && !t.rrule) set({ date: dateKey(new Date(t.start_at)) })
     notify({ text: t.start_at ? `Added “${t.title}”` : `“${t.title}” → inbox`, undo: () => repo.deleteTask(t.id).then(() => undefined) })
   }
+
+  /** Edit mode save — TaskSheet's rules: an occurrence goes through editOccurrence with the chosen scope; a plain task
+   *  is patched (undoable); turning repeat on/off makes / unmakes the series. */
+  async function save(input: Parameters<typeof repo.createTask>[0] & { start_at: string | null }) {
+    if (!edit) return
+    const { task, occ } = edit
+    const { sort_key: _s, rrule: _r, dtstart: _d, ...fields } = input
+    void _s
+    void _r
+    void _d
+    if (occ && task.rrule) await editOccurrence(task.id, occ, fields, scope)
+    else {
+      const series = draft.rrule && fields.start_at ? { rrule: draft.rrule, dtstart: fields.start_at } : task.rrule ? { rrule: null, dtstart: null } : {}
+      await patchItem({ task }, { ...fields, ...series }, 'Saved')
+    }
+    close()
+  }
+  const occurrence = edit?.occ ? { seriesId: edit.task.id, date: edit.occ } : undefined
 
   const onTitleKey = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -160,7 +241,7 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
       else if (step === 2) setStep(3)
     }
   }
-  const timezone = onTimezone ?? (() => notify({ text: 'Timezone picker arrives with the details step' }))
+  const timezone = () => setPanel('tz')
   const stepName = step === 1 ? 'title' : step === 2 ? 'when' : 'details'
   const start = draft.inbox ? null : draft.all_day ? 0 : draft.start
 
@@ -181,16 +262,28 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
         data-category={draft.category_id ?? cat?.id ?? ''}
       >
         <h1 id="wiz-h" className="sr-only">
-          New task, step {step} of 3: {stepName}
+          {edit ? `Edit ${draft.title || 'task'}` : `New task, step ${step} of 3: ${stepName}`}
         </h1>
-        <header className={`wiz-hd ${cat ? `cat-${cat.color}` : 'cat-accent'}`}>
+        <header className={`wiz-hd ${step === 3 ? 'wiz-hd-3' : ''} ${cat ? `cat-${cat.color}` : 'cat-accent'}`}>
           <button type="button" className="wiz-x" aria-label="Close" onClick={requestClose} data-testid="wizard-close">
             <Icon name="ui-close" size={22} />
           </button>
           <div className="wiz-hd-row">
-            <span className="wiz-chip-glyph" data-testid="wizard-glyph" data-icon={glyph}>
-              <Icon name={glyph} size={36} />
-            </span>
+            {step === 3 ? (
+              // ③ (mockups 06): the task as a capsule on a stub of spine, the palette button at its foot
+              <span className="wiz-capsule-wrap">
+                <span className="wiz-capsule" style={{ height: Math.min(160, Math.max(56, (draft.inbox ? 30 : draft.duration) * 2)) }} data-testid="wizard-glyph" data-icon={glyph}>
+                  <Icon name={glyph} size={36} />
+                </span>
+                <button type="button" className="wiz-palette" aria-label="Category, icon and priority" onClick={() => setPanel('palette')} data-testid="wizard-palette">
+                  <Icon name="ui-palette" size={22} />
+                </button>
+              </span>
+            ) : (
+              <span className="wiz-chip-glyph" data-testid="wizard-glyph" data-icon={glyph}>
+                <Icon name={glyph} size={36} />
+              </span>
+            )}
             <div className="wiz-hd-text">
               {step > 1 && (
                 <p className="wiz-meta tnum" data-testid="wizard-meta">
@@ -215,7 +308,21 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
                 data-testid="wizard-title"
               />
             </div>
-            {step > 1 && <span className="wiz-ring" aria-hidden="true" />}
+            {step > 1 &&
+              (edit ? (
+                <button
+                  type="button"
+                  className={`wiz-ring ${edit.task.completed_at ? 'done' : ''}`}
+                  aria-label={edit.task.completed_at ? 'Mark not done' : 'Complete'}
+                  aria-pressed={!!edit.task.completed_at}
+                  onClick={() => void toggleComplete({ task: edit.task, occurrence }).then(close)}
+                  data-testid="wizard-complete"
+                >
+                  {edit.task.completed_at && <Icon name="ui-check" size={14} />}
+                </button>
+              ) : (
+                <span className="wiz-ring" aria-hidden="true" />
+              ))}
           </div>
         </header>
 
@@ -235,7 +342,27 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
               onTimezone={timezone}
             />
           )}
-          {step === 3 && <StepDetails draft={draft} settings={settings} onCreate={create} onEditWhen={draft.inbox ? undefined : () => setStep(2)} />}
+          {step === 3 && (
+            <StepDetails
+              draft={draft}
+              settings={settings}
+              cats={cats}
+              onChange={patch}
+              onCreate={create}
+              onEditWhen={draft.inbox && !edit ? undefined : () => setStep(2)}
+              edit={
+                edit
+                  ? {
+                      occurrence: !!(edit.occ && edit.task.rrule),
+                      scope,
+                      onScope: setScope,
+                      onDelete: () => void deleteItem({ task: edit.task, occurrence }).then(close),
+                      onFocus: !edit.task.completed_at && edit.task.start_at ? () => set({ focusId: edit.key, view: 'focus', editingId: null }) : undefined,
+                    }
+                  : undefined
+              }
+            />
+          )}
         </div>
 
         {step === 1 && (
@@ -244,6 +371,21 @@ export function WizardSheet({ wizard, settings, cats, onTimezone }: WizardSheetP
               Continue
             </button>
           </div>
+        )}
+
+        {panel === 'tz' && <TimezonePicker value={draft.tz} onPick={(tz) => patch({ tz: tz && tz !== deviceZone() ? tz : null, all_day: false })} onClose={() => setPanel(null)} />}
+        {panel === 'palette' && (
+          <PaletteSheet
+            cats={cats}
+            categoryId={draft.category_id}
+            priority={draft.priority}
+            title={draft.title}
+            glyph={glyph}
+            settings={settings}
+            onCategory={(category_id) => patch({ category_id })}
+            onPriority={(priority) => patch({ priority })}
+            onClose={() => setPanel(null)}
+          />
         )}
 
         {confirm && (

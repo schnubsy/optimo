@@ -16,7 +16,7 @@ test.describe('snags #29–#37 (arc 3)', () => {
     else await expect(ft).toBeVisible()
   })
 
-  test('#31 the editor mounts with its Category row already filled (no empty-row flash)', async ({ page, context }) => {
+  test('#31 the editor mounts already filled (no empty-field flash)', async ({ page, context }) => {
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     // record how many category chips the sheet has in the very mutation that inserts it
@@ -24,16 +24,16 @@ test.describe('snags #29–#37 (arc 3)', () => {
       const w = window as any
       w.__chipsAtMount = null
       new MutationObserver((_, obs) => {
-        const row = document.querySelector('[data-testid="sheet-category"]')
-        if (row && w.__chipsAtMount === null) {
-          w.__chipsAtMount = row.querySelectorAll('button').length
+        const title = document.querySelector<HTMLInputElement>('[data-testid="wizard-title"]')
+        if (title && w.__chipsAtMount === null) {
+          w.__chipsAtMount = title.value.length
           obs.disconnect()
         }
       }).observe(document.body, { childList: true, subtree: true })
     })
     await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
     await expect(page.getByRole('dialog')).toBeVisible()
-    expect(await page.evaluate(() => (window as any).__chipsAtMount)).toBeGreaterThanOrEqual(8)
+    expect(await page.evaluate(() => (window as any).__chipsAtMount)).toBeGreaterThanOrEqual(8) // 'Write the migration plan'
   })
 
   for (const theme of ['light', 'dark'] as const)
@@ -128,7 +128,7 @@ test.describe('snags #29–#37 (arc 3)', () => {
     await expect(page.getByTestId('toast')).toBeVisible()
     const z = (sel: string) => page.locator(sel).first().evaluate((e) => Number(getComputedStyle(e).zIndex))
     const toast = await z('.toast-wrap')
-    expect(toast).toBeLessThan(await z('.sheet-wrap'))
+    expect(toast).toBeLessThan(await z('.wiz-wrap')) // arc 6: the editor is the wizard sheet
     if (await page.getByTestId('tabbar').isVisible()) expect(toast).toBeGreaterThan(await z('.tabbar'))
     // the sheet's close control is what a tap there hits
     const close = page.getByRole('dialog').getByRole('button', { name: 'Close' })

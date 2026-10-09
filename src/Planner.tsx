@@ -25,7 +25,6 @@ import { Header, PaneHeader } from './chrome/Header'
 import { TabBar, type TabId } from './chrome/TabBar'
 import { Fab } from './chrome/Fab'
 import { Toast } from './components/Toast'
-import { TaskSheet } from './editor/TaskSheet'
 import { Day } from './views/Day'
 import { Inbox } from './views/Inbox'
 import { Wizard } from './editor/Wizard'
@@ -309,7 +308,6 @@ export function Planner({ userId }: { userId: string }) {
             </footer>
           </>
         )}
-        <TaskSheet cats={cats} />
         <Wizard settings={settings} cats={cats} />
         <PlacePicker />
         {view === 'focus' && <Focus />}

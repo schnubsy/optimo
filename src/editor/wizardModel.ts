@@ -1,7 +1,7 @@
 // The create wizard's working draft + its display formats (shared by Wizard, the steps and the wheels).
 import type { TaskInput } from '../data/repo'
-import type { Priority, SettingsData } from '../data/types'
-import { fmtClock, isoAt, MIN_PER_DAY } from '../lib/time'
+import type { Priority, SettingsData, Subtask } from '../data/types'
+import { fmtClock, isoAtZone, MIN_PER_DAY } from '../lib/time'
 
 export type WizardStep = 1 | 2 | 3
 
@@ -17,7 +17,14 @@ export interface WizardDraft {
   inbox: boolean
   rrule: string | null
   priority: Priority
-  /** anything else the prefill carried (notes, subtasks, reminders) — passed through to createTask */
+  /** ③ details (slice 7) */
+  notes: string
+  subtasks: Subtask[]
+  /** alert leads, minutes before start; null = not touched yet (create: the settings default applies) */
+  reminders: number[] | null
+  /** the zone `date` + `start` are wall-clock in (Set Timezone); null = the device zone */
+  tz: string | null
+  /** anything else the prefill carried — passed through to createTask */
   extra: TaskInput
 }
 
@@ -66,13 +73,16 @@ export function presetChip(min: number): string {
   return m ? `${h}h ${m}m` : `${h}h`
 }
 
-/** The task this draft creates (slice 7's details add notes / subtasks / alerts on top). */
+/** The task this draft creates or saves: ① title, ② when (in the draft's zone), ③ details. */
 export function draftToInput(d: WizardDraft, settings: Pick<SettingsData, 'reminder_lead'>): TaskInput & { start_at: string | null } {
-  const start_at = d.inbox ? null : isoAt(d.date, d.all_day ? 0 : d.start)
+  const start_at = d.inbox ? null : isoAtZone(d.date, d.all_day ? 0 : d.start, d.all_day ? null : d.tz)
   const timed = !!start_at && !d.all_day
   return {
-    reminders: timed && settings.reminder_lead ? [settings.reminder_lead] : [],
     ...d.extra,
+    reminders: d.reminders ?? (timed && settings.reminder_lead ? [settings.reminder_lead] : []),
+    notes: d.notes,
+    subtasks: d.subtasks.filter((s) => s.title.trim()),
+    tz: timed ? d.tz : null,
     title: d.title.trim(),
     category_id: d.category_id,
     priority: d.priority,

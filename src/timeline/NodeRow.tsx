@@ -2,7 +2,7 @@ import { memo, useRef, useState, type KeyboardEvent as RKeyboardEvent, type Poin
 import { useDraggable } from '@dnd-kit/core'
 import type { Category } from '../data/types'
 import { Icon } from '../icons/Icon'
-import { fmtClock, fmtDur, fmtDurWords, fmtRange } from '../lib/time'
+import { deviceZone, fmtClock, fmtDur, fmtDurWords, fmtRange, zoneCity } from '../lib/time'
 import type { Item } from './items'
 import { MIN_DURATION, snap as snapTo } from './layout'
 import type { SegmentMap } from './segments'
@@ -63,6 +63,7 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
   const title = t.title || 'Untitled'
   const meta = nodeMeta(item.start, dur, p.clock24)
   const repeats = !!item.occurrence || !!t.rrule
+  const zoned = !!t.tz && t.tz !== deviceZone()
 
   // the row's own px-per-minute from the map (2 inside a capsule): the duration follows the finger at the row's scale,
   // not across the next row, which re-lays once the new duration commits
@@ -149,6 +150,8 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
         <span className="node-meta tnum">
           {meta}
           {repeats && <Icon name="ui-repeat" size={14} />}
+          {/* a task kept in another zone (db/007): shown converted to this device, marked with the globe */}
+          {zoned && <Icon name="ui-globe" size={14} title={`Set in ${zoneCity(t.tz!)} time`} className="node-tz" />}
           {p.late && <span className="node-late">· late</span>}
         </span>
         <span className={`node-title ${t.title ? '' : 'untitled'}`}>{title}</span>

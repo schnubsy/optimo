@@ -155,9 +155,9 @@ test.describe('day timeline', () => {
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('90')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-duration', '90')
     await page.evaluate((id) => (window as any).__optimo.repo.updateTask(id, { duration_min: 120 }), ids!.plan)
-    await expect(page.getByTestId('sheet-duration')).toHaveValue('120')
+    await expect(page.getByTestId('wizard')).toHaveAttribute('data-duration', '120')
   })
 
   test('complete toggles, with undo', async ({ page, context }) => {

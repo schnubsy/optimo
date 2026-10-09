@@ -32,12 +32,24 @@ test.describe('design review P0 guards', () => {
     const b = page.locator(`[data-testid="block"][data-id="${s!.ids.plan}"] [data-testid="chip"]`)
     await b.scrollIntoViewIfNeeded()
     await b.click() // arc 6: one tap on the chip opens the editor
-    const high = page.getByRole('dialog').getByRole('button', { name: 'High' })
+    // arc 6: priority lives in ③'s palette sheet, alerts in the alert sheet
+    await page.getByTestId('wizard-palette').click()
+    const high = page.getByTestId('palette-sheet').getByRole('button', { name: 'High' })
     await expect(high).toHaveAttribute('aria-pressed', 'true')
     expect(await high.evaluate(bg)).toBe(await accent(page))
-    const r10 = page.getByRole('dialog').getByRole('button', { name: '0:10' })
+    await page.getByTestId('palette-sheet').getByRole('button', { name: 'Close look' }).click()
+    await page.getByTestId('details-alerts').click()
+    const r10 = page.getByTestId('alert-sheet').getByRole('button', { name: '10 min before' })
     await r10.click()
-    expect(await r10.evaluate(bg)).toBe(await accent(page))
+    await expect(r10).toHaveAttribute('aria-pressed', 'true')
+    expect(await r10.evaluate((el) => getComputedStyle(el).color)).toBe(await page.evaluate(() => {
+      const i = document.createElement('i')
+      i.style.color = 'var(--accent)'
+      document.body.append(i)
+      const c = getComputedStyle(i).color
+      i.remove()
+      return c
+    }))
   })
 
   test('P0-3 the sync badge is fully on screen in every desktop view, offline too', async ({ page, context }, info) => {

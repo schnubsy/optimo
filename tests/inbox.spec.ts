@@ -138,8 +138,11 @@ test.describe('inbox & quick-add', () => {
     const b = page.locator(`[data-testid="block"][data-id="${s!.ids.guitar}"] [data-testid="chip"]`)
     await b.scrollIntoViewIfNeeded()
     await b.click()
-    await page.getByRole('switch', { name: 'On the timeline (off = inbox)' }).click()
-    await page.getByTestId('sheet-save').click()
+    // arc 6: ③ time row → ② → ••• → Add to Inbox → ③ → Save
+    await page.getByTestId('details-time').click()
+    await page.getByTestId('time-more').click()
+    await page.getByRole('menuitem', { name: 'Add to Inbox' }).click()
+    await page.getByTestId('wizard-save').click()
     await expect.poll(async () => (await row(page, s!.ids.guitar)).start_at).toBeNull()
     await showInbox(page)
     await expect(inboxRow(page, 'Guitar practice')).toBeVisible()

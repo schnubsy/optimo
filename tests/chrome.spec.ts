@@ -165,12 +165,13 @@ test.describe('desktop chrome', () => {
     let ids: ReturnType<typeof seedDay>['ids']
     await openApp(page, context, { seed: (s) => (ids = seedDay(s).ids) })
     await page.evaluate((id) => (window as any).__optimo.ui.getState().set({ editingId: id }), ids!.plan)
-    await page.getByTestId('sheet-icon').click()
+    await page.getByTestId('wizard-palette').click() // arc 6: the icon picker sits in ③'s palette sheet
     await page.getByTestId('glyph-picker').getByRole('searchbox').fill('passport')
     await expect(page.getByTestId('glyph-picker').getByRole('button')).toHaveCount(0)
     await page.getByTestId('glyph-picker').getByRole('searchbox').fill('flight')
     await page.getByTestId('glyph-picker').getByRole('button', { name: 'travel-plane' }).click()
-    await page.keyboard.press('Escape')
+    await page.keyboard.press('Escape') // the palette sheet
+    await page.keyboard.press('Escape') // the editor
     const pill = page.locator(`[data-testid="block"][data-id="${ids!.plan}"]`)
     await pill.scrollIntoViewIfNeeded()
     await expect(pill.getByTestId('chip').locator('svg')).toHaveAttribute('data-icon', 'travel-plane')
