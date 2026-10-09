@@ -37,12 +37,12 @@ test.describe('snags #1–#12', () => {
     await expect(deep.locator('.blk-main')).toHaveAccessibleName(/P1/)
   })
 
-  test('#3 inbox category reads as a whole short code, never cut mid-word', async ({ page, context }) => {
+  test('#3 inbox category reads as a whole name, never cut mid-word', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
     await showInbox(page)
+    // arc 6: the meta line is full width (`duration · category`), so the short-code column is gone
     const cat = page.getByTestId('inbox-row').filter({ hasText: 'Book flights' }).getByTestId('inbox-cat')
-    await expect(cat).toHaveText('Pers')
-    expect(await cat.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+    await expect(cat).toHaveText('Personal')
   })
 
   test('#4 week header says which figure is planned; free time shows in the grid', async ({ page, context }) => {

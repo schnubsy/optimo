@@ -1,7 +1,7 @@
 // arc 3 slices 2–10 — snag Issues #29–#37 (label `snag`), raised by the snag-train 2026-10 slice-14 Eye LITE critique
 // (docs/evidence/snag-train-2026-10-slice-14-design-critique.md). One behavioural case per Issue.
 import { test, expect, type Page } from '@playwright/test'
-import { CAT, at, openApp, seedDay, seedTask } from './support/app'
+import { CAT, at, openApp, quickAdd, seedDay, seedTask } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
@@ -74,8 +74,7 @@ test.describe('snags #29–#37 (arc 3)', () => {
   test('#33 the iPhone quick-add parse chips are 44px tall and the row stays on screen', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'iphone-15', 'the quick-add sheet is mobile')
     await openApp(page, context)
-    await page.getByTestId('fab').click()
-    const field = page.getByTestId('quickadd')
+    const field = await quickAdd(page)
     await field.fill('Lunch with Sam tomorrow at 1pm for 45m #personal !!')
     const chips = page.locator('.qa-sheet .cmd .parse > b, .qa-sheet .cmd .parse .f')
     await expect(chips.first()).toBeVisible()

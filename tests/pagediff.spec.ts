@@ -4,7 +4,7 @@
 // scripts/page-diff-gate.mjs. Gated on PAGEDIFF=<dir>; skipped in the gauntlet.
 import { test, expect, type BrowserContext, type Page } from '@playwright/test'
 import { FakeSupabase } from './support/fakeSupabase'
-import { seedDay } from './support/app'
+import { quickAdd, seedDay } from './support/app'
 
 const DIR = process.env.PAGEDIFF
 const LIVE = 'https://schnubsy.github.io/optimo/'
@@ -52,8 +52,7 @@ test.describe('page-diff gate captures', () => {
       await set(page, { view: 'settings', mobileTab: 'board' })
       await shot('settings')
       await set(page, { view: 'day', mobileTab: 'board' })
-      const field = page.getByTestId('quickadd')
-      if (!(await field.isVisible())) await page.getByTestId('fab').click()
+      const field = await quickAdd(page)
       await field.fill('Dentist tomorrow 3pm 30m every weekday')
       await shot('quickadd')
     })

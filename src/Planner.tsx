@@ -12,7 +12,6 @@ import {
   type DragMoveEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './data/db'
 import * as repo from './data/repo'
 import { useCategories, useSettings } from './data/hooks'
@@ -100,7 +99,6 @@ export function Planner({ userId }: { userId: string }) {
     if (itemsByDay) performance.mark('optimo:day-data')
     return itemsByDay?.[date] ?? []
   }, [itemsByDay, date])
-  const inboxCount = useInboxCount()
   const eventsByDay = useEvents(days)
   const dayEvents = useMemo(() => eventsByDay[date] ?? [], [eventsByDay, date])
   useCalendarSync(!!supabase())
@@ -261,10 +259,15 @@ export function Planner({ userId }: { userId: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [settings.snap, settings.default_duration])
 
-  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'week' ? 'week' : view === 'settings' ? 'settings' : view === 'plan' ? 'plan' : 'timeline'
+  // arc 6: four tabs — Day / Week / Month all live under Timeline (week is the collapsed panel, slice 4)
+  const mobileTabId: TabId = tab === 'backlog' ? 'inbox' : view === 'settings' ? 'settings' : view === 'plan' ? 'plan' : 'timeline'
   const onTab = (t: TabId) => {
     if (t === 'inbox') set({ mobileTab: 'backlog' })
-    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t === 'week' ? 'week' : t === 'plan' ? 'plan' : 'settings' })
+    else set({ mobileTab: 'board', view: t === 'timeline' ? 'day' : t })
+  }
+  // interim until slice 4 drives the panel detent: re-tapping Timeline from week / month returns to the day
+  const onReselect = (t: TabId) => {
+    if (t === 'timeline' && view !== 'day') set({ view: 'day' })
   }
   const hdr = { date, view, weekStartsOn: settings.week_start, now, clock24: settings.clock24 }
   return (
@@ -272,12 +275,13 @@ export function Planner({ userId }: { userId: string }) {
       <div className={`app ${isMobile ? 'is-mobile' : 'is-desktop'}`}>
         {isMobile ? (
           <>
-            <Header {...hdr} />
+            {/* mockup 07: the inbox screen carries its own title — no day header over it */}
+            {tab !== 'backlog' && <Header {...hdr} />}
             <main className={`pane m-${tab === 'backlog' ? 'inbox' : view}`}>
               {tab === 'backlog' ? <Inbox cats={catMap} /> : <ViewSwitch view={view} date={date} items={items} events={dayEvents} catMap={catMap} settings={settings} />}
             </main>
-            <TabBar active={mobileTabId} onChange={onTab} inboxCount={inboxCount} recede={nearBar} />
-            <Fab onClick={() => set({ quickAdd: true })} />
+            <TabBar active={mobileTabId} onChange={onTab} onReselect={onReselect} recede={nearBar} />
+            <Fab />
             {quickAdd && <QuickAdd sheet onDone={() => set({ quickAdd: false })} />}
           </>
         ) : (
@@ -323,8 +327,4 @@ function ViewSwitch({ view, date, items, events, catMap, settings }: { view: str
   if (view === 'week') return <Week date={date} cats={catMap} settings={settings} />
   if (view === 'month') return <Month date={date} cats={catMap} settings={settings} />
   return <Day day={date} items={items} events={events} cats={catMap} settings={settings} />
-}
-
-function useInboxCount(): number {
-  return useLiveQuery(() => db.tasks.where('_kind').equals('inbox').count(), []) ?? 0
 }

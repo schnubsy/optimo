@@ -22,14 +22,13 @@ test.describe('inbox & quick-add', () => {
     await expect(page.getByTestId('parse-row')).toContainText('Errands')
     await expect(page.getByTestId('parse-row')).toContainText('P2')
     await qa.press('Enter')
-    // desktop clears the pill; on iPhone the FAB's sheet closes on add
+    // desktop clears the pill; on iPhone the quick-add sheet closes on add
     if (await isMobile(page)) await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
     else await expect(qa).toHaveValue('')
     await showInbox(page)
     const r = inboxRow(page, 'Book train tickets')
     await expect(r).toBeVisible()
-    await expect(r).toContainText('0:20')
-    await expect(r).toContainText('P2')
+    await expect(r).toContainText('20 min · Errands · P2') // arc 6 meta: duration · category
     expect(errors).toEqual([])
   })
 

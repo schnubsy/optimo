@@ -1,0 +1,111 @@
+/* arc 6 slice 5 — the floating tab bar, the FAB and the inbox screen (mockups 01 · 07 · 10, 2026-10-09).
+   CSS px = mockup px ÷ 3. Everything is a token from tokens.css; nothing here defines a colour. */
+
+/* ---------- tab bar: --node at 80 % + blur, 60 tall, 16 in from the left, 8 px short of the FAB ---------- */
+.tabbar {
+  position: fixed; z-index: 30;
+  left: var(--tabbar-inset);
+  /* measured (07): the bar stops 8 px before the FAB — right = FAB + its inset + 8 */
+  right: calc(var(--fab-size-m) + var(--tabbar-inset) + 8px);
+  bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom));
+  height: var(--tabbar-h);
+  border-radius: var(--r-pill);
+  background: var(--bar-bg);
+  -webkit-backdrop-filter: var(--bar-blur); backdrop-filter: var(--bar-blur);
+  border: var(--bar-border);
+  box-shadow: var(--shadow-bar);
+  transition: transform var(--dur-tab) var(--ease-standard), opacity var(--dur-tab) var(--ease-standard);
+}
+.tabbar > [role='tablist'] { height: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: center; padding: 0 3px; }
+.tabbar button {
+  position: relative; min-width: 44px; height: 52px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 0; border: 0; border-radius: var(--r-pill); background: none;
+  color: var(--ink); font: var(--type-tab);
+}
+/* the active tab sits on a darker 76×52 pill; glyph + label turn accent */
+.tabbar .tab-pill { position: absolute; z-index: 0; top: 0; left: 50%; width: 76px; height: 52px; margin-left: -38px; border-radius: var(--r-pill); background: transparent; pointer-events: none; }
+.tabbar button[aria-selected='true'] { color: var(--accent); }
+.tabbar button[aria-selected='true'] .tab-pill { background: var(--tab-active); }
+.tabbar button .ic, .tabbar .tab-l { position: relative; z-index: 1; }
+.tabbar .tab-l { line-height: 1; white-space: nowrap; }
+.tabbar button:focus-visible { outline: none; }
+.tabbar button:focus-visible .tab-pill { box-shadow: var(--focus-ring); }
+.tabbar.recede { transform: translateY(8px); opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .tabbar.recede { transform: none; opacity: 1; background: var(--bar-bg-opaque); } }
+
+/* ---------- FAB: 58 px accent disc, right 16, centred on the bar ---------- */
+.fab {
+  position: fixed; z-index: 30;
+  right: var(--tabbar-inset);
+  bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom) + (var(--tabbar-h) - var(--fab-size-m)) / 2);
+  width: var(--fab-size-m); height: var(--fab-size-m);
+  padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--ink-on-accent);
+  box-shadow: var(--shadow-fab);
+  transition: transform var(--dur-instant) ease;
+}
+.fab:active { transform: scale(var(--scale-press)); }
+
+/* ---------- inbox screen ---------- */
+.backlog { position: relative; }
+.is-mobile .pane.m-inbox > .backlog { padding-top: env(safe-area-inset-top); }
+.is-mobile .backlog .hd { padding: 12px 16px 12px; }
+.is-mobile .backlog .hd h2 { font: var(--type-title); color: var(--ink); }
+.backlog .hd .n b { color: var(--ink); font-weight: var(--fw-bold); }
+
+/* empty state: 110 px accent tray centred at 42 % of the screen, the New Inbox Task pill at 63 % (07) */
+.inbox-empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-5); padding: var(--sp-8) var(--sp-4); }
+.inbox-tray { display: grid; place-items: center; color: var(--accent); }
+.inbox-new {
+  display: inline-flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 24px 0 18px;
+  border: 0; border-radius: var(--r-pill);
+  background: var(--accent-tint); color: var(--accent-on-tint);
+  font: var(--fw-semibold) var(--fs-22) / 1 var(--font-ui); white-space: nowrap;
+}
+.inbox-new:hover { background: color-mix(in oklch, var(--accent-tint) 85%, var(--accent)); }
+.inbox-new:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.is-mobile .inbox-empty { position: absolute; inset: 0; padding: 0; pointer-events: none; }
+.is-mobile .inbox-tray { position: absolute; top: calc(42% - 55px); left: 50%; margin-left: -55px; }
+.is-mobile .inbox-new { position: absolute; top: 63%; left: 50%; transform: translateX(-50%); pointer-events: auto; }
+.inbox-nomatch { margin: 0; padding: var(--sp-8) var(--sp-4); color: var(--ink-3); font-size: var(--fs-15); text-align: center; }
+
+/* rows: the day-row node grammar without the spine — 56 px disc · title 20/600 · meta 15/600 · Place · 22 px ring.
+   Virtualised and droppable: positioned with `top`, never a transform (lessons [dnd]). */
+.irow { position: absolute; left: 0; right: 0; top: 0; height: 72px; }
+.irow.over::before { content: ''; position: absolute; left: 12px; right: 12px; top: -5px; height: 3px; border-radius: 2px; background: var(--accent); z-index: 3; }
+.irow-in { display: flex; align-items: center; gap: 12px; height: 72px; padding: 0 4px 0 0; border-radius: var(--r-pill); }
+.irow.grab .irow-in { position: relative; z-index: 30; background: var(--panel); box-shadow: var(--shadow-drag); will-change: transform; }
+.irow-chip {
+  position: relative; flex: none; width: var(--node-size); height: var(--node-size);
+  padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--node); color: var(--cat-glyph);
+}
+.irow-chip.prio-high { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-high); }
+.irow-chip.prio-med { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-med); }
+.irow-chip.prio-low { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-low); }
+.irow-main { all: unset; box-sizing: border-box; flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 2px; cursor: grab; }
+.irow-main:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--r-md); }
+.irow .it { font: var(--type-list-title); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.irow .im { font: var(--type-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place { position: relative; flex: none; height: 36px; padding: 0 var(--sp-4); border: 0; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-on-tint); font-size: var(--fs-13); font-weight: var(--fw-bold); }
+.place::before { content: ''; position: absolute; inset: -4px 0; }
+.place:hover { background: color-mix(in oklch, var(--accent-tint) 70%, var(--accent)); }
+.irow-ring { position: relative; flex: none; width: 44px; height: 44px; padding: 0; border: 0; background: none; display: grid; place-items: center; }
+.irow-ring > span { width: var(--ring); height: var(--ring); border-radius: 50%; box-shadow: inset 0 0 0 2px var(--cat-glyph); display: grid; place-items: center; color: var(--ink-on-accent); }
+.irow-ring:focus-visible { outline: none; }
+.irow-ring:focus-visible > span { box-shadow: inset 0 0 0 2px var(--cat-glyph), var(--focus-ring); }
+.irow.done .irow-ring > span { background: var(--accent); box-shadow: none; }
+.irow.done .it { color: var(--ink-3); text-decoration: line-through; }
+.irow.done .irow-chip .ic { opacity: 0.6; }
+/* the 300 px desktop rail: the same grammar, compacted so a title keeps ~120 px (rows stay ROW_H tall) */
+.is-desktop .irow-in { gap: 8px; }
+.is-desktop .irow-chip { width: 44px; height: 44px; }
+.is-desktop .irow-chip .ic { width: 22px; height: 22px; }
+.is-desktop .irow .it { font-size: var(--fs-17); }
+.is-desktop .irow .im { font-size: var(--fs-13); }
+.is-desktop .place { padding: 0 var(--sp-3); }
+.is-desktop .irow-ring { width: 32px; }

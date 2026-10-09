@@ -24,7 +24,7 @@ test.describe('iPhone chrome', () => {
       expect(box.width).toBeGreaterThanOrEqual(44)
       expect(box.height).toBeGreaterThanOrEqual(44)
     }
-    await expect(bar.getByRole('tab')).toHaveCount(5) // Inbox · Timeline · Week · Plan · Settings (arc 3 shows the reserved Plan column)
+    await expect(bar.getByRole('tab')).toHaveCount(4) // arc 6: Inbox · Timeline · AI · Settings
     const hdr = page.getByTestId('header')
     expect(await hdr.evaluate((el) => getComputedStyle(el).borderBottomWidth)).toBe('0px')
     expect(await hdr.evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none')
@@ -49,9 +49,9 @@ test.describe('iPhone chrome', () => {
     expect(tl.y + tl.height).toBeGreaterThanOrEqual(vp.height - 1)
   })
 
-  test('FAB opens quick-add with focus in the field; adding closes it', async ({ page, context }) => {
+  test('quick-add (⌘K / `/`) opens the sheet with focus in the field; adding closes it', async ({ page, context }) => {
     await openApp(page, context)
-    await page.getByTestId('fab').click()
+    await page.keyboard.press('/')
     await expect(page.getByTestId('quickadd-sheet')).toBeVisible()
     await expect(page.getByTestId('quickadd')).toBeFocused()
     await page.getByTestId('quickadd').fill('Dentist at 4pm')
@@ -63,8 +63,6 @@ test.describe('iPhone chrome', () => {
 
   test('tabs switch views, and arrow keys move between tabs', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
-    await page.getByTestId('tab-week').click()
-    await expect(page.getByTestId('week-col').first()).toBeVisible()
     await page.getByTestId('tab-backlog').click()
     await expect(page.getByTestId('inbox')).toBeVisible()
     await page.getByTestId('tab-settings').click()
@@ -74,9 +72,8 @@ test.describe('iPhone chrome', () => {
     await expect(page.getByTestId('tab-plan')).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByTestId('plan')).toBeVisible()
     await page.keyboard.press('ArrowLeft')
-    await expect(page.getByTestId('tab-week')).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByTestId('tab-week')).toBeFocused()
-    await page.keyboard.press('ArrowLeft')
+    await expect(page.getByTestId('tab-timeline')).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByTestId('tab-timeline')).toBeFocused()
     await expect(page.getByTestId('timeline')).toBeVisible()
   })
 
@@ -114,7 +111,6 @@ test.describe('iPhone chrome', () => {
       await openApp(page, context, { seed: seedDay, theme })
       await page.getByTestId('timeline').evaluate((el) => (el.scrollTop = 10 * 66))
       await page.screenshot({ path: `docs/evidence/arc2-slice-3-iphone-day-${theme}.png` })
-      await page.getByTestId('fab').click()
       await (await quickAdd(page)).fill('Gym every weekday at 7am')
       await page.screenshot({ path: `docs/evidence/arc2-slice-3-iphone-quickadd-${theme}.png` })
     })
@@ -308,5 +304,147 @@ test.describe('arc 6 header', () => {
       await settle(page)
       await page.screenshot({ path: 'docs/evidence/arc6-slice-2-header.png' })
     })
+  })
+})
+
+// arc 6 slice 5 — the 4-tab floating bar, the 58px FAB and the inbox screen (mockups 01 · 07, 2026-10-09).
+test.describe('arc 6 tab bar', () => {
+  const iphone = (info: { project: { name: string } }) => test.skip(info.project.name !== 'iphone-15', 'iPhone chrome')
+  /** resolve a colour token to the computed string the browser paints for it */
+  const token = (page: Page, v: string) =>
+    page.evaluate((name) => {
+      const p = document.createElement('i')
+      p.style.backgroundColor = `var(${name})`
+      document.body.append(p)
+      const c = getComputedStyle(p).backgroundColor
+      p.remove()
+      return c
+    }, v)
+  const css = (page: Page, testid: string, prop: 'color' | 'backgroundColor', sel?: string) => {
+    const l = page.getByTestId(testid)
+    return (sel ? l.locator(sel) : l).evaluate((el, p) => getComputedStyle(el)[p], prop)
+  }
+  const wizard = (page: Page) => page.evaluate(() => (window as any).__optimo.ui.getState().wizard as { mode: string } | null)
+
+  test('exactly four tabs — Inbox · Timeline · AI · Settings — with filled glyphs', async ({ page, context }, info) => {
+    iphone(info)
+    await openApp(page, context, { theme: 'dark' })
+    const tabs = page.getByTestId('tabbar').getByRole('tab')
+    await expect(tabs).toHaveCount(4)
+    expect((await tabs.allTextContents()).map((t) => t.trim())).toEqual(['Inbox', 'Timeline', 'AI', 'Settings'])
+    await expect(page.getByTestId('tab-plan').locator('svg')).toHaveAttribute('data-icon', 'ui-ai')
+    for (const svg of await tabs.locator('svg').all()) expect(await svg.getAttribute('fill')).toBe('currentColor')
+    await expect(page.getByTestId('tab-week')).toHaveCount(0)
+  })
+
+  test('the active tab sits on the --tab-active pill with an accent label', async ({ page, context }, info) => {
+    iphone(info)
+    await openApp(page, context, { theme: 'dark' })
+    const active = page.getByTestId('tab-timeline')
+    await expect(active).toHaveAttribute('aria-selected', 'true')
+    const box = (await page.getByTestId('tab-active-pill').boundingBox())!
+    expect(Math.abs(box.width - 76)).toBeLessThanOrEqual(1)
+    expect(Math.abs(box.height - 52)).toBeLessThanOrEqual(1)
+    expect(await css(page, 'tab-active-pill', 'backgroundColor')).toBe(await token(page, '--tab-active'))
+    expect(await css(page, 'tab-timeline', 'color', '.tab-l')).toBe(await token(page, '--accent'))
+    // an inactive tab has no pill and reads in --ink
+    expect(await css(page, 'tab-settings', 'backgroundColor', '.tab-pill')).toBe('rgba(0, 0, 0, 0)')
+    expect(await css(page, 'tab-settings', 'color', '.tab-l')).toBe(await token(page, '--ink'))
+  })
+
+  test('geometry: 60px bar 16px from the left, 58px FAB 16px from the right on the same centre line', async ({ page, context }, info) => {
+    iphone(info)
+    await openApp(page, context)
+    const vp = page.viewportSize()!
+    const b = (await page.getByTestId('tabbar').boundingBox())!
+    const f = (await page.getByTestId('fab').boundingBox())!
+    expect(Math.abs(b.height - 60)).toBeLessThanOrEqual(1)
+    expect(Math.abs(b.x - 16)).toBeLessThanOrEqual(1)
+    expect(Math.abs(f.width - 58)).toBeLessThanOrEqual(1)
+    expect(Math.abs(f.height - 58)).toBeLessThanOrEqual(1)
+    expect(Math.abs(vp.width - (f.x + f.width) - 16)).toBeLessThanOrEqual(1)
+    expect(Math.abs(b.y + b.height / 2 - (f.y + f.height / 2))).toBeLessThanOrEqual(1)
+    expect(b.x + b.width).toBeLessThan(f.x) // side by side, never overlapping
+  })
+
+  test('the FAB opens the new-task wizard (timeline mode), not the quick-add sheet', async ({ page, context }, info) => {
+    iphone(info)
+    await openApp(page, context)
+    await page.getByTestId('fab').click()
+    await expect.poll(() => wizard(page)).toMatchObject({ mode: 'timeline' })
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
+  })
+
+  test('inbox empty state: title, tray and the New Inbox Task pill → wizard in inbox mode', async ({ page, context }, info) => {
+    iphone(info)
+    await openApp(page, context, { theme: 'dark' })
+    await page.getByTestId('tab-backlog').click()
+    await expect(page.getByTestId('tab-backlog')).toHaveAttribute('aria-selected', 'true')
+    const h = page.getByRole('heading', { name: 'Inbox' })
+    await expect(h).toBeVisible()
+    expect(await h.evaluate((el) => getComputedStyle(el).fontSize)).toBe('30px')
+    await expect(page.getByTestId('inbox-empty')).toBeVisible()
+    const pill = page.getByTestId('new-inbox-task')
+    await expect(pill).toHaveText('New Inbox Task')
+    expect(Math.abs((await pill.boundingBox())!.height - 56)).toBeLessThanOrEqual(1)
+    expect(await css(page, 'new-inbox-task', 'backgroundColor')).toBe(await token(page, '--accent-tint'))
+    const tray = (await page.getByTestId('inbox-empty').locator('.inbox-tray svg').boundingBox())!
+    expect(Math.abs(tray.width - 110)).toBeLessThanOrEqual(1)
+    const vh = page.viewportSize()!.height
+    expect(Math.abs(tray.y + tray.height / 2 - vh * 0.42)).toBeLessThanOrEqual(vh * 0.03)
+    await pill.click()
+    await expect.poll(() => wizard(page)).toMatchObject({ mode: 'inbox' })
+    await expect(page.getByRole('dialog')).toBeVisible()
+  })
+
+  test('inbox rows: node disc, ring completes the task, disc opens the editor; Place stays', async ({ page, context }, info) => {
+    iphone(info)
+    let id = ''
+    await openApp(page, context, { seed: (s) => (id = seedTask(s, { title: 'Renew passport', start_at: null, duration_min: 45, category_id: CAT.errand }).id) })
+    await page.getByTestId('tab-backlog').click()
+    const r = page.locator(`[data-testid="inbox-row"][data-id="${id}"]`)
+    await expect(r).toContainText('45 min · Errands')
+    const disc = (await r.locator('.irow-chip').boundingBox())!
+    expect(Math.abs(disc.width - 56)).toBeLessThanOrEqual(1)
+    await expect(r.getByTestId('place')).toBeVisible()
+    await expect(page.getByTestId('inbox-empty')).toHaveCount(0)
+    await r.locator('.irow-chip').click()
+    await expect.poll(() => page.evaluate(() => (window as any).__optimo.ui.getState().editingId)).toBe(id)
+    await page.evaluate(() => (window as any).__optimo.ui.getState().set({ editingId: null }))
+    await r.getByTestId('inbox-ring').click()
+    await expect.poll(async () => (await row(page, id)).completed_at).not.toBeNull()
+    await expect(r).toHaveClass(/\bdone\b/)
+    await expect(r.getByTestId('inbox-ring')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  for (const theme of ['dark', 'light'] as const)
+    test(`axe clean on the inbox screen, empty and with rows (${theme})`, async ({ page, context }, info) => {
+      iphone(info)
+      await openApp(page, context, { theme })
+      await page.getByTestId('tab-backlog').click()
+      await expect(page.getByTestId('inbox-empty')).toBeVisible()
+      expect(await serious(page)).toEqual([])
+      await page.evaluate(() => (window as any).__optimo.repo.createTask({ title: 'Book flights', duration_min: 30, start_at: null }))
+      await expect(page.getByTestId('inbox-row')).toHaveCount(1)
+      expect(await serious(page)).toEqual([])
+    })
+
+  test('desktop: the inbox rail header carries the "in inbox" count', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'desktop rail')
+    await openApp(page, context, { seed: seedDay })
+    await expect(page.getByTestId('inbox').getByTestId('stat-unplaced')).toHaveText('4')
+    await expect(page.getByTestId('inbox').locator('.hd')).toContainText('4 in inbox')
+  })
+
+  test('evidence: tab bar + inbox empty state (iPhone 15, dark)', async ({ page, context }, info) => {
+    iphone(info)
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    await page.setViewportSize({ width: 402, height: 874 })
+    await openApp(page, context, { theme: 'dark' })
+    await page.getByTestId('tab-backlog').click()
+    await expect(page.getByTestId('inbox-empty')).toBeVisible()
+    await page.waitForFunction(() => document.getAnimations().length === 0)
+    await page.screenshot({ path: 'docs/evidence/arc6-slice-5-tabbar-inbox.png' })
   })
 })

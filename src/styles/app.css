@@ -187,25 +187,6 @@
 .backlog .filter input { width: 100%; height: 40px; padding: 0 var(--sp-4); background: var(--surface); border: 0; border-radius: var(--r-pill); font-size: var(--fs-15); box-shadow: inset 0 0 0 1px var(--line); }
 .ilist { flex: 1; overflow: auto; position: relative; min-height: 0; padding: 0 var(--sp-3); }
 .ilist ul { list-style: none; margin: 0; padding: 0; position: relative; }
-.irow { position: absolute; left: 0; right: 0; top: 0; height: 48px; }
-.irow.over::before { content: ''; position: absolute; left: 12px; right: 12px; top: -4px; height: 3px; border-radius: 2px; background: var(--accent); z-index: 3; }
-.irow-in { display: flex; align-items: center; gap: var(--sp-2); height: 48px; padding: 0 4px 0 11px; border-radius: var(--r-pill); background: var(--surface); }
-.irow.grab .irow-in { position: relative; z-index: 30; box-shadow: var(--shadow-drag); will-change: transform; }
-.irow-chip { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }
-.irow-chip::before { content: ''; position: absolute; inset: -9px; }
-.irow-chip.prio-high { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-high); }
-.irow-chip.prio-med { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-med); }
-.irow-chip.prio-low { box-shadow: 0 0 0 var(--prio-ring-w) var(--prio-low); }
-.irow-main { all: unset; box-sizing: border-box; flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; cursor: grab; }
-.irow-main:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--r-pill); }
-.irow .it { font-weight: var(--fw-bold); font-size: var(--fs-15); line-height: var(--lh-tight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.irow .im { font-size: var(--fs-13); color: var(--ink-2); line-height: var(--lh-tight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.irow .ic-cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.place { position: relative; flex: none; height: 36px; padding: 0 var(--sp-4); border: 0; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-ink); font-size: var(--fs-13); font-weight: var(--fw-bold); }
-.place::before { content: ''; position: absolute; inset: -4px 0; }
-.place:hover { background: color-mix(in oklch, var(--accent-tint) 70%, var(--accent)); }
-.backlog .empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-8) var(--sp-4); color: var(--ink-2); font-size: var(--fs-15); text-align: center; }
-.backlog .empty .empty-chip { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--cat-3-chip); color: var(--chip-glyph-color); }
 .backlog .ft { margin: 0; padding: var(--sp-3) var(--sp-4); font-size: var(--fs-12); color: var(--ink-2); line-height: var(--lh-snug); }
 /* #29: the drag hint is desktop copy and sat under the floating tab bar; mobile Place = the row pill + swipe */
 .is-mobile .backlog .ft { display: none; }
@@ -386,21 +367,6 @@
 .is-mobile .toast-wrap { bottom: calc(var(--tabbar-h) + var(--tabbar-inset) * 2 + env(safe-area-inset-bottom)); }
 
 /* floating pill tab bar + separate FAB */
-.tabbar { position: fixed; z-index: 30; left: var(--tabbar-inset); right: calc(var(--fab-size) + var(--tabbar-inset) * 2); bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom));
-  height: var(--tabbar-h); border-radius: var(--r-pill); background: var(--bar-bg); -webkit-backdrop-filter: var(--bar-blur); backdrop-filter: var(--bar-blur); border: var(--bar-border); box-shadow: var(--shadow-bar);
-  transition: transform var(--dur-tab) var(--ease-standard), opacity var(--dur-tab) var(--ease-standard); }
-.tabbar > [role='tablist'] { height: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 0 6px; }
-.tabbar button { position: relative; min-width: 44px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; border: 0; border-radius: var(--r-pill); background: none; color: var(--ink-2); }
-.tabbar button[hidden] { display: none; }
-.tabbar button[aria-selected='true'] { color: var(--accent-ink); }
-.tabbar .tab-ic { position: relative; display: grid; place-items: center; }
-.tabbar .tab-l { font-size: var(--fs-10); font-weight: var(--fw-bold); line-height: 1; }
-.tabbar .tab-badge { position: absolute; top: -4px; left: 14px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--r-pill); background: var(--accent); color: var(--ink-on-accent); font-size: 9px; font-weight: var(--fw-bold); line-height: 16px; text-align: center; }
-.tabbar.recede { transform: translateY(8px); opacity: 0.6; }
-@media (prefers-reduced-motion: reduce) { .tabbar.recede { transform: none; opacity: 1; background: var(--bar-bg-opaque); } }
-.fab { position: fixed; z-index: 30; right: var(--tabbar-inset); bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom)); width: var(--fab-size); height: var(--fab-size); padding: 0; border: 0; border-radius: 50%;
-  display: grid; place-items: center; background: var(--accent); color: var(--ink-on-accent); box-shadow: var(--shadow-fab); transition: transform var(--dur-instant) ease; }
-.fab:active { transform: scale(var(--scale-press)); }
 
 /* desktop pane header: segmented pill, title, quick-add pill, gear, sync */
 .pane-hdr { position: relative; z-index: 15; display: flex; align-items: center; gap: var(--sp-3); min-height: var(--header-h-desktop); padding: 0 var(--sp-4); background: var(--header-fade); flex-wrap: nowrap; min-width: 0; }
