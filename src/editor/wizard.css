@@ -284,3 +284,12 @@ button.det-box::before { content: ''; position: absolute; inset: -10px; }
 .det-keep { background: var(--accent); color: var(--ink-on-accent); }
 .det-discard { background: var(--node); color: var(--ink); }
 .det-props-btns button:focus-visible { box-shadow: var(--focus-ring); }
+
+/* arc 7 slice 6: ③'s place control — six one-tap chips (3 × 2 on iPhone, one row on desktop); the current place filled */
+.det-place { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: var(--r-md); background: var(--card); }
+.is-desktop .det-place { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.det-place-chip { position: relative; width: 100%; min-width: 0; height: 44px; padding: 0 6px; border: 0; border-radius: var(--r-pill); background: var(--node); color: var(--ink); font: var(--fw-bold) var(--fs-15) / 1 var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.det-place-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.det-place-chip[aria-pressed='true'] { background: var(--accent); color: var(--ink-on-accent); }
+.det-place-pick { position: relative; display: block; min-width: 0; }
+.det-place-date { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; border: 0; padding: 0; }

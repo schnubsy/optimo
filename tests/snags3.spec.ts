@@ -1,7 +1,7 @@
 // arc 3 slices 2–10 — snag Issues #29–#37 (label `snag`), raised by the snag-train 2026-10 slice-14 Eye LITE critique
 // (docs/evidence/snag-train-2026-10-slice-14-design-critique.md). One behavioural case per Issue.
 import { test, expect, type Page } from '@playwright/test'
-import { CAT, at, openApp, seedDay, seedTask } from './support/app'
+import { CAT, at, openApp, openCreateWizard, seedDay, seedTask } from './support/app'
 
 const isMobile = (page: Page) => page.evaluate(() => matchMedia('(max-width: 899px)').matches)
 
@@ -78,7 +78,7 @@ test.describe('snags #29–#37 (arc 3)', () => {
   test('#33 the iPhone parse chips stay on screen, clear of the floating Continue', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'iphone-15', 'the FAB wizard is mobile')
     await openApp(page, context)
-    await page.getByTestId('fab').click()
+    await openCreateWizard(page) // arc 7 slice 8: FAB → capture → Details…
     const field = page.getByTestId('wizard-title')
     await field.fill('Lunch with Sam tomorrow at 1pm for 45m #personal !!')
     // arc 6: the chips are read-only previews (not tap targets) under the wizard title

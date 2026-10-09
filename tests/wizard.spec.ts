@@ -1,18 +1,15 @@
 // arc 6 slice 6 — the create wizard ① title + suggestions → ② when (wheel, ••• menu, duration sheet) → ③ (stub).
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { CAT, openApp } from './support/app'
+import { CAT, openApp, openCreateWizard } from './support/app'
 
 const axe = async (page: Page) => (await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
 const settled = (page: Page) => expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0)
 const wizard = (page: Page) => page.getByTestId('wizard')
 
-/** FAB on iPhone, `N` on desktop. */
+/** arc 7 slice 8: the FAB / `N` capture in one line — the full wizard is their "Details…" (iPhone FAB, desktop N). */
 async function openWizard(page: Page) {
-  const fab = page.getByTestId('fab')
-  if (await fab.isVisible()) await fab.click()
-  else await page.keyboard.press('n')
-  await expect(wizard(page)).toHaveAttribute('data-step', '1')
+  await openCreateWizard(page)
   await expect(page.getByTestId('wizard-title')).toBeFocused()
 }
 const clock12 = (page: Page) => page.evaluate(() => (window as any).__optimo.repo.updateSettings({ clock24: false }))

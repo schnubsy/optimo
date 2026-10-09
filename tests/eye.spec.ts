@@ -1,7 +1,7 @@
 // arc 6 slice 9 — captures of every mocked state (docs/design/2026-10-09-mockups/01–10) at 402×874, dark + light, for
 // the Eye LITE side-by-side (docs/evidence/arc6-eye-lite.md). EVIDENCE-gated: `EVIDENCE=1 npx playwright test tests/eye.spec.ts`.
 import { test, expect, type Page } from '@playwright/test'
-import { at, openApp } from './support/app'
+import { at, openApp, openCreateWizard } from './support/app'
 
 const settle = (page: Page) => expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0)
 const shot = (page: Page, n: string, theme: string) => page.screenshot({ path: `docs/evidence/arc6-eye-${n}-${theme}.png` })
@@ -24,7 +24,7 @@ for (const theme of ['dark', 'light'] as const)
     await page.getByTestId('tab-timeline').click()
 
     // 04 ① title + suggestions
-    await page.getByTestId('fab').click()
+    await openCreateWizard(page) // arc 7 slice 8: FAB → capture → Details…
     await settle(page)
     await shot(page, '04-new-task-title', theme)
     // 02 ② when

@@ -29,7 +29,8 @@ const LONG_TITLE = 14
 /** The prefill (gap / paint / N / parsed command line) → the wizard's working draft. */
 export function initialDraft(w: WizardState, uiDate: string, settings: SettingsData): WizardDraft {
   const p: Partial<Draft> = w.draft
-  const { title, category_id, start_at, duration_min, all_day, rrule, priority, dtstart: _dtstart, notes, subtasks, reminders, tz, ...extra } = p
+  const { title, category_id, start_at, duration_min, all_day, rrule, priority, dtstart: _dtstart, notes, subtasks, reminders, tz, plan_date, someday, estimated: _est, ...extra } = p
+  void _est
   void _dtstart
   let date = uiDate
   let start = date === todayKey() ? Math.min(23 * 60 + 45, Math.ceil(nowMinutes() / 15) * 15) : 9 * 60
@@ -45,6 +46,8 @@ export function initialDraft(w: WizardState, uiDate: string, settings: SettingsD
     duration: duration_min ?? settings.default_duration,
     all_day: !!all_day,
     inbox: w.mode === 'inbox',
+    plan_date: plan_date ?? null,
+    someday: !!someday,
     rrule: rrule ?? null,
     priority: priority ?? 0,
     notes: notes ?? '',
@@ -63,11 +66,13 @@ export function draftFromTask(task: Task, occ: string | null, uiDate: string, se
   return {
     title: shown.title,
     category_id: shown.category_id,
-    date: at?.date ?? uiDate,
+    date: at?.date ?? shown.plan_date ?? uiDate,
     start: at ? (shown.all_day ? 9 * 60 : at.minutes) : 9 * 60,
     duration: shown.duration_min || settings.default_duration,
     all_day: !!shown.all_day,
     inbox: !shown.start_at,
+    plan_date: shown.start_at ? null : (shown.plan_date ?? null),
+    someday: !shown.start_at && !!shown.someday,
     rrule: task.rrule,
     priority: shown.priority,
     notes: shown.notes ?? '',
@@ -120,8 +125,20 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   const set = useUI((s) => s.set)
   const notify = useUI((s) => s.notify)
   const uiDate = useUI((s) => s.date)
-  const [draft, setDraft] = useState<WizardDraft>(() => (edit ? draftFromTask(edit.task, edit.occ, uiDate, settings) : initialDraft(wizard, uiDate, settings)))
-  const [step, setStep] = useState<WizardStep>(edit ? 3 : 1)
+  // arc 7 slice 9: "Pick a time" on a tray chip opens the edit screen on ② (consumed once): the task is drafted onto
+  // its day's timeline so ② shows the wheel
+  const [startStep] = useState<WizardStep>(() => (edit ? (useUI.getState().editStep ?? 3) : 1))
+  useEffect(() => {
+    if (useUI.getState().editStep !== null) useUI.getState().set({ editStep: null })
+  }, [])
+  const [draft, setDraft] = useState<WizardDraft>(() => {
+    if (!edit) return initialDraft(wizard, uiDate, settings)
+    const d = draftFromTask(edit.task, edit.occ, uiDate, settings)
+    if (startStep !== 2 || !d.inbox) return d
+    const start = d.date === todayKey() ? Math.min(23 * 60 + 45, Math.ceil(nowMinutes() / 15) * 15) : d.start
+    return { ...d, inbox: false, all_day: false, plan_date: null, someday: false, start }
+  })
+  const [step, setStep] = useState<WizardStep>(startStep)
   const [panel, setPanel] = useState<'tz' | 'palette' | null>(null)
   const [scope, setScope] = useState<Scope>('this')
   // slice 8: AI subtasks (the sparkle on ③)
@@ -181,7 +198,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }, [step])
 
   const dirty = !edit && (step === 1 ? text : draft.title).trim().length > 0
-  const close = () => (edit ? set({ editingId: null }) : set({ wizard: null }))
+  const close = () => (edit ? set({ editingId: null, editStep: null }) : set({ wizard: null }))
   const requestClose = () => (dirty ? setConfirm(true) : close())
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -368,7 +385,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               presets={durationPresets(settings)}
               onChange={patch}
               onInbox={() => {
-                patch({ inbox: true })
+                patch({ inbox: true, plan_date: null, someday: false })
                 setStep(3)
               }}
               onTimezone={timezone}
@@ -381,6 +398,10 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               cats={cats}
               onChange={patch}
               onEditWhen={draft.inbox && !edit ? undefined : () => setStep(2)}
+              onTimeline={() => {
+                patch({ inbox: false, all_day: false, someday: false, plan_date: null, date: draft.plan_date ?? draft.date })
+                setStep(2)
+              }}
               ai={{
                 ...ai,
                 onSuggest: () => void suggest(),
