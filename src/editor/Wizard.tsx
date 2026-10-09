@@ -13,6 +13,8 @@ import { resolveCategory, useKeyboardInset } from '../quickadd/QuickAdd'
 import { CATEGORY_OF, suggestIcon, taskIcon } from '../quickadd/suggest'
 import { useUI, type Draft, type Wizard as WizardState } from '../state/ui'
 import { StepDetails } from './StepDetails'
+import { newId } from '../data/ids'
+import { PlannerError, suggestSubtasks } from '../plan/api'
 import { PaletteSheet } from './PaletteSheet'
 import { TimezonePicker } from './TimezonePicker'
 import { StepTitle } from './StepTitle'
@@ -119,6 +121,17 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   const [step, setStep] = useState<WizardStep>(edit ? 3 : 1)
   const [panel, setPanel] = useState<'tz' | 'palette' | null>(null)
   const [scope, setScope] = useState<Scope>('this')
+  // slice 8: AI subtasks (the sparkle on ③)
+  const [ai, setAi] = useState<{ busy: boolean; proposals: string[] | null; note: string | null }>({ busy: false, proposals: null, note: null })
+  async function suggest() {
+    setAi({ busy: true, proposals: null, note: null })
+    try {
+      const list = await suggestSubtasks({ title: draft.title.trim(), notes: draft.notes, duration_min: draft.inbox ? undefined : draft.duration })
+      setAi({ busy: false, proposals: list, note: null })
+    } catch (e) {
+      setAi({ busy: false, proposals: null, note: e instanceof PlannerError ? e.message : 'Couldn’t reach the planner — try again in a moment.' })
+    }
+  }
   const [text, setText] = useState(draft.title)
   const [confirm, setConfirm] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -350,6 +363,15 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               onChange={patch}
               onCreate={create}
               onEditWhen={draft.inbox && !edit ? undefined : () => setStep(2)}
+              ai={{
+                ...ai,
+                onSuggest: () => void suggest(),
+                onKeep: (titles) => {
+                  patch({ subtasks: [...draft.subtasks, ...titles.map((title) => ({ id: newId(), title, done: false }))] })
+                  setAi({ busy: false, proposals: null, note: null })
+                },
+                onDiscard: () => setAi({ busy: false, proposals: null, note: null }),
+              }}
               edit={
                 edit
                   ? {

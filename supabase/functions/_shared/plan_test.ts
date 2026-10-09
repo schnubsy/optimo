@@ -1,6 +1,6 @@
 // deno test — plan-day in the real Edge runtime against the scripted model (tests/fake/planPorts.ts), the same fake
 // vitest and the hermetic Playwright server drive.
-import { DAILY_LIMIT, LEARN_MODEL, handlePlan, uuidv7Floor } from './plan.ts'
+import { DAILY_LIMIT, LEARN_MODEL, SUBTASK_MODEL, handlePlan, uuidv7Floor } from './plan.ts'
 import { FAKE_SOURCE, FakeModel, MemPlanPorts, PLAN_USER } from '../../../tests/fake/planPorts.ts'
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -121,4 +121,38 @@ Deno.test('missing planner tables are a 503 not_connected, not a crash', async (
   p.countPlansSince = () => Promise.reject(new PlannerUnavailable('relation "planner_ai_plans" does not exist'))
   const r = await handlePlan(propose(), p)
   assert(r.status === 503 && (await r.json()).code === 'not_connected', `status ${r.status}`)
+})
+
+// ---------- arc 6 slice 8: subtasks ----------
+const eq = (a: unknown, b: unknown, msg: string) => assert(JSON.stringify(a) === JSON.stringify(b), `${msg}: ${JSON.stringify(a)} !== ${JSON.stringify(b)}`)
+
+Deno.test('subtasks: the small model, one strict tool, no web search; 3–7 cleaned steps; counts against the limit', async () => {
+  const p = new MemPlanPorts()
+  const res = await handlePlan(post({ action: 'subtasks', title: 'Write the migration plan', notes: 'include rollback', duration_min: 90 }), p)
+  eq(res.status, 200, 'status')
+  const body = await res.json()
+  eq(body.subtasks, ['Gather what you need', 'Block out time for Write the migration plan', 'Do the first pass', 'Review and wrap up'], 'cleaned steps')
+  const call = p.fake.calls[0] as unknown as { model: string; tools: { name?: string; type?: string; strict?: boolean }[]; tool_choice: unknown }
+  eq(call.model, SUBTASK_MODEL, 'model')
+  eq(call.tools.map((t) => t.name), ['submit_subtasks'], 'one tool, no web search')
+  eq(call.tools[0].strict, true, 'strict')
+  eq(call.tool_choice, { type: 'auto' }, 'tool_choice')
+  const row = p.plans.get(body.plan_id)!
+  eq(row.status, 'applied', 'recorded as an applied plan row')
+  assert(!p.logs.join('\n').includes('migration'), 'the title never reaches the log')
+})
+
+Deno.test('subtasks: the 31st request of the day is a 429; malformed output is a 502; a text answer gets one nudge', async () => {
+  const p = new MemPlanPorts()
+  for (let i = 0; i < DAILY_LIMIT; i++) {
+    const id = p.newId()
+    p.plans.set(id, { id, user_id: PLAN_USER } as never)
+  }
+  eq((await handlePlan(post({ action: 'subtasks', title: 'Pack' }), p)).status, 429, 'limit')
+  const q = new MemPlanPorts()
+  eq((await handlePlan(post({ action: 'subtasks', title: 'Pack #malformed' }), q)).status, 502, 'malformed')
+  eq((await handlePlan(post({ action: 'subtasks', title: '' }), q)).status, 400, 'no title')
+  const r = new MemPlanPorts(new FakeModel({ textFirst: true }))
+  eq((await handlePlan(post({ action: 'subtasks', title: 'Pack for the trip' }), r)).status, 200, 'nudged')
+  eq(r.fake.calls.length, 2, 'one nudge')
 })

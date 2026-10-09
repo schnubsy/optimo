@@ -350,3 +350,55 @@ test.describe('per-task time zone (device in Chicago)', () => {
     await expect(page.getByTestId('details-tz')).toContainText('London')
   })
 })
+
+// arc 6 slice 8 — the sparkle on ③ asks plan-day (`action: 'subtasks'`, the real handler behind the hermetic server
+// with the scripted model) for subtasks; proposals can be ticked off, then Keep all / Discard.
+test.describe('AI subtasks', () => {
+  async function toDetails(page: Page, title: string) {
+    await openWizard(page)
+    await page.getByTestId('wizard-title').fill(title)
+    await page.getByTestId('wizard-continue').click()
+    await page.getByTestId('wizard-continue').click()
+    await expect(wizard(page)).toHaveAttribute('data-step', '3')
+  }
+
+  test('sparkle → 4 proposals → Keep all → saved on the task', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00', seed: (s) => ((s.ai = true), (s.planFn = true)) })
+    await toDetails(page, 'Pack for the trip at 6pm for 1h')
+    await page.getByTestId('subtask-ai').click()
+    await expect(page.getByTestId('subtask-proposal')).toHaveCount(4)
+    await expect(page.getByTestId('subtask-proposal').first()).toHaveText('Gather what you need')
+    // untick one, discard nothing else
+    await page.getByRole('button', { name: 'Keep Do the first pass' }).click()
+    await page.getByTestId('subtask-keep').click()
+    await expect(page.getByTestId('subtask')).toHaveCount(3)
+    await page.getByTestId('wizard-create').click()
+    await expect.poll(async () => (await taskByTitle(page, 'Pack for the trip'))?.subtasks?.map((s: { title: string }) => s.title)).toEqual(['Gather what you need', 'Block out time for Pack for the trip', 'Review and wrap up'])
+  })
+
+  test('Discard drops the proposals; the daily limit and offline show a note, not a crash', async ({ page, context }) => {
+    const { server } = await openApp(page, context, { at: '09:00', seed: (s) => ((s.ai = true), (s.planFn = true)) })
+    await toDetails(page, 'Clean the garage')
+    await page.getByTestId('subtask-ai').click()
+    await expect(page.getByTestId('subtask-proposal')).toHaveCount(4)
+    await page.getByTestId('subtask-discard').click()
+    await expect(page.getByTestId('subtask-proposals')).toHaveCount(0)
+    await expect(page.getByTestId('subtask')).toHaveCount(0)
+    // 30 requests today already → the 429 message
+    const hex = Date.now().toString(16).padStart(12, '0')
+    for (let i = 0; i < 30; i++) server.upsert('planner_ai_plans', { id: `${hex.slice(0, 8)}-${hex.slice(8, 12)}-7000-8000-${String(i).padStart(12, '0')}`, plan_date: '2026-10-09', intent: 'x', mode: 'propose', status: 'applied', proposal: { blocks: [], questions: [], notes: '' }, research: [], accepted_task_ids: [], deleted_at: null, field_ts: {} })
+    await page.getByTestId('subtask-ai').click()
+    await expect(page.getByTestId('subtask-ai-note')).toContainText('resets at midnight UTC')
+    await context.setOffline(true)
+    await page.getByTestId('subtask-ai').click()
+    await expect(page.getByTestId('subtask-ai-note')).toHaveText('You’re offline.')
+    await context.setOffline(false)
+  })
+
+  test('plan-day not deployed → the not-connected copy', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00' })
+    await toDetails(page, 'Plan the week')
+    await page.getByTestId('subtask-ai').click()
+    await expect(page.getByTestId('subtask-ai-note')).toHaveText('Planner isn’t connected yet.')
+  })
+})

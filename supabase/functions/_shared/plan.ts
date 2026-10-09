@@ -5,12 +5,19 @@
 // Actions (POST JSON, user JWT):
 //   propose {date, from, to, tz, intent, mode, research, plan_id?, answers?} → a planner_ai_plans row (status draft)
 //   learn   {plan_id, accepted_task_ids, edits, rejected}                     → planner_ai_profile.data distilled
+//   subtasks {title, notes?, duration_min?}                                  → {subtasks: string[3..7], plan_id}
+//            (arc 6 slice 8: the sparkle on ③; small model, no web search, one strict tool; recorded as an
+//            `applied` planner_ai_plans row so it counts against the daily limit like a plan)
 //
-// Privacy: the model sees titles, times, durations, categories and priorities only — never notes, calendar
-// credentials or device ids. The intent text is never logged.
+// Privacy: propose / learn send titles, times, durations, categories and priorities only — never notes, calendar
+// credentials or device ids. `subtasks` sends that one task's title, its notes and duration (the user asked the
+// sparkle to break that task down). Neither the intent nor the title is ever logged.
 
 export const DEFAULT_MODEL = 'claude-sonnet-5-5'
 export const LEARN_MODEL = 'claude-haiku-4-5'
+export const SUBTASK_MODEL = 'claude-haiku-4-5'
+export const MIN_SUBTASKS = 3
+export const MAX_SUBTASKS = 7
 export const DAILY_LIMIT = 30
 export const MAX_QUESTIONS = 3
 export const MAX_CONTINUATIONS = 3
@@ -335,6 +342,97 @@ async function runPlanner(p: PlanPorts, userText: string, research: boolean): Pr
   return { input: null, content: all, model: p.model }
 }
 
+// ---------- subtasks (arc 6 slice 8) ----------
+
+const SUBTASK_SYSTEM = `You break one task from Mark's day planner (optimo) into concrete subtasks.
+- Return ${MIN_SUBTASKS} to ${MAX_SUBTASKS} short, actionable steps in the order he would do them, each a few words starting
+  with a verb, fitting the task's duration when one is given.
+- Use the notes when they help; never invent people, places or facts that are not in the task.
+- Finish by calling submit_subtasks exactly once. Do not answer in plain text.`
+
+const SUBTASK_TOOL = {
+  name: 'submit_subtasks',
+  description: 'Submit the subtasks for the task. Call exactly once, as the final step.',
+  strict: true,
+  input_schema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['subtasks'],
+    properties: {
+      subtasks: { type: 'array', items: { type: 'string' }, description: `${MIN_SUBTASKS}–${MAX_SUBTASKS} short steps, in order.` },
+    },
+  },
+}
+
+/** Validate submit_subtasks: trimmed, de-duplicated, 3–7 items of ≤ 120 chars; anything else is null. */
+export function cleanSubtasks(input: unknown): string[] | null {
+  const raw = (input as { subtasks?: unknown } | null)?.subtasks
+  if (!Array.isArray(raw)) return null
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const s of raw) {
+    if (typeof s !== 'string') continue
+    const t = s.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim().slice(0, 120)
+    if (!t || seen.has(t.toLowerCase())) continue
+    seen.add(t.toLowerCase())
+    out.push(t)
+  }
+  return out.length >= MIN_SUBTASKS ? out.slice(0, MAX_SUBTASKS) : null
+}
+
+/** One small-model call (one nudge if it answers in text); no web search, nothing logged but the failure class. */
+async function runSubtasks(p: PlanPorts, userText: string): Promise<unknown> {
+  const messages: { role: string; content: unknown }[] = [{ role: 'user', content: userText }]
+  for (let i = 0; i < 2; i++) {
+    const res = await call(p, { model: SUBTASK_MODEL, max_tokens: 1024, system: SUBTASK_SYSTEM, tools: [SUBTASK_TOOL], tool_choice: { type: 'auto' }, messages })
+    const use = res.content.find((b) => b.type === 'tool_use' && b.name === 'submit_subtasks')
+    if (use) return use.input
+    if (res.stop_reason === 'refusal') return null
+    messages.push({ role: 'assistant', content: res.content }, { role: 'user', content: 'Call submit_subtasks now with the steps.' })
+  }
+  return null
+}
+
+interface SubtasksBody {
+  action: 'subtasks'
+  title?: string
+  notes?: string
+  duration_min?: number
+}
+
+async function subtasks(b: SubtasksBody, userId: string, p: PlanPorts): Promise<Response> {
+  const title = typeof b.title === 'string' ? b.title.trim() : ''
+  if (!title) return json(400, { error: 'A task title is needed.' })
+  if (title.length > 300) return json(400, { error: 'That title is too long.' })
+  const now = p.now()
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  if ((await p.countPlansSince(userId, uuidv7Floor(today))) >= DAILY_LIMIT)
+    return json(429, { error: `That’s ${DAILY_LIMIT} planner requests today — it resets at midnight UTC.` })
+  const notes = typeof b.notes === 'string' ? b.notes.trim().slice(0, 2000) : ''
+  const dur = Number(b.duration_min)
+  const text = [`Task: ${title}`, Number.isFinite(dur) && dur > 0 ? `Duration: ${Math.round(dur)} min` : '', notes ? `Notes:\n${notes}` : ''].filter(Boolean).join('\n')
+  const list = cleanSubtasks(await runSubtasks(p, text))
+  if (!list) return json(502, { error: 'The planner returned no usable steps — try again.' })
+  const ts = now.getTime()
+  // recorded like a plan so the daily limit sees it; `applied` keeps it out of the Plan tab
+  const row = await p.upsertPlan({
+    id: p.newId(),
+    user_id: userId,
+    plan_date: today.toISOString().slice(0, 10),
+    intent: `subtasks: ${title}`,
+    mode: 'propose',
+    status: 'applied',
+    proposal: { blocks: [], questions: [], notes: '' },
+    research: [],
+    model: SUBTASK_MODEL,
+    accepted_task_ids: [],
+    deleted_at: null,
+    field_ts: Object.fromEntries(['plan_date', 'intent', 'mode', 'status', 'proposal', 'research', 'model', 'accepted_task_ids', 'deleted_at'].map((k) => [k, ts])),
+    device_id: 'plan-day',
+  })
+  return json(200, { subtasks: list, plan_id: row.id })
+}
+
 // ---------- handler ----------
 
 interface ProposeBody {
@@ -376,7 +474,7 @@ export async function handlePlan(req: Request, p: PlanPorts): Promise<Response> 
   if (req.method !== 'POST') return json(405, { error: 'POST only' })
   const userId = await p.userFromJwt(bearer(req))
   if (!userId) return json(401, { error: 'Sign in first.' })
-  let body: ProposeBody | LearnBody
+  let body: ProposeBody | LearnBody | SubtasksBody
   try {
     body = await req.json()
   } catch {
@@ -385,6 +483,7 @@ export async function handlePlan(req: Request, p: PlanPorts): Promise<Response> 
   try {
     if (body.action === 'propose') return await propose(body, userId, p)
     if (body.action === 'learn') return await learn(body, userId, p)
+    if (body.action === 'subtasks') return await subtasks(body, userId, p)
     return json(400, { error: 'Unknown action.' })
   } catch (e) {
     if (e instanceof PlannerUnavailable) return json(503, { code: 'not_connected', error: 'Planner isn’t connected yet.' })

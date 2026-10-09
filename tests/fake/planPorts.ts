@@ -61,6 +61,13 @@ export class FakeModel {
       f.times--
       throw new ModelError(f.status, `fake ${f.status}`)
     }
+    if ((b.tools ?? []).some((t) => t.name === 'submit_subtasks')) {
+      // arc 6 slice 8: four steps for the task in the user message (bullets / numbers are stripped by the handler)
+      const title = /Task: (.*)/.exec(userText(b))?.[1] ?? 'the task'
+      if (/#malformed/.test(title)) return { stop_reason: 'tool_use', content: [toolUse('submit_subtasks', { subtasks: ['only one'] })] }
+      if (this.opts.textFirst && !b.messages.some((m) => m.role === 'assistant')) return { stop_reason: 'end_turn', content: [{ type: 'text', text: 'Steps: …' }] }
+      return { stop_reason: 'tool_use', model: b.model, content: [toolUse('submit_subtasks', { subtasks: ['1. Gather what you need', `- Block out time for ${title}`, 'Do the first pass', 'Review and wrap up', 'Do the first pass'] })] }
+    }
     if ((b.tools ?? []).some((t) => t.name === 'save_profile')) {
       return {
         stop_reason: 'tool_use',

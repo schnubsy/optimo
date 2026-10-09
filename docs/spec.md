@@ -96,6 +96,13 @@ task converge without data loss (§5). Visible sync state (synced / pending n / 
 a11y ≥ 90 on the built page (desktop + mobile). Timeline and inbox lists virtualised.
 
 ## 3. Later arcs (not in v0.1; design for them)
+
+**AI subtasks (arc 6 slice 8, shipped).** The sparkle on the editor's subtasks card calls `plan-day` with
+`{action: 'subtasks', title, notes, duration_min}`: the small model (`claude-haiku-4-5`), one strict `submit_subtasks`
+tool with `tool_choice: auto` (one nudge on a text answer), no web search; 3–7 cleaned steps come back as proposals the
+user ticks off, then Keep all / Discard. Each request is recorded as an `applied` planner_ai_plans row so it counts
+against the 30/day limit (and stays out of the Plan tab); title and notes are never logged. Offline / not deployed →
+the Plan tab's not-connected copy.
 - **Arc 2 — Calendars (shipped: iCloud CalDAV, read-only; Google deferred).** Settings → Calendars posts the
   Apple ID + app-specific password once to the `calendar-connect` Edge Function, which discovers calendars
   (PROPFIND principal → calendar-home-set → VEVENT calendars) and stores only the AES-GCM ciphertext

@@ -31,7 +31,7 @@ export interface StepDetailsProps {
     onFocus?: () => void
   }
   /** slice 8: the sparkle button — proposes subtasks through plan-day */
-  ai?: { busy: boolean; onSuggest: () => void }
+  ai?: { busy: boolean; onSuggest: () => void; proposals: string[] | null; note: string | null; onKeep: (titles: string[]) => void; onDiscard: () => void }
 }
 
 /**
@@ -40,6 +40,7 @@ export interface StepDetailsProps {
  */
 export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, edit, ai }: StepDetailsProps) {
   const [sheet, setSheet] = useState<'alerts' | 'repeat' | null>(null)
+  const [dropped, setDropped] = useState<Set<number>>(new Set())
   const [newSub, setNewSub] = useState('')
   const timed = !draft.inbox && !draft.all_day
   const leads = draft.reminders ?? (timed && settings.reminder_lead ? [settings.reminder_lead] : [])
@@ -147,6 +148,44 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
             )}
           </li>
         </ul>
+        {ai?.note && (
+          <p className="det-ai-note" role="status" data-testid="subtask-ai-note">
+            {ai.note}
+          </p>
+        )}
+        {ai?.proposals && (
+          <div className="det-props" role="group" aria-label="Suggested subtasks" data-testid="subtask-proposals">
+            <ul className="det-subs">
+              {ai.proposals.map((t, i) => (
+                <li key={`${i}:${t}`} className={`det-sub det-prop ${dropped.has(i) ? 'off' : ''}`} data-testid="subtask-proposal">
+                  <button
+                    type="button"
+                    className="det-box"
+                    aria-pressed={!dropped.has(i)}
+                    aria-label={`Keep ${t}`}
+                    onClick={() => setDropped((d) => {
+                      const n = new Set(d)
+                      if (n.has(i)) n.delete(i)
+                      else n.add(i)
+                      return n
+                    })}
+                  >
+                    {!dropped.has(i) && <Icon name="ui-check" size={14} />}
+                  </button>
+                  <span className="det-sub-t">{t}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="det-props-btns">
+              <button type="button" className="det-discard" onClick={() => (setDropped(new Set()), ai.onDiscard())} data-testid="subtask-discard">
+                Discard
+              </button>
+              <button type="button" className="det-keep" onClick={() => (ai.onKeep(ai.proposals!.filter((_, i) => !dropped.has(i))), setDropped(new Set()))} data-testid="subtask-keep">
+                Keep all
+              </button>
+            </div>
+          </div>
+        )}
         <label className="det-notes">
           <span className="sr-only">Notes</span>
           <textarea rows={3} value={draft.notes} onChange={(e) => onChange({ notes: e.target.value })} placeholder="Add notes, links or a number to call…" data-testid="details-notes" />

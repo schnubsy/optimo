@@ -68,3 +68,16 @@ export async function learn(input: { plan_id: string; accepted_task_ids: string[
     return false
   }
 }
+
+/**
+ * Arc 6 slice 8 — the sparkle on ③: 3–7 subtasks for one task from plan-day (`action: 'subtasks'`). Sends the task's
+ * title, notes and duration only; counts against the planner's daily limit.
+ */
+export async function suggestSubtasks(input: { title: string; notes?: string; duration_min?: number }): Promise<string[]> {
+  if (!navigator.onLine) throw new PlannerError('You’re offline.', 'offline')
+  const { data, error } = await client().functions.invoke('plan-day', { body: { action: 'subtasks', ...input } })
+  if (error) throw await fnError(error)
+  const list = (data as { subtasks?: unknown })?.subtasks
+  if (!Array.isArray(list) || !list.length) throw new PlannerError('The planner returned no usable steps — try again.')
+  return list.filter((s): s is string => typeof s === 'string')
+}
