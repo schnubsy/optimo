@@ -14,7 +14,14 @@
   --pill-bg: oklch(var(--pill-l) calc(var(--cat-c) * var(--pill-cm)) var(--cat-h));
   --pill-fg: oklch(var(--pill-ink-l) calc(var(--cat-c) * var(--pill-ink-cm)) var(--cat-h));
   --chip-bg: oklch(var(--chip-l) calc(var(--cat-c) * var(--chip-cm)) var(--cat-h));
+  /* arc 6: glyph + ring on the spine, the editor header, the week overview's past-day disc */
+  --cat-glyph: oklch(var(--glyph-l) var(--glyph-c) var(--cat-h));
+  --cat-hdr: oklch(var(--hdr-l) var(--hdr-c) var(--cat-h));
+  --cat-past: oklch(var(--past-l) var(--past-c) var(--cat-h));
 }
+/* no category yet: the editor header and the glyph take the accent hue (mockups 04) */
+.cat-accent { --cat-h: 23.4; --cat-c: 0.103; --cat-chip: var(--accent); }
+.icon-sizes { display: inline-flex; gap: var(--sp-2); align-items: center; color: var(--ink); }
 
 .boot { min-height: 100%; }
 .app { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; background: var(--canvas); }

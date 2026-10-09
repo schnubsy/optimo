@@ -1,7 +1,7 @@
 # Lessons — optimo
 
 _Append-only. One line per lesson: `- YYYY-MM-DD [tag] lesson`. Tags: [git] [supabase] [sync] [dnd] [pwa] [perf] [design] [test]_
-- 2026-09-26 [git] RULE: originality gate — no Structured.app (or any planner's) look, copy, icon set or naming; icons drawn in-repo (`src/icons/glyphs.tsx`).
+- 2026-09-26 [git] RULE (rewritten 2026-10-09, arc 6): originality — structure, flow, sizes and colours may follow the 2026-10-09 mockups exactly; glyph artwork is always drawn in-repo on the 24 px grid (never traced from any icon set), copy strings are ours (free-time phrases, bookend names, suggestion seeds), the name stays optimo. Icons live in `src/icons/set.ts`.
 - 2026-09-26 [supabase] RULE: only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (publishable) in the client; every other secret is server-side.
 - 2026-09-26 [supabase] ~~RULE: DDL goes through Cowork, not Code~~ — retired 2026-10-03 — was a read-only connector config, not policy. Either surface (Code or Cowork) applies `db/*.sql`, runs SQL and deploys Edge Functions via the claude.ai Supabase connector; destructive SQL routes to Code until anthropics/claude-code #94450 is fixed (Supabase channel, CLAUDE.md).
 - 2026-09-26 [git] GitHub Pages on a private repo needs a paid plan; optimo went public (Mark's call). `workflow_dispatch` only works once the workflow is on the default branch — first deploy = push to main.
@@ -19,7 +19,7 @@ _Append-only. One line per lesson: `- YYYY-MM-DD [tag] lesson`. Tags: [git] [sup
 - 2026-09-27 [supabase] RULE: optimo shares press's Auth config (email template, SMTP, sign-ups OFF, Site URL = remit's page). Never change press Auth settings from an optimo arc; adapt optimo to them.
 - 2026-09-27 [supabase] A shared project's email template decides the sign-in UX: press sends a 6-digit `{{ .Token }}`, so clients must offer code entry (`verifyOtp({ email, token, type: 'email' })`). GoTrue answers wrong AND expired codes with 403 `otp_expired` — show one message for both. With sign-ups off, pass `shouldCreateUser: false`.
 - 2026-09-27 [test] Mirror server rate limits in the hermetic fake (press's 60 s OTP resend → 429 with the "only request this after N seconds" msg) and expose the clock knob (`lastOtpAt`) so the "after the window" path is testable without waiting.
-- 2026-09-27 [design] RULE: originality — the pastel register and the floating-bar pattern are shared conventions; palette values, glyphs and copy are ours. Never trace SF Symbols or Structured's glyphs.
+- 2026-09-27 [design] ~~RULE: originality — palette values, glyphs and copy are ours~~ — superseded 2026-10-09 by the arc-6 rule (2026-09-26 [git] line): mockup structure and colours may be followed; glyph artwork and copy stay ours. Never trace SF Symbols or any planner's glyphs.
 - 2026-09-27 [design] Contrast tables estimated from OKLCH lightness can be wrong: measure every token pair with culori in a unit test (`tests/unit/contrast.test.ts`); correct failures in a separate override layer so the design pack's tokens stay verbatim.
 - 2026-09-27 [dnd] Never commit a pointer gesture from React state read inside the pointerup handler — a quick flick releases before React renders the last move. Keep the live value in a ref and recompute from the release point.
 - 2026-09-27 [design] Container queries measure the CONTENT box — subtract the container's padding from the spec width; and place `@container` rules after the base rule or same-specificity cascade order silently wins (WebKit showed it first).

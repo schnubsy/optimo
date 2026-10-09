@@ -5,3 +5,10 @@
      --ink-3 on --canvas       : 0.60 → 3.69:1 — kept for decorative marks only; text uses --ink-2 (5.6:1) */
 :root { --done-ink: oklch(0.51 0.02 40); }
 [data-theme="dark"] { --done-ink: oklch(0.66 0.02 40); }
+
+/* arc 6 (2026-10-09): the mockups put meta lines, gutter times and the free-time sentence in --ink-3, so it is text now.
+   Measured (culori): #6A6A6C on #1C1C1E = 3.2:1 → lifted to L 0.68 (5.9:1 on --panel, 4.8:1 on --card); accent text on --accent-tint (#EC9792 on #524040 = 4.3:1) → L 0.80 (5.0:1); light 0.60 →
+   0.53 (5.1:1 on --panel, 4.7:1 on --card). White on the coral accent (Continue, FAB +, the selected day) is 2.3:1, so
+   --ink-on-accent stays the dark ink (8:1) — logged as a deliberate a11y delta in the Eye LITE table. */
+:root { --ink-3: oklch(0.53 0.02 40); }
+[data-theme="dark"] { --ink-3: oklch(0.68 0.003 286); --accent-on-tint: oklch(0.80 0.08 23.4); }

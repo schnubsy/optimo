@@ -143,12 +143,12 @@ function SheetForm({ task, occ, cats }: { task: Task | null; occ: string | null;
   useEffect(() => {
     if (!task) titleRef.current?.focus()
     else formRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && set({ editingId: null, draft: null })
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && set({ editingId: null, draft: null, wizard: null })
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [task, set])
 
-  const close = () => set({ editingId: null, draft: null })
+  const close = () => set({ editingId: null, draft: null, wizard: null })
   const up = (p: Partial<Form>) => setForm({ ...form, ...p })
 
   async function save(e?: FormEvent) {

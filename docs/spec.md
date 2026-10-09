@@ -232,11 +232,14 @@ security between them.
   - Then family-wide read/write is live.
 
 ## 6. Design system
-Tokens and the hero direction live in `docs/design/2026-09-26-lite/` (Eye LITE, 2026-09-26).
-Recommended and adopted: **Switchboard** (dark-first instrument panel, Chivo/Chivo Mono, single cobalt
-signal, free time rendered as real drop rows). Runner-up: Slack Water. Paste-ready tokens are in
-`directions.md` → `src/styles/tokens.css`. Original icon set: `src/icons/` (SVG, 24px grid, line, drawn
-in-repo — never imported from a named icon library's brand set).
+**Current (arc 6, 2026-10-09):** the spine design in `docs/design/2026-10-09-mockups/` (10 mockups + the measured
+`mockups.md` sheet) on the FINAL "Meadow" token base — `src/styles/tokens.css` (dark = the measured mockup palette:
+`--canvas` #000, `--panel` #1C1C1E, `--card`, `--node`, `--spine`, accent #EC9792; light mirrors it) plus the culori-measured
+a11y layer `tokens-a11y.css`. Font Nunito Sans (Google Fonts). Glyphs: `src/icons/set.ts` (24 px grid, filled, drawn in-repo).
+
+**Originality rule (2026-10-09):** structure, flow, sizes and colours may follow the 2026-10-09 mockups exactly; glyph artwork is always drawn in-repo on the 24 px grid (never traced from any icon set), copy strings are ours (free-time phrases, bookend names, suggestion seeds), the name stays optimo.
+
+History: Switchboard (arc 1, `docs/design/2026-09-26-lite/`) → FINAL Meadow (arc 2, `docs/design/2026-09-27-final/`) → spine (arc 6).
 
 ## 7. Testing (gauntlet — `scripts/gauntlet.sh`)
 vitest (merge logic, NLP grammar, recurrence materialisation, push-down rules) · Playwright smoke

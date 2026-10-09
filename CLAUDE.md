@@ -38,8 +38,7 @@ plan-day as a monitored agent). Snags #67–#79 + #39–#65 open.
 ## Project rules
 
 Global rules: council arc instrument
-- **Originality gate:** no Structured.app (or other planner's) copy, iconography, naming or color scheme.
-  Icons are drawn in-repo (`src/icons/`); fonts from Google Fonts only.
+- **Originality gate (rewritten 2026-10-09, arc 6):** structure, flow, sizes and colours may follow the 2026-10-09 mockups exactly; glyph artwork is always drawn in-repo on the 24 px grid (never traced from any icon set), copy strings are ours (free-time phrases, bookend names, suggestion seeds), the name stays optimo. Icons are drawn in-repo (`src/icons/set.ts`); fonts from Google Fonts only.
 - **Sync contract is the API.** Any client (web now, Swift later) speaks only: outbox + `field_ts` + pull
   cursor over PostgREST (`docs/spec.md` §5). No client-specific server logic.
 - **Only publishable keys in the client** (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). All other

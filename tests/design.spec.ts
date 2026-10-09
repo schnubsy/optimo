@@ -100,3 +100,85 @@ test.describe('design review P0 guards', () => {
     await page.screenshot({ path: `docs/evidence/arc1-slice-7-editor-${info.project.name}.png` })
   })
 })
+
+// arc 6 slice 1 — the measured 2026-10-09 mockup palette (docs/design/2026-10-09-mockups/mockups.md → Palette)
+const token = (page: Page, name: string) =>
+  page.evaluate((n) => {
+    const probe = document.createElement('i')
+    probe.style.background = `var(${n})`
+    document.body.append(probe)
+    const c = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return c
+  }, name)
+/** "rgb(r, g, b)" / "oklch(...)" → [r, g, b] via a canvas, so OKLCH tokens compare as sRGB channels. */
+const rgb = (page: Page, css: string) =>
+  page.evaluate((c) => {
+    const cv = document.createElement('canvas')
+    cv.width = cv.height = 1
+    const x = cv.getContext('2d')!
+    x.fillStyle = c
+    x.fillRect(0, 0, 1, 1)
+    return [...x.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+  }, css)
+const near = (got: number[], want: number[], tol = 4) => got.every((v, i) => Math.abs(v - want[i]) <= tol)
+
+test.describe('arc 6 tokens', () => {
+  test('dark: canvas #000, panel #1C1C1E, accent ≈ #EC9792; light mirrors with a warm canvas', async ({ page, context }) => {
+    await openApp(page, context, { theme: 'dark' })
+    expect(await rgb(page, await page.evaluate(() => getComputedStyle(document.querySelector('.app')!).backgroundColor))).toEqual([0, 0, 0])
+    expect(await rgb(page, await token(page, '--canvas'))).toEqual([0, 0, 0])
+    expect(near(await rgb(page, await token(page, '--panel')), [0x1c, 0x1c, 0x1e]), 'panel').toBe(true)
+    expect(near(await rgb(page, await token(page, '--accent')), [0xec, 0x97, 0x92]), 'accent').toBe(true)
+    expect(near(await rgb(page, await token(page, '--card')), [0x2c, 0x2c, 0x2e]), 'card').toBe(true)
+    expect(near(await rgb(page, await token(page, '--node')), [0x37, 0x38, 0x39]), 'node').toBe(true)
+    await page.evaluate(() => (window as any).__optimo.repo.updateSettings({ theme: 'light' }))
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+    const canvas = await rgb(page, await token(page, '--canvas'))
+    expect(canvas[0]).toBeGreaterThan(240) // warm white, never pure black or pure white
+    expect(canvas[0]).toBeGreaterThan(canvas[2])
+  })
+
+  test('day + inbox are axe-clean in both themes', async ({ page, context }) => {
+    const { AxeBuilder } = await import('@axe-core/playwright')
+    await openApp(page, context, { seed: seedDay, at: '10:00' })
+    for (const theme of ['dark', 'light'] as const) {
+      await page.evaluate((t) => (window as any).__optimo.repo.updateSettings({ theme: t }), theme)
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+      for (const tab of ['board', 'backlog'] as const) {
+        await page.evaluate((m) => (window as any).__optimo.ui.getState().set({ view: 'day', mobileTab: m }), tab)
+        await page.waitForFunction(() => document.getAnimations().length === 0)
+        const v = (await new AxeBuilder({ page }).analyze()).violations.filter((x) => ['serious', 'critical'].includes(x.impact ?? ''))
+        expect(v.map((x) => `${theme}/${tab}: ${x.id} ${x.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([])
+      }
+    }
+  })
+
+  test('evidence: dark + light token swatches', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'one capture')
+    await openApp(page, context)
+    await page.evaluate(() => {
+      const names = ['--canvas', '--panel', '--card', '--node', '--spine', '--ink', '--ink-3', '--accent', '--accent-tint', '--ink-on-accent']
+      const col = (theme: string) =>
+        `<div data-theme="${theme}" style="background:var(--canvas);color:var(--ink);padding:24px;font:600 14px var(--font-ui)"><h2 style="margin:0 0 12px">${theme}</h2>` +
+        names.map((n) => `<div style="display:flex;align-items:center;gap:12px;margin:6px 0"><i style="width:56px;height:32px;border-radius:12px;background:var(${n});outline:1px solid var(--spine)"></i>${n}</div>`).join('') +
+        ['work', 'meet', 'health', 'personal', 'errand', 'learn', 'family', 'home']
+          .map((c) => `<span class="cat-${c}" style="display:inline-grid;place-items:center;width:40px;height:40px;margin:4px;border-radius:50%;background:var(--node);box-shadow:inset 0 0 0 2px var(--cat-glyph)"><i style="width:14px;height:14px;border-radius:50%;background:var(--cat-glyph)"></i></span>`)
+          .join('') +
+        '</div>'
+      const o = document.createElement('div')
+      o.id = 'swatches'
+      o.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;grid-template-columns:1fr 1fr'
+      o.innerHTML = col('dark') + col('light')
+      document.body.append(o)
+    })
+    await page.screenshot({ path: 'docs/evidence/arc6-slice-1-tokens.png' })
+    // every chrome glyph (10 new + 3 restyled) at 18 / 24 / 13 px
+    await page.evaluate(() => document.getElementById('swatches')?.remove())
+    await page.evaluate(() => (window as any).__optimo.ui.getState().set({ view: 'icons', mobileTab: 'board' }))
+    const sheets = page.getByTestId('icon-sheet')
+    await expect(page.getByTestId('icon-sizes')).toHaveCount(23)
+    await sheets.last().scrollIntoViewIfNeeded()
+    await sheets.last().screenshot({ path: 'docs/evidence/arc6-slice-1-glyphs.png' })
+  })
+})

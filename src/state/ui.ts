@@ -9,6 +9,14 @@ import type { TaskInput } from '../data/repo'
 /** TaskSheet in create mode, optionally prefilled (e.g. Tab from the command line). */
 export type Draft = TaskInput & { start_at: string | null }
 
+/** arc 6: the create wizard (① title → ② when → ③ details). `inbox` skips the time rows and creates unscheduled. */
+export type WizardMode = 'timeline' | 'inbox'
+export interface Wizard {
+  mode: WizardMode
+  /** prefill: a gap / paint / parsed command line / suggestion */
+  draft: Partial<Draft>
+}
+
 export interface Toast {
   id: number
   text: string
@@ -26,8 +34,10 @@ interface UI {
   focusId: string | null
   mobileTab: MobileTab
   quickAdd: boolean // mobile quick-add sheet (FAB)
+  wizard: Wizard | null // arc 6 create flow; until the wizard lands (slice 6) it opens the editor sheet in create mode
+  openWizard: (mode: WizardMode, draft?: Partial<Draft>) => void
   toast: Toast | null
-  set: (p: Partial<Omit<UI, 'set' | 'notify'>>) => void
+  set: (p: Partial<Omit<UI, 'set' | 'notify' | 'openWizard'>>) => void
   notify: (t: Omit<Toast, 'id'>) => void
 }
 
@@ -42,6 +52,10 @@ export const useUI = create<UI>((set) => ({
   focusId: null,
   mobileTab: 'board',
   quickAdd: false,
+  wizard: null,
+  openWizard: (mode, draft = {}) =>
+    // interim (slice 1): the wizard contract opens TaskSheet's create mode; slice 6 renders <Wizard> from `wizard` instead
+    set({ wizard: { mode, draft }, draft: { ...draft, start_at: mode === 'inbox' ? null : (draft.start_at ?? null) }, quickAdd: false, selectedId: null }),
   toast: null,
   set: (p) => set(p),
   notify: (t) => set({ toast: { ...t, id: ++toastId } }),

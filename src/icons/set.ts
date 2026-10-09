@@ -93,12 +93,15 @@ export const ACTIVITY = {
 
 /** Chrome glyphs: filled (active) and outline (inactive, 1.75px stroke of the same silhouette). */
 export const CHROME = {
-  'ui-inbox': '<path fill-rule="evenodd" d="M4 4h16a1 1 0 0 1 1 1v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1zm1 9v5h14v-5h-3.5a3.5 3.5 0 0 1-7 0H5z"/>',
+  // arc 6: an open tray — sloped rim, a notch where the opening meets the box
+  'ui-inbox': '<path fill-rule="evenodd" d="M7 4h10a2 2 0 0 1 1.7 1L22 11v6.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5V11l3.3-6A2 2 0 0 1 7 4zm.6 2.5L5.2 11h4.3a2.5 2.5 0 0 0 5 0h4.3l-2.4-4.5H7.6z"/>',
   // #16: two offset stacked pills with a small left chip, echoing the brand mark (was a note/message card)
-  'ui-timeline': '<circle cx="5" cy="9" r="2.3"/><rect x="8.5" y="6.5" width="12.5" height="5.5" rx="2.75"/><rect x="10.5" y="14.5" width="10" height="5.5" rx="2.75"/>',
+  // arc 6: the spine list — a node over a capsule, two title lines beside them
+  'ui-timeline': '<circle cx="6" cy="5.8" r="2.7"/><rect x="3.5" y="10" width="5" height="10.5" rx="2.5"/><rect x="11" y="4.7" width="10.5" height="2.3" rx="1.15"/><rect x="11" y="14" width="10.5" height="2.3" rx="1.15"/>',
   // #16: a calendar frame with a solid header band joining 3 column counter-cuts (was three loose capsules)
   'ui-week': '<rect x="3" y="4" width="18" height="5" rx="2"/><rect x="3" y="8" width="5" height="12" rx="1.5"/><rect x="9.5" y="8" width="5" height="12" rx="1.5"/><rect x="16" y="8" width="5" height="12" rx="1.5"/>',
-  'ui-settings': '<path fill-rule="evenodd" d="M10.3 2.5h3.4l.5 2.3 1.9.8 2-1.3 2.4 2.4-1.3 2 .8 1.9 2.3.5v3.4l-2.3.5-.8 1.9 1.3 2-2.4 2.4-2-1.3-1.9.8-.5 2.3h-3.4l-.5-2.3-1.9-.8-2 1.3-2.4-2.4 1.3-2-.8-1.9-2.3-.5v-3.4l2.3-.5.8-1.9-1.3-2 2.4-2.4 2 1.3 1.9-.8.5-2.3zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/>',
+  // arc 6: eight rounded teeth on a ring with a round hub (rounder than the arc-2 polygon)
+  'ui-settings': '<path fill-rule="evenodd" d="M4.4 12a7.6 7.6 0 1 1 15.2 0a7.6 7.6 0 1 1 -15.2 0zM8.9 12a3.1 3.1 0 1 0 6.2 0a3.1 3.1 0 1 0 -6.2 0z"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(0 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(45 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(90 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(135 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(180 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(225 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(270 12 12)"/><rect x="10.3" y="1.6" width="3.4" height="4.6" rx="1.2" transform="rotate(315 12 12)"/>',
   'ui-plan': '<path d="M11 2.5a1 1 0 0 1 2 0c.4 3.9 2.6 6.1 6.5 6.5a1 1 0 0 1 0 2c-3.9.4-6.1 2.6-6.5 6.5a1 1 0 0 1-2 0c-.4-3.9-2.6-6.1-6.5-6.5a1 1 0 0 1 0-2c3.9-.4 6.1-2.6 6.5-6.5z"/><path d="M18.5 15.5a.7.7 0 0 1 1.4 0c.2 1.6 1 2.4 2.6 2.6a.7.7 0 0 1 0 1.4c-1.6.2-2.4 1-2.6 2.6a.7.7 0 0 1-1.4 0c-.2-1.6-1-2.4-2.6-2.6a.7.7 0 0 1 0-1.4c1.6-.2 2.4-1 2.6-2.6z"/>',
   'ui-plus': '<path d="M12 3.5a1.5 1.5 0 0 1 1.5 1.5v5.5H19a1.5 1.5 0 0 1 0 3h-5.5V19a1.5 1.5 0 0 1-3 0v-5.5H5a1.5 1.5 0 0 1 0-3h5.5V5A1.5 1.5 0 0 1 12 3.5z"/>',
   'ui-check': '<path d="M9.5 16.2 5.3 12a1.3 1.3 0 0 0-1.8 1.8l5.1 5.1a1.3 1.3 0 0 0 1.8 0L20.5 8.8A1.3 1.3 0 0 0 18.7 7L9.5 16.2z"/>',
@@ -109,6 +112,26 @@ export const CHROME = {
   'ui-search': '<path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 0 1 6 12l4.2 4.2a1.3 1.3 0 0 1-1.8 1.8l-4.2-4.2A7.5 7.5 0 1 1 10.5 3zm0 2.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/>',
   // #18: a calendar-frame chrome glyph for iCloud events (was reusing ui-week, which now reads as a different thing)
   'ui-calendar': '<rect x="5" y="2.3" width="2" height="4" rx="1"/><rect x="15" y="2.3" width="2" height="4" rx="1"/><path fill-rule="evenodd" d="M4.5 4.5h15A2.5 2.5 0 0 1 22 7v11.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5V7a2.5 2.5 0 0 1 2.5-2.5zm4 7.3h3v3h-3v-3z"/>',
+  // arc 6: four-point sparkle with two small companions (the AI tab)
+  'ui-ai': '<path d="M14 6.5Q15.44 13.06 22 14.5Q15.44 15.94 14 22.5Q12.56 15.94 6 14.5Q12.56 13.06 14 6.5z"/><path d="M5.5 3.3Q6.08 5.92 8.7 6.5Q6.08 7.08 5.5 9.7Q4.92 7.08 2.3 6.5Q4.92 5.92 5.5 3.3z"/><path d="M12 1.2Q12.36 2.84 14 3.2Q12.36 3.56 12 5.2Q11.64 3.56 10 3.2Q11.64 2.84 12 1.2z"/>',
+  // arc 6: week overview: three columns of two rounded cells
+  'ui-grid-2x3': '<rect x="2.4" y="3.3" width="5.4" height="7.8" rx="2.7"/><rect x="9.3" y="3.3" width="5.4" height="7.8" rx="2.7"/><rect x="16.2" y="3.3" width="5.4" height="7.8" rx="2.7"/><rect x="2.4" y="12.9" width="5.4" height="7.8" rx="2.7"/><rect x="9.3" y="12.9" width="5.4" height="7.8" rx="2.7"/><rect x="16.2" y="12.9" width="5.4" height="7.8" rx="2.7"/>',
+  // arc 6: three dots
+  'ui-more': '<circle cx="5" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="19" cy="12" r="2.1"/>',
+  // arc 6: two arcs chasing each other clockwise
+  'ui-repeat': '<path d="M4.48 9.26A8 8 0 0 1 18.93 8L17.02 9.1A5.8 5.8 0 0 0 6.55 10.02zM19.6 11.36L20.31 7.2L15.64 9.9zM19.52 14.74A8 8 0 0 1 5.07 16L6.98 14.9A5.8 5.8 0 0 0 17.45 13.98zM4.4 12.64L3.69 16.8L8.36 14.1z"/>',
+  // arc 6: a stopwatch: ring, crown and one hand
+  'ui-timer': '<path fill-rule="evenodd" d="M3.5 13.5a8.5 8.5 0 1 1 17 0a8.5 8.5 0 1 1 -17 0zM5.6 13.5a6.4 6.4 0 1 0 12.8 0a6.4 6.4 0 1 0 -12.8 0z"/><rect x="10" y="1.6" width="4" height="2.4" rx="1.2"/><rect x="11" y="8.4" width="2" height="6.1" rx="1"/>',
+  // arc 6: a bell crossed by one bar (no alerts)
+  'ui-bell-off': '<path d="M12 2.8c.8 0 1.4.6 1.4 1.4v.5A6 6 0 0 1 18 10.6v3.6l1.6 2.3a.9.9 0 0 1-.7 1.5H5.1a.9.9 0 0 1-.7-1.5L6 14.2v-3.6a6 6 0 0 1 4.6-5.9v-.5c0-.8.6-1.4 1.4-1.4z"/><path d="M9.6 19.4h4.8a2.4 2.4 0 0 1-4.8 0z"/><rect x="11" y="0.8" width="2" height="22.4" rx="1" transform="rotate(-45 12 12)"/>',
+  // arc 6: a palette with four paint wells cut through
+  'ui-palette': '<path fill-rule="evenodd" d="M12 3c5 0 9 3.4 9 7.7 0 2.8-2.1 4.4-4.5 4.4h-1.8a1.5 1.5 0 0 0-1.1 2.5 1.6 1.6 0 0 1-1.2 2.6H12A8.6 8.6 0 0 1 12 3zM6.1 11.4a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0zM7.9 7.4a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0zM11.9 5.9a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0zM15.6 8.4a1.4 1.4 0 1 0 2.8 0 1.4 1.4 0 1 0-2.8 0z"/>',
+  // arc 6: a globe with two land masses cut out
+  'ui-globe': '<path fill-rule="evenodd" d="M3 12a9 9 0 1 1 18 0a9 9 0 1 1 -18 0zM8 5.6c1.6.4 2.4 1.6 2 3-.3 1.1-1.6 1.4-1.8 2.6-.2 1.3 1.3 1.9 1.1 3.2-.2 1-1.3 1.3-2 .6A7 7 0 0 1 8 5.6zM14.6 10.2c1.2-.4 2.7.1 3.4 1.2.6 1 .2 2.4-.6 3.4-.9 1.1-2.2 2-3.2 1.4-.8-.5-.2-1.7-.4-2.7-.2-1.2-.8-2.8.8-3.3z"/>',
+  // arc 6: a clock face with its hands cut out
+  'ui-clock': '<path fill-rule="evenodd" d="M3 12a9 9 0 1 1 18 0a9 9 0 1 1 -18 0zM11 6.5h2v5.1l3.3 1.9-1 1.7L11 12.7V6.5z"/>',
+  // arc 6: a disc with a plus cut through
+  'ui-plus-circle': '<path fill-rule="evenodd" d="M3 12a9 9 0 1 1 18 0a9 9 0 1 1 -18 0zM11 7.5h2V11h3.5v2H13v3.5h-2V13H7.5v-2H11V7.5z"/>',
 } as const
 
 export type ActivityName = keyof typeof ACTIVITY

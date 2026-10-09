@@ -59,6 +59,15 @@ describe.each(Object.entries(themes))('%s theme', (_name, v) => {
     ['--accent-ink', '--accent-tint'],
     ['--now-flag-fg', '--now-flag-bg'],
     ['--danger-ink', '--canvas'],
+    // arc 6: meta lines / gutter times / free-time sentence, the accent year + gap duration, the accent-tint pills
+    ['--ink-3', '--panel'],
+    ['--ink-3', '--card'],
+    ['--ink-3', '--canvas'],
+    ['--ink', '--panel'],
+    ['--ink', '--card'],
+    ['--accent', '--canvas'],
+    ['--accent', '--panel'],
+    ['--accent-on-tint', '--accent-tint'],
   ])('%s on %s ≥ 4.5', (fg, bg) => {
     expect(wcagContrast(color(v, fg), color(v, bg))).toBeGreaterThanOrEqual(4.5)
   })
