@@ -47,6 +47,7 @@ Implementation: mobile — the panel is `position: fixed` inside `.app`, detents
 Done: Playwright (iPhone 15): collapse by drag → week visible, Timeline tab glyph = grid, title `October 2026 ›`; tap Wed → date changes + panel expands; past-day chips have the filled background, future the dark one; desktop week screenshot matches the column spec; reduced-motion: detent change ≤ 160 ms; evidence `arc6-slice-4-week.png` + `-peek.png`.
 
 === SLICE 5 — Tab bar, FAB, Inbox screen ===
+Status: done a072b4c
 Scope: 4 tabs, FAB, Inbox empty state + rows per `mockups.md` → 01 Tab bar / 07.
 Files: src/chrome/TabBar.tsx, Fab.tsx, src/views/Inbox.tsx, src/inbox/virtual.ts (row height), src/styles/app.css, tests/inbox.spec.ts, chrome.spec.ts.
 Implementation: tabs `inbox · timeline · plan(label "AI", glyph ui-ai) · settings`; Week removed from the bar (`TabId` 'week' dropped; the view stays reachable through the sheet / desktop control); geometry + active pill per the sheet; FAB 58 px → wizard ①; inbox title 30/800, empty state + `New Inbox Task` → wizard with `inbox` preset; rows restyled to the node grammar (56 px disc, ring completes, chip/title opens the editor, Place button kept, drag kept); `in inbox` count in the rail header (desktop).
