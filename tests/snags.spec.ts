@@ -45,11 +45,13 @@ test.describe('snags #1–#12', () => {
     await expect(cat).toHaveText('Personal')
   })
 
-  test('#4 week header says which figure is planned; free time shows in the grid', async ({ page, context }) => {
+  // arc 6 slice 4: the plan/free figures and dotted free rules left with the old grid (mockup 10 has none) — free time
+  // now reads as the bare spine between a day's nodes, from its first node to its last
+  test('#4 week: every day shows its spine between the first and last node', async ({ page, context }) => {
     await openApp(page, context, { seed: seedDay })
     await setView(page, 'week')
-    await expect(page.getByTestId('week-hours').first()).toContainText(/\d+h\d\d plan · \d+h\d\d free/)
-    expect(await page.getByTestId('week-free').count()).toBeGreaterThan(0)
+    await expect(page.getByTestId('week-spine')).toHaveCount(7)
+    for (const h of await page.getByTestId('week-spine').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(h).toBeGreaterThan(100)
   })
 
   test('#5 resting "Synced" does not spend the signal colour', async ({ page, context }) => {

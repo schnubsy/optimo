@@ -236,58 +236,7 @@
 .icon-group { margin: var(--sp-5) 0 0; font-size: var(--fs-13); font-weight: var(--fw-bold); color: var(--ink-2); }
 .icon-sheet .icon-chip { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }
 
-/* ---------- week ---------- */
-.week { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-.whead { display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); background: var(--canvas); }
-.wnav { display: flex; align-items: center; justify-content: center; }
-.wnav .nav { min-width: 22px; height: 36px; border: 0; background: none; font-size: 18px; color: var(--ink-2); }
-.wday { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px var(--sp-2); border: 0; border-radius: var(--r-sm); background: none; text-align: left; min-height: 48px; min-width: 0; }
-.wday b { font-size: var(--fs-13); font-weight: var(--fw-black); }
-.wday span { font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--ink-2); }
-.wday.today b { color: var(--accent-ink); }
-.wday.sel { background: var(--surface); }
-.wbody { flex: 1; overflow: auto; min-height: 0; }
-/* #22: desktop — keep the Sun column clear of the window edge instead of flush against it */
-.is-desktop .wbody { padding-right: var(--sp-4); }
-/* #35: the day-header row takes the body's right pad, so Sun's header ends where its column does */
-.is-desktop .whead { padding-right: var(--sp-4); }
-.wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
-.wrail { position: relative; }
-.wrail .hour { position: absolute; left: 0; right: 0; }
-.wrail .hour b { position: absolute; right: 6px; top: -8px; font-size: var(--fs-11); font-weight: var(--fw-semibold); color: var(--ink-2); }
-.wcol { position: relative; background-image: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 40px); }
-.wcol.over { background-color: color-mix(in oklch, var(--accent-tint) 60%, transparent); }
-.wcol .oob { position: absolute; left: 0; right: 0; background: color-mix(in oklch, var(--panel) 60%, transparent); pointer-events: none; }
-.wcol.today { background-color: color-mix(in oklch, var(--accent-tint) 40%, transparent); }
-.wblk { all: unset; box-sizing: border-box; position: absolute; overflow: hidden; background: var(--pill-bg); color: var(--pill-fg); border-radius: var(--r-pill); padding: 1px 6px 1px 3px; font-size: var(--fs-11); font-weight: var(--fw-bold); line-height: 1.25; cursor: grab; z-index: 2; display: flex; flex-direction: column; justify-content: center; box-shadow: var(--pill-ring); }
-.wblk:focus-visible { box-shadow: var(--focus-ring); }
-.wblk .wt { display: flex; gap: 4px; align-items: center; white-space: nowrap; overflow: hidden; }
-.wblk .wchip { flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: var(--chip-bg); color: var(--chip-glyph-color); }
-.wblk .wt .tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.wblk .wm { font-size: var(--fs-10); font-weight: var(--fw-semibold); padding-left: 20px; }
-.wblk.done { background: var(--done-fill); color: var(--done-ink); }
-.wblk.done .tt { text-decoration: line-through; }
-.wblk.done .wchip { background: var(--done-chip); color: oklch(1 0 0); }
-.wblk.grab { z-index: 30; box-shadow: var(--shadow-drag); will-change: transform; }
-.wfree { position: absolute; left: 50%; border-left: var(--free-dot) dotted var(--free-line); pointer-events: none; z-index: 1; }
-.wnow { position: absolute; left: 0; right: 0; height: 0; border-top: var(--now-line-w) solid var(--now-line); z-index: 5; pointer-events: none; }
-/* mobile: three days at a time, snapping, rail and header sticky inside one scroller */
-/* #22: 32px must match the sticky rail's own width below — a stale 42px left a ~10px sliver of the
-   adjacent day visible after every snap scroll (3 columns under-filled the space the rail actually leaves) */
-.week.m { --wcol: calc((100vw - 32px) / 3); }
-.week.m .whead { display: none; }
-.wbar { display: flex; align-items: center; justify-content: space-between; background: var(--canvas); }
-.wbar .nav { min-width: 44px; height: 44px; border: 0; background: none; font-size: 20px; color: var(--ink-2); }
-.wbar b { font-size: var(--fs-15); font-weight: var(--fw-black); }
-.week.m .wbody { overflow: auto; scroll-snap-type: x mandatory; scroll-padding-left: 32px; }
-.week.m .wgrid { grid-template-columns: 32px repeat(7, var(--wcol)); grid-template-rows: auto 960px; width: calc(32px + 7 * var(--wcol)); }
-.week.m .whead-m { grid-column: 1 / -1; display: grid; grid-template-columns: 32px repeat(7, var(--wcol)); position: sticky; top: 0; z-index: 12; background: var(--canvas); }
-.week.m .whead-m .wday { scroll-snap-align: start; padding: 4px 6px; min-height: 40px; }
-.week.m .whead-m .wday span { font-size: var(--fs-10); }
-.week.m .whead-m .corner { position: sticky; left: 0; background: var(--canvas); z-index: 2; }
-.week.m .wrail { position: sticky; left: 0; z-index: 11; background: var(--canvas); }
-.week.m .wcol { scroll-snap-align: start; }
-.week.m .wblk { font-size: var(--fs-12); }
+/* week: the spine columns live in src/chrome/panel.css (arc 6 slice 4) */
 
 /* ---------- month ---------- */
 .month { padding: var(--sp-4); overflow: auto; }
@@ -362,7 +311,7 @@
 .is-mobile .pane > * { padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); }
 .is-mobile .pane.m-day > .day { padding-top: 0; }
 .is-mobile .tl { padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); padding-bottom: var(--scroll-pad-bottom); scroll-padding-top: calc(var(--header-h-mobile) + env(safe-area-inset-top)); }
-.is-mobile .backlog .ilist, .is-mobile .week .wbody, .is-mobile .month, .is-mobile .page { padding-bottom: var(--scroll-pad-bottom); }
+.is-mobile .backlog .ilist, .is-mobile .month, .is-mobile .page { padding-bottom: var(--scroll-pad-bottom); }
 .is-mobile .allday { top: calc(var(--header-h-mobile) + env(safe-area-inset-top) - 8px); }
 .is-mobile .toast-wrap { bottom: calc(var(--tabbar-h) + var(--tabbar-inset) * 2 + env(safe-area-inset-bottom)); }
 

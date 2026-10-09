@@ -450,3 +450,197 @@ test.describe('arc 6 tab bar', () => {
     await page.screenshot({ path: 'docs/evidence/arc6-slice-5-tabbar-inbox.png' })
   })
 })
+
+// arc 6 slice 4 — the day panel as a two-detent sheet over the week overview (mockups 01 · 10, 2026-10-09).
+test.describe('arc 6 panel sheet', () => {
+  test.beforeEach(({ browserName: _b }, info) => test.skip(info.project.name !== 'iphone-15', 'iPhone sheet'))
+  const ui = (page: Page) =>
+    page.evaluate(() => {
+      const s = (window as any).__optimo.ui.getState()
+      return { date: s.date as string, panel: s.panel as string, view: s.view as string }
+    })
+  const keyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const shift = (days: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return keyOf(d)
+  }
+  /** wait until the sheet has settled (no running transition) */
+  const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().length === 0)
+  /** a colour expression as the browser paints it, optionally inside a category class */
+  const paint = (page: Page, expr: string, cls = '') =>
+    page.evaluate(([e, c]) => {
+      const p = document.createElement('i')
+      if (c) p.className = c
+      p.style.backgroundColor = e
+      document.body.append(p)
+      const out = getComputedStyle(p).backgroundColor
+      p.remove()
+      return out
+    }, [expr, cls] as const)
+  async function dragGrabber(page: Page, dy: number) {
+    const g = (await page.getByTestId('panel-grabber').boundingBox())!
+    const x = g.x + g.width / 2
+    const y = g.y + g.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    for (let k = 1; k <= 10; k++) await page.mouse.move(x, y + (dy * k) / 10)
+    await page.mouse.up()
+  }
+
+  test('drag the grabber down → the week overview; grid glyph on Timeline; month + year title; drag up → back', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00', seed: seedDay })
+    await expect(page.getByTestId('week')).toHaveCount(0)
+    await expect(page.getByTestId('tab-timeline').locator('svg')).toHaveAttribute('data-icon', 'ui-timeline')
+    await dragGrabber(page, 420)
+    await expect.poll(async () => (await ui(page)).panel).toBe('week')
+    await settled(page)
+    await expect(page.getByTestId('week')).toBeVisible()
+    await expect(page.getByTestId('week-col')).toHaveCount(7)
+    await expect(page.getByTestId('tab-timeline').locator('svg')).toHaveAttribute('data-icon', 'ui-grid-2x3')
+    await expect(page.getByTestId('hdr-title')).toHaveText(/^[A-Z][a-z]+ \d{4} ›$/)
+    await expect(page.getByTestId('mini-chip')).toHaveCount(0)
+    // the peek: 112 px, sitting 8 px above the tab bar, clipped narrower than the expanded panel
+    const peek = await page.getByTestId('panel-sheet').evaluate((el) => ({ top: el.getBoundingClientRect().top, clip: getComputedStyle(el).clipPath }))
+    const bar = (await page.getByTestId('tabbar').boundingBox())!
+    expect(Math.abs(bar.y - 8 - 112 - peek.top)).toBeLessThanOrEqual(2)
+    expect(peek.clip).toContain('inset')
+    // the day's content is inert while collapsed; the peek drags back up
+    expect(await page.locator('.psheet-body').evaluate((el) => el.hasAttribute('inert'))).toBe(true)
+    const p = (await page.getByTestId('panel-peek').boundingBox())!
+    await page.mouse.move(p.x + p.width / 2, p.y + 40)
+    await page.mouse.down()
+    for (let k = 1; k <= 10; k++) await page.mouse.move(p.x + p.width / 2, p.y + 40 - 42 * k)
+    await page.mouse.up()
+    await expect.poll(async () => (await ui(page)).panel).toBe('day')
+    await settled(page)
+    await expect(page.getByTestId('tab-timeline').locator('svg')).toHaveAttribute('data-icon', 'ui-timeline')
+    await expect(page.getByTestId('hdr-title')).toHaveText(/^[A-Z][a-z]+ \d{1,2}, \d{4} ›$/)
+    await expect(page.getByTestId('week')).toHaveCount(0)
+  })
+
+  test('a slow short drag snaps back to the nearest detent', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00', seed: seedDay })
+    const g = (await page.getByTestId('panel-grabber').boundingBox())!
+    await page.mouse.move(g.x + g.width / 2, g.y + 14)
+    await page.mouse.down()
+    for (let k = 1; k <= 8; k++) {
+      await page.mouse.move(g.x + g.width / 2, g.y + 14 + 10 * k)
+      await page.waitForTimeout(40) // ≤ 10 px / 40 ms = 0.25 px/ms: under the flick threshold
+    }
+    await page.waitForTimeout(150)
+    await page.mouse.up()
+    await settled(page)
+    expect((await ui(page)).panel).toBe('day')
+  })
+
+  test('tapping the active Timeline tab toggles the detent', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00', seed: seedDay })
+    await page.getByTestId('tab-timeline').click()
+    await expect.poll(async () => (await ui(page)).panel).toBe('week')
+    await expect(page.getByTestId('panel-sheet')).toHaveAttribute('data-detent', 'week')
+    await expect(page.getByTestId('week')).toBeVisible()
+    await page.getByTestId('tab-timeline').click()
+    await expect.poll(async () => (await ui(page)).panel).toBe('day')
+    await expect(page.getByTestId('panel-sheet')).toHaveAttribute('data-detent', 'day')
+  })
+
+  test('tap a Wednesday column → that date, panel expanded', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00', seed: seedDay })
+    await page.getByTestId('tab-timeline').click()
+    await settled(page)
+    const days = await page.getByTestId('week-col').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.day!))
+    const wed = days.find((d) => new Date(`${d}T12:00:00`).getDay() === 3)!
+    await page.locator(`[data-testid="week-col"][data-day="${wed}"]`).click()
+    await expect.poll(() => ui(page)).toMatchObject({ date: wed, panel: 'day', view: 'day' })
+    await expect(page.getByTestId('timeline')).toHaveAttribute('data-day', wed)
+    await expect(page.getByTestId('panel-sheet')).toHaveAttribute('data-detent', 'day')
+  })
+
+  test('past-day discs are filled in --cat-past with a white glyph; today / future sit on --node with the category glyph', async ({ page, context }) => {
+    await openApp(page, context, { at: '09:00', seed: seedDay, theme: 'dark' })
+    // last week: every day is past
+    await page.evaluate((d) => (window as any).__optimo.ui.getState().set({ date: d, panel: 'week' }), shift(-7))
+    const pastWake = page.locator('[data-testid="week-node"].cat-accent').first()
+    await expect(pastWake).toHaveAttribute('data-past', 'true')
+    expect(await pastWake.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(await paint(page, 'var(--cat-past)', 'cat-accent'))
+    expect(await pastWake.evaluate((el) => getComputedStyle(el).color)).toBe(await page.evaluate(() => {
+      const p = document.createElement('i')
+      p.style.color = 'oklch(1 0 0)' // white
+      document.body.append(p)
+      const c = getComputedStyle(p).color
+      p.remove()
+      return c
+    }))
+    // next week: every day is future
+    await page.evaluate((d) => (window as any).__optimo.ui.getState().set({ date: d }), shift(7))
+    await expect(page.locator(`[data-testid="week-col"][data-day="${shift(7)}"]`)).toHaveCount(1)
+    const futureWake = page.locator('[data-testid="week-node"].cat-accent').first()
+    await expect(futureWake).not.toHaveAttribute('data-past', 'true')
+    expect(await futureWake.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(await paint(page, 'var(--node)'))
+    expect(await futureWake.evaluate((el) => getComputedStyle(el).color)).toBe(await paint(page, 'var(--cat-glyph)', 'cat-accent'))
+    // today's tasks: --node discs too
+    await page.evaluate((d) => (window as any).__optimo.ui.getState().set({ date: d }), shift(0))
+    const todayTask = page.locator(`[data-testid="week-col"][data-day="${shift(0)}"] [data-testid="week-block"]`).first()
+    await expect(todayTask).toBeVisible()
+    expect(await todayTask.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(await paint(page, 'var(--node)'))
+  })
+
+  test('reduced motion: a detent change completes within 160 ms', async ({ page, context }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await openApp(page, context, { seed: seedDay })
+    for (const want of ['week', 'day']) {
+      const r = await page.evaluate(async (w) => {
+        const sheet = document.querySelector<HTMLElement>('[data-testid="panel-sheet"]')!
+        const tab = document.querySelector<HTMLElement>('[data-testid="tab-timeline"]')!
+        const t0 = document.timeline.currentTime as number
+        tab.click()
+        // React commits the tap's update in a microtask: wait for the new detent, then for any transition to finish
+        for (let i = 0; i < 50 && sheet.dataset.detent !== w; i++) await new Promise((res) => setTimeout(res, 0))
+        const anims = sheet.getAnimations()
+        const dur = Math.max(0, ...anims.map((a) => Number(a.effect?.getTiming().duration) || 0))
+        await Promise.all(anims.map((a) => a.finished))
+        return { dur, took: (document.timeline.currentTime as number) - t0, transform: getComputedStyle(sheet).transform }
+      }, want)
+      expect(r.transform === 'none').toBe(want === 'day')
+      // base.css drops transform transitions under reduced motion: the detent change is instant (or ≤ 160 ms)
+      expect(r.dur).toBeLessThanOrEqual(160)
+      expect(r.took).toBeLessThanOrEqual(160)
+      await expect(page.getByTestId('panel-sheet')).toHaveAttribute('data-detent', want)
+    }
+  })
+
+  for (const theme of ['dark', 'light'] as const)
+    test(`axe clean on the week overview (${theme})`, async ({ page, context }) => {
+      await openApp(page, context, { at: '09:00', seed: seedDay, theme })
+      await page.getByTestId('tab-timeline').click()
+      await settled(page)
+      await expect(page.getByTestId('week')).toBeVisible()
+      expect(await serious(page)).toEqual([])
+    })
+
+  test('evidence: week overview + peeking panel (iPhone 15, dark)', async ({ page, context }) => {
+    test.skip(!process.env.EVIDENCE, 'set EVIDENCE=1 to refresh docs/evidence screenshots')
+    await page.setViewportSize({ width: 402, height: 874 })
+    await openApp(page, context, {
+      at: '09:00',
+      theme: 'dark',
+      seed: (s) => {
+        seedTask(s, { title: 'Watch a movie', start_at: at('20:00'), duration_min: 90, category_id: CAT.personal })
+        seedTask(s, { title: 'Morning run', start_at: at('07:30', -2), duration_min: 45, category_id: CAT.health })
+        seedTask(s, { title: 'Standup', start_at: at('10:00', -1), duration_min: 15, category_id: CAT.meet })
+        seedTask(s, { title: 'Groceries', start_at: at('17:00', 1), duration_min: 60, category_id: CAT.errand })
+      },
+    })
+    await page.getByTestId('tab-timeline').click()
+    await settled(page)
+    await page.screenshot({ path: 'docs/evidence/arc6-slice-4-week.png' })
+    // mid-drag: the sheet follows the finger between the detents
+    const p = (await page.getByTestId('panel-peek').boundingBox())!
+    await page.mouse.move(p.x + p.width / 2, p.y + 40)
+    await page.mouse.down()
+    for (let k = 1; k <= 6; k++) await page.mouse.move(p.x + p.width / 2, p.y + 40 - 45 * k)
+    await page.screenshot({ path: 'docs/evidence/arc6-slice-4-week-peek.png' })
+    await page.mouse.up()
+  })
+})

@@ -68,16 +68,18 @@ test.describe('design review P0 guards', () => {
     await context.setOffline(false)
   })
 
-  test('P0-4 mobile week shows readable columns with ellipsised titles', async ({ page, context }, info) => {
+  // arc 6 slice 4: the iPhone week is the overview behind the collapsed panel — 7 spine columns under the strip days
+  test('P0-4 mobile week: all seven columns on screen, each under its strip day', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'iphone-15', 'mobile week')
     await openApp(page, context, { seed: seedDay })
     await setView(page, 'week')
-    const col = page.locator('[data-testid="week-col"]').first()
-    expect((await col.boundingBox())!.width).toBeGreaterThanOrEqual(100)
-    const tt = page.locator('.wblk .tt').first()
-    await expect(tt).toBeVisible()
-    expect(await tt.evaluate((el) => getComputedStyle(el).textOverflow)).toBe('ellipsis')
-    // today is within the first visible three days
+    await expect(page.getByTestId('week-col')).toHaveCount(7)
+    const cols = await page.getByTestId('week-col').evaluateAll((els) => els.map((e) => ({ day: (e as HTMLElement).dataset.day!, ...e.getBoundingClientRect().toJSON() })))
+    for (const c of cols) {
+      const s = (await page.locator(`[data-testid="strip-day"][data-day="${c.day}"]`).boundingBox())!
+      expect(Math.abs(c.x + c.width / 2 - (s.x + s.width / 2))).toBeLessThanOrEqual(1)
+    }
+    // today is on screen
     const today = await page.evaluate(() => {
       const d = new Date()
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

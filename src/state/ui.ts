@@ -24,8 +24,12 @@ export interface Toast {
   undo?: () => void | Promise<void>
 }
 
+/** arc 6 slice 4 (iPhone): the day panel's detent — 'day' = expanded sheet, 'week' = collapsed over the week overview */
+export type PanelDetent = 'day' | 'week'
+
 interface UI {
   view: View
+  panel: PanelDetent
   date: string
   selectedId: string | null
   editingId: string | null
@@ -46,6 +50,7 @@ interface UI {
 let toastId = 0
 export const useUI = create<UI>((set) => ({
   view: 'day',
+  panel: 'day',
   date: todayKey(),
   selectedId: null,
   editingId: null,

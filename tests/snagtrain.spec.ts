@@ -201,17 +201,20 @@ test.describe('snag train 2026-10', () => {
   })
 
   // === slice 8 (Fixes #22) — Week view edges: no sliver on iPhone, no flush-right on desktop ===
-  test('#22 Week: mobile 3-day columns exactly fill the space the sticky rail leaves (no sliver)', async ({ page, context }, info) => {
-    test.skip(info.project.name !== 'iphone-15', 'the 3-day mobile week is mobile-only')
+  // arc 6 slice 4: the 3-day scroller became the 7-column overview (mockup 10) — the columns fill the strip's width
+  test('#22 Week: mobile 7 columns exactly fill the 20 px gutters (no sliver, no scroll)', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'iphone-15', 'the mobile week overview is mobile-only')
     const setView = (v: string) => page.evaluate((x) => (window as any).__optimo.ui.getState().set({ view: x, mobileTab: 'board' }), v)
     await openApp(page, context, { seed: seedDay })
     await setView('week')
-    const railWidth = (await page.locator('.week.m .wrail').boundingBox())!.width
-    const colWidth = (await page.locator('.week.m .wcol').first().boundingBox())!.width
+    const cols = page.locator('.wov [data-testid="week-col"]')
+    await expect(cols).toHaveCount(7)
+    const first = (await cols.first().boundingBox())!
+    const last = (await cols.last().boundingBox())!
     const viewport = page.viewportSize()!.width
-    // the rail + 3 columns must account for the full viewport — within 1px of rounding, so there is no
-    // unfilled sliver of a 4th day left over after a snap scroll (the old 42px constant left ~10px spare)
-    expect(Math.abs(railWidth + 3 * colWidth - viewport)).toBeLessThan(1)
+    expect(Math.abs(first.x - 20)).toBeLessThan(1)
+    expect(Math.abs(viewport - (last.x + last.width) - 20)).toBeLessThan(1)
+    expect(await page.locator('.wov .wbody').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   })
 
   test('#22 Week: desktop Sun column stays clear of the window edge', async ({ page, context }, info) => {

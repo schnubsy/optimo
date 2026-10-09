@@ -1,0 +1,84 @@
+/* arc 6 slice 4 — the day panel sheet (iPhone) and the spine week columns (iPhone overview + desktop Week), mockups
+   01 / 10 (2026-10-09). CSS px = mockup px ÷ 3. app.css loads after this file, so the mobile pane rules carry `.app`
+   for specificity. Every colour is a token. */
+
+/* ---------- the sheet ---------- */
+.app.is-mobile .pane.m-day > .psheet {
+  --sheet-dur: var(--dur-sheet);
+  position: fixed; z-index: 15;
+  top: calc(var(--header-h-mobile) + env(safe-area-inset-top));
+  left: var(--panel-margin); right: var(--panel-margin); bottom: 0;
+  padding: 0;
+  display: flex; flex-direction: column;
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+  background: var(--panel);
+  overflow: hidden;
+  transition: transform var(--sheet-dur) var(--ease-drawer), clip-path var(--sheet-dur) var(--ease-drawer);
+}
+.app.is-mobile .pane.m-day > .psheet[data-dragging] { will-change: transform; }
+.psheet-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.app.is-mobile .psheet-body > .day { flex: 1; min-height: 0; margin: 0; padding: 0; border-radius: 0; }
+
+/* grabber 45×5 --spine at 12 px; the hit area is a wider band (it overlays the first row's text column, never a chip) */
+.psheet-grab { position: absolute; z-index: 12; top: 0; left: 50%; width: 120px; height: 28px; margin-left: -60px; padding: 0; border: 0; background: none; touch-action: none; cursor: grab; }
+.psheet-grab i { position: absolute; top: 12px; left: 50%; width: 45px; height: 5px; margin-left: -22.5px; border-radius: 3px; background: var(--spine); }
+.psheet-grab:focus-visible { outline: none; }
+.psheet-grab:focus-visible i { box-shadow: var(--focus-ring); }
+/* collapsed: the whole peek is the handle */
+.psheet-peek { position: absolute; z-index: 11; inset: 0 0 auto 0; height: 112px; touch-action: none; cursor: grab; }
+
+/* reduced motion: base.css drops transform transitions app-wide, so a detent change is instant (Done: ≤ 160 ms) */
+
+/* the header in week mode (mockup 10): no mini-chips → the band ends under the numerals, with a hairline */
+.app.is-mobile header.hdr.week-mode { height: calc(102px + env(safe-area-inset-top)); border-bottom: 1px solid var(--card); }
+
+/* ---------- week: shared spine columns ---------- */
+.spine-week { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.spine-week .wbody { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.spine-week .wgrid { position: relative; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
+.spine-week .wrail { position: relative; pointer-events: none; }
+.spine-week .wrail .hour { position: absolute; left: 0; right: 0; height: 0; }
+.spine-week .wrail .hour b { position: absolute; right: 8px; top: 0; translate: 0 -50%; font: var(--fw-bold) var(--fs-13) / 1 var(--font-ui); letter-spacing: -0.02em; color: var(--ink-3); white-space: nowrap; }
+.spine-week .wrail .hour sup { margin-left: 1px; font-size: 9px; vertical-align: 0.45em; line-height: 0; letter-spacing: 0; }
+.spine-week .wcol { position: relative; min-width: 0; }
+.spine-week .wcol.over { background: color-mix(in oklch, var(--accent-tint) 50%, transparent); border-radius: var(--r-md); }
+.wcol-open { position: absolute; inset: 0; z-index: 0; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+.wcol-open:focus-visible { outline: none; box-shadow: inset var(--focus-ring); border-radius: var(--r-md); }
+/* the day's spine: first node → last node, 3 px; past days carry the gradient inline (first → last node colour) */
+.wspine { position: absolute; z-index: 1; left: 50%; width: var(--spine-w); margin-left: calc(var(--spine-w) / -2); background: var(--spine); pointer-events: none; }
+/* nodes: 48 px --node discs (capsules when taller at 36 px/h), glyph in the category colour; past = filled + white glyph */
+.wnode { all: unset; box-sizing: border-box; position: absolute; z-index: 2; left: 50%; width: var(--node-size-week); margin-left: calc(var(--node-size-week) / -2);
+  display: grid; place-items: center; border-radius: calc(var(--node-size-week) / 2); background: var(--node); color: var(--cat-glyph); }
+button.wnode { cursor: grab; touch-action: manipulation; }
+.wnode:focus-visible { box-shadow: var(--focus-ring); }
+.wnode.past { background: var(--cat-past); color: oklch(1 0 0); }
+.wnode.done .ic { opacity: 0.6; }
+.wnode.grab { z-index: 30; cursor: grabbing; box-shadow: var(--shadow-drag); will-change: transform; }
+span.wnode { pointer-events: none; }
+
+/* desktop: a day header row over the columns (the iPhone strip does this job in the overview) */
+.spine-week .whead { display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); background: var(--canvas); }
+.spine-week .wnav { display: flex; align-items: center; justify-content: center; }
+.spine-week .wnav .nav { min-width: 22px; height: 36px; border: 0; background: none; font-size: 18px; color: var(--ink-2); }
+.spine-week .wday { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px; padding: 0 var(--sp-2); border: 0; border-radius: var(--r-sm); background: none; color: var(--ink); }
+.spine-week .wday b { font: var(--type-weekday); font-weight: var(--fw-bold); }
+.spine-week .wday.today b { color: var(--accent-ink); }
+.spine-week .wday.sel { background: var(--surface); }
+.is-desktop .spine-week .wbody, .is-desktop .spine-week .whead { padding-right: var(--sp-4); }
+
+/* iPhone overview: fixed under the header, columns aligned under the strip days (20 px gutters, 7 equal columns), the
+   rail overlays the left gutter; room at the bottom for the peeking panel + the tab bar */
+.app.is-mobile .pane.m-day > .spine-week.wov {
+  position: fixed; inset: 0; z-index: 1;
+  padding: calc(102px + env(safe-area-inset-top)) 0 0;
+  background: var(--canvas);
+}
+.spine-week.wov .wbody { padding-bottom: calc(var(--tabbar-h) + var(--tabbar-inset) + 8px + 112px + 16px + env(safe-area-inset-bottom)); }
+.spine-week.wov .wgrid { grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 0 20px; }
+.spine-week.wov .wrail { position: absolute; z-index: 0; left: 0; top: 0; bottom: 0; width: 22px; }
+.spine-week.wov .wrail .hour b { left: 3px; right: auto; letter-spacing: -0.04em; }
+
+/* collapsed: the peek is a card — gutter times sit outside its narrower clip, so they step out */
+.psheet[data-detent='week'] .tl .gutter, .psheet[data-detent='week'] .tl .now { visibility: hidden; }
+/* …and a short day must still be able to scroll its first row up to the peek's top */
+.psheet[data-detent='week'] .tl .tl-inner { margin-bottom: 100vh; }
