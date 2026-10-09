@@ -26,7 +26,7 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-Merge state: PR pending (branch arc/ui-round-spine)
+Merge state: Merged: PR #111 9b8a3f1 on 2026-10-09; main checkout on main @ 9b8a3f1
 **Arc 6 — UI/UX round (2026-10-09), all 9 slices green.** The 2026-10-09 mockups shipped: spine timeline (one segment
 map `src/timeline/segments.ts` for every minute↔pixel), bookends Up / Lights out, compressed gaps, header + strip,
 4-tab bar + 58 px FAB, two-detent panel over the week overview, create wizard ①②③ (= the edit screen; TaskSheet

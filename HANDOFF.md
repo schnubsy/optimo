@@ -1,7 +1,7 @@
 # HANDOFF — optimo
 
 ## Current state
-- Merge state: PR pending (branch arc/ui-round-spine)
+- Merge state: Merged: PR #111 9b8a3f1 on 2026-10-09; main checkout on main @ 9b8a3f1
 - Arc 6 — **UI/UX round (spine timeline, panel sheet, 4-tab bar, task wizard)**: all 9 slices done, each with a GREEN
   gauntlet (last: Lighthouse desktop 100/100, mobile 97/100); sentry (secrets scan of the whole arc diff) 0 hits.
 - Live before the merge: Pages `<meta name="build">` = `4f04493`.
