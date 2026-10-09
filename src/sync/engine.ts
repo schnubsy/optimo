@@ -3,8 +3,9 @@
 
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { db, getMeta, setMeta } from '../data/db'
-import { onLocalWrite, taskKind } from '../data/repo'
-import { OPTIONAL_TABLES, REMOTE_TABLE, type AiPlan, type AiProfile, type CalendarEvent, type Category, type Exception, type Settings, type TableName, type Task } from '../data/types'
+import { onLocalWrite, taskKind, toPayload } from '../data/repo'
+import { withTaskDefaults } from '../data/place'
+import { OPTIONAL_COLUMNS, OPTIONAL_TABLES, REMOTE_TABLE, type AiPlan, type AiProfile, type CalendarEvent, type Category, type Exception, type Settings, type TableName, type Task } from '../data/types'
 import { mergeRow } from './merge'
 import { useSync } from '../state/sync'
 
@@ -63,6 +64,28 @@ export function isMissingTable(error: { code?: string; message?: string; status?
   return error.code === 'PGRST205' || error.code === '42P01' || /could not find the table|does not exist/i.test(error.message ?? '')
 }
 
+/** PostgREST's answer when a column isn't in the schema (yet): PGRST204 on write, 42703 on read. */
+export function isMissingColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return error.code === 'PGRST204' || error.code === '42703' || /could not find the '[^']+' column|column \S+ does not exist/i.test(error.message ?? '')
+}
+
+/** A row (and its field_ts) without the given columns — what a server lacking them can take. */
+export function withoutColumns(row: Record<string, unknown>, cols: readonly string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...row }
+  for (const c of cols) delete out[c]
+  if (out.field_ts && typeof out.field_ts === 'object') {
+    const ts = { ...(out.field_ts as Record<string, number>) }
+    for (const c of cols) delete ts[c]
+    out.field_ts = ts
+  }
+  return out
+}
+
+/** meta key: per table, the ids pushed without their optional columns — re-sent in full once the server has them. */
+export const COLUMN_BACKLOG = 'colBacklog'
+type Backlog = Partial<Record<TableName, string[]>>
+
 /** Listeners told which tables an outbox push just sent (arc 4: task pushes trigger the iCloud write-back). */
 export const afterPush = new Set<(tables: Set<TableName>) => void>()
 
@@ -83,6 +106,8 @@ export class SyncEngine {
   private unsub: (() => void) | null = null
   /** Optional tables (db/004_ai.sql) the server doesn't have yet: their outbox rows wait, retried every cycle. */
   readonly parked = new Set<TableName>()
+  /** Tables whose OPTIONAL_COLUMNS the server lacks (db/008 not applied yet): pushed without them, backlogged. */
+  readonly missingCols = new Set<TableName>()
 
   constructor(sb: SupabaseClient, userId: string) {
     this.sb = sb
@@ -195,7 +220,34 @@ export class SyncEngine {
     }
   }
 
+  /** Rows sent without their optional columns go back into the outbox, in full, once the server has the columns. */
+  private async drainColumnBacklog() {
+    const backlog = await getMeta<Backlog>(COLUMN_BACKLOG, {})
+    let changed = false
+    for (const [table, ids] of Object.entries(backlog) as [TableName, string[]][]) {
+      const cols = OPTIONAL_COLUMNS[table]
+      if (!ids?.length || !cols) continue
+      const { error } = await this.sb.from(REMOTE_TABLE[table]).select(cols.join(',')).limit(1)
+      if (error) {
+        if (isMissingColumn(error)) this.missingCols.add(table)
+        continue // still missing (or unreachable): keep the backlog, probe again next cycle
+      }
+      this.missingCols.delete(table)
+      const tbl = db.table(table)
+      await db.transaction('rw', tbl, db.outbox, async () => {
+        for (const id of ids) {
+          const row = (await tbl.get(id)) as Record<string, unknown> | undefined
+          if (row) await db.outbox.add({ table, id, op: 'upsert', payload: toPayload(row), field_ts: (row.field_ts ?? {}) as Record<string, number> })
+        }
+      })
+      delete backlog[table]
+      changed = true
+    }
+    if (changed) await setMeta(COLUMN_BACKLOG, backlog)
+  }
+
   async push() {
+    await this.drainColumnBacklog()
     const entries = await db.outbox.orderBy('seq').toArray()
     if (!entries.length) return
     const maxSeq = entries[entries.length - 1].seq!
@@ -206,10 +258,19 @@ export class SyncEngine {
       for (const e of entries) if (e.table === table) latest.set(e.id, e.payload)
       if (!latest.size) continue
       const rows = [...latest.values()].map((p) => toRemote(table, p))
+      const cols = OPTIONAL_COLUMNS[table]
+      const upsert = (chunk: Record<string, unknown>[]) =>
+        this.sb.from(REMOTE_TABLE[table]).upsert(chunk, { onConflict: CONFLICT[table], ignoreDuplicates: false, defaultToNull: false })
       for (let i = 0; i < rows.length; i += CHUNK) {
-        const { error } = await this.sb
-          .from(REMOTE_TABLE[table])
-          .upsert(rows.slice(i, i + CHUNK), { onConflict: CONFLICT[table], ignoreDuplicates: false, defaultToNull: false })
+        const chunk = rows.slice(i, i + CHUNK)
+        let error = null as Awaited<ReturnType<typeof upsert>>['error']
+        if (!cols || !this.missingCols.has(table)) ({ error } = await upsert(chunk))
+        if (cols && (this.missingCols.has(table) || isMissingColumn(error))) {
+          // the server predates the optional columns (db/008): send the rest now, re-send these rows in full later
+          this.missingCols.add(table)
+          ;({ error } = await upsert(chunk.map((r) => withoutColumns(r, cols))))
+          if (!error) await this.backlog(table, chunk.map((r) => String(r.id)))
+        }
         if (error && OPTIONAL_TABLES.has(table) && isMissingTable(error)) {
           // not applied on the server yet: keep these rows queued, never block the core tables (degrade cleanly)
           held.add(table)
@@ -231,6 +292,12 @@ export class SyncEngine {
     this.refreshPending()
     const sent = new Set(entries.map((e) => e.table).filter((t) => !held.has(t)))
     for (const f of afterPush) f(sent)
+  }
+
+  private async backlog(table: TableName, ids: string[]) {
+    const backlog = await getMeta<Backlog>(COLUMN_BACKLOG, {})
+    backlog[table] = [...new Set([...(backlog[table] ?? []), ...ids])]
+    await setMeta(COLUMN_BACKLOG, backlog)
   }
 
   async pull() {
@@ -320,8 +387,11 @@ export async function applyRemote(table: TableName, rows: Record<string, unknown
       const incoming = fromRemote(table, raw)
       const key = table === 'exceptions' ? [incoming.series_id, incoming.occurrence_date] : incoming.id
       const local = await tbl.get(key as never)
-      const merged = local ? mergeRow(local, incoming) : incoming
-      if (table === 'tasks') (merged as Task)._kind = taskKind(merged as Task)
+      let merged = local ? mergeRow(local, incoming) : incoming
+      if (table === 'tasks') {
+        merged = withTaskDefaults(merged) // a pre-008 server row lacks plan_date / someday / estimated
+        ;(merged as Task)._kind = taskKind(merged as Task)
+      }
       await tbl.put(merged as Task | Category | Exception | Settings | AiPlan | AiProfile)
     }
   })

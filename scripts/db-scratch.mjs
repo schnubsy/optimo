@@ -5,6 +5,8 @@
 //   2. db/001, 002, 004, 005 as applied today (003 is pg_cron/vault only — skipped);
 //   3. arc-5a-era data written the way the client writes it (authenticated role, RLS on, upserts);
 //   4. db/006 applied TWICE; then the arc-5a client's writes again, the flag off/on, and the people policies.
+//   8. (arc 7) db/007 + db/008 applied TWICE on top: defaults on existing rows, no version bump / sync-log rows,
+//      field-level merge of plan_date / someday / estimated, a pre-008 client's upsert keeps them, no wedging check.
 // Usage: PGLITE=<dir containing node_modules/@electric-sql/pglite> node scripts/db-scratch.mjs > docs/evidence/…txt
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -210,6 +212,75 @@ await as(BARB, 'barb@family.example', () => db.query(`insert into planner_tasks 
 ok((await val(`select p.name from planner_tasks t join planner_people p on p.id = t.person_id where t.id = '0190b000-0000-7000-8000-0000000000b9'`)) === 'Barb',
   "a new row from Barb is filled with Barb's own person once she has one")
 ok((await val(`select count(*)::int from information_schema.role_table_grants where table_name = 'planner_people' and grantee = 'anon'`)) === 0, 'no anon grants on planner_people')
+
+// ---------- 8. arc 7: db/007 + db/008 on top of 001–006 ----------
+const pre008 = {
+  version: await val(`select max(version) from planner_tasks`),
+  log: await val(`select count(*)::int from planner_sync_log`),
+  rows: await val(`select count(*)::int from planner_tasks`),
+}
+for (const f of ['007_task_tz.sql', '008_inbox_first.sql']) {
+  const sql = readFileSync(join(ROOT, 'db', f), 'utf8')
+  for (const run of [1, 2]) {
+    try {
+      await db.exec(sql)
+      ok(true, `db/${f} run ${run} applied clean`)
+    } catch (e) {
+      ok(false, `db/${f} run ${run}: ${e.message}`)
+    }
+  }
+}
+const cols = (await db.query(`select column_name, data_type, is_nullable, column_default from information_schema.columns
+  where table_schema = 'public' and table_name = 'planner_tasks' and column_name in ('plan_date', 'someday', 'estimated') order by column_name`)).rows
+log(`008 columns: ${cols.map((c) => `${c.column_name} ${c.data_type} null=${c.is_nullable} default=${c.column_default}`).join(' · ')}`)
+ok(cols.length === 3 && cols[0].data_type === 'boolean' && cols[0].is_nullable === 'NO' && cols[0].column_default === 'true'
+  && cols[1].data_type === 'date' && cols[1].is_nullable === 'YES' && cols[2].column_default === 'false', '008 columns have the documented types / nullability / defaults')
+ok((await val(`select count(*)::int from planner_tasks where plan_date is null and not someday and estimated`)) === pre008.rows, 'every existing row reads plan_date null · someday false · estimated true')
+ok((await val(`select max(version) from planner_tasks`)) === pre008.version, '007/008 fired no merge trigger (version unchanged)')
+ok((await val(`select count(*)::int from planner_sync_log`)) === pre008.log, '007/008 wrote no sync-log rows')
+ok((await val(`select count(*)::int from pg_constraint where conrelid = 'public.planner_tasks'::regclass and contype = 'c' and pg_get_constraintdef(oid) ilike '%someday%'`)) === 0,
+  'no cross-column check on someday / plan_date (a field-level merge can never be rejected)')
+
+const T3 = '0190b000-0000-7000-8000-000000000003'
+const upsertTask = (cols, vals, setCols) => db.query(
+  `insert into planner_tasks (id, ${cols.join(', ')}) values ($1, ${cols.map((_, i) => `$${i + 2}`).join(', ')})
+   on conflict (id) do update set ${setCols.map((c) => `${c} = excluded.${c}`).join(', ')}`, vals)
+await as(MARK, 'markgubb@gmail.com', async () => {
+  // capture on device A (arc-7 client): inbox, no estimate
+  await upsertTask(['title', 'plan_date', 'someday', 'estimated', 'field_ts'], [T3, 'Captured', null, false, false, '{"title":10,"plan_date":10,"someday":10,"estimated":10}'],
+    ['title', 'plan_date', 'someday', 'estimated', 'field_ts'])
+  // device A plans it for a day (place fields stamped together at 20)
+  await upsertTask(['plan_date', 'someday', 'start_at', 'field_ts'], [T3, '2026-10-12', false, null, '{"title":10,"plan_date":20,"someday":20,"start_at":20,"estimated":10}'],
+    ['plan_date', 'someday', 'start_at', 'field_ts'])
+  let r = await one(`select plan_date::text, someday, estimated, version from planner_tasks where id = $1`, [T3])
+  ok(r.plan_date === '2026-10-12' && r.someday === false && r.estimated === false && Number(r.version) === 2, 'planForDay upsert merges: plan_date lands, version bumps')
+  // device B moved it to Someday EARLIER (ts 15) and arrives late: loses both place fields as a unit
+  await upsertTask(['plan_date', 'someday', 'start_at', 'field_ts'], [T3, null, true, null, '{"plan_date":15,"someday":15,"start_at":15}'], ['plan_date', 'someday', 'start_at', 'field_ts'])
+  r = await one(`select plan_date::text, someday, (field_ts->>'someday')::int as ts from planner_tasks where id = $1`, [T3])
+  ok(r.plan_date === '2026-10-12' && r.someday === false && r.ts === 20, 'an older place decision loses field-level (plan_date kept, someday stays false)')
+  // a mixed merge (someday from one device, plan_date from another) is accepted — no check wedges the push
+  await upsertTask(['someday', 'field_ts'], [T3, true, '{"someday":30}'], ['someday', 'field_ts'])
+  r = await one(`select plan_date::text, someday from planner_tasks where id = $1`, [T3])
+  ok(r.plan_date === '2026-10-12' && r.someday === true, 'a field-level mix (someday + plan_date) is stored; the client derives Someday')
+  // setEstimate
+  await upsertTask(['duration_min', 'estimated', 'field_ts'], [T3, 60, true, '{"duration_min":40,"estimated":40}'], ['duration_min', 'estimated', 'field_ts'])
+  r = await one(`select duration_min, estimated from planner_tasks where id = $1`, [T3])
+  ok(r.duration_min === 60 && r.estimated === true, 'estimated merges like any field')
+  // a pre-008 client (doesn't know the columns) edits the title: the 008 fields are untouched
+  await upsertTask(['title', 'field_ts'], [T3, 'Captured (renamed on an old client)', '{"title":50}'], ['title', 'field_ts'])
+  r = await one(`select title, plan_date::text, someday, estimated, field_ts from planner_tasks where id = $1`, [T3])
+  ok(r.title === 'Captured (renamed on an old client)' && r.plan_date === '2026-10-12' && r.someday === true && r.estimated === true && r.field_ts.plan_date === 20,
+    "a pre-008 client's upsert keeps plan_date / someday / estimated and their field_ts")
+  // a bad plan_date is rejected by the column type (the client only ever sends YYYY-MM-DD)
+  let rejected = false
+  try {
+    await upsertTask(['plan_date', 'field_ts'], [T3, 'next tuesday', '{"plan_date":60}'], ['plan_date', 'field_ts'])
+  } catch {
+    rejected = true
+  }
+  ok(rejected, "plan_date is a real date: 'next tuesday' is rejected")
+  ok((await val(`select count(*)::int from planner_sync_log where row_id = $1`, [T3])) === 6, 'every accepted write logged once for the pull')
+})
 
 log(failures ? `\nRESULT: RED (${failures} failed)` : '\nRESULT: GREEN')
 process.exit(failures ? 1 : 0)
