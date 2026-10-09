@@ -46,7 +46,7 @@ import { segmentMaps, timelineEls } from './timeline/Timeline'
 import { clampStart, MIN_DURATION, snap } from './timeline/layout'
 import { useNow } from './timeline/NowLine'
 import { edgeStep, pointOf, scrollerAt, type Pt } from './lib/dragScroll'
-import { addDays, dateKey, fromKey, nowMinutes, todayKey } from './lib/time'
+import { addDays, dateKey, fromKey, todayKey } from './lib/time'
 import { useIsMobile } from './lib/useMedia'
 import { deleteItem, moveItem, resizeItem, schedule, toggleComplete, unschedule } from './actions'
 import { seedCategories } from './categories/defaults'
@@ -80,6 +80,10 @@ const collision: CollisionDetection = (args) => {
   const self = `row:${String(args.active.id).replace(/^inbox:/, '')}`
   const rows = hits.filter((h) => String(h.id).startsWith('row:') && h.id !== self)
   if (rows.length) return rows
+  // arc 7: a "To place" tray (plan:<day>) or week tray/header (wplan:<day>) sits over the timeline's top edge while a
+  // drag is live — when the pointer is inside one, it wins over the timeline underneath.
+  const plans = hits.filter((h) => /^w?plan:/.test(String(h.id)))
+  if (plans.length) return plans
   const rest = hits.filter((h) => h.id !== self)
   return rest.length ? rest : rectIntersection(args).filter((h) => h.id !== self)
 }
