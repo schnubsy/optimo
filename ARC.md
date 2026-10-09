@@ -28,6 +28,7 @@ Implementation: dark `--canvas` → pure black, `--panel #1C1C1E`, new `--card`,
 Done: tokens compile in both themes; every new glyph renders in `IconSheet` at 24 and 13 px; `tests/design.spec.ts` asserts the dark canvas is `rgb(0,0,0)`, the panel `#1C1C1E`, and accent ≈ `#EC9792` (±4 per channel); axe clean on day + inbox in both themes; evidence `docs/evidence/arc6-slice-1-tokens.png` (dark + light swatches).
 
 === SLICE 2 — Header + date strip ===
+Status: done 2ae5a87
 Scope: mobile + desktop headers per `mockups.md` → 01 Header/Strip; stats line removed (decision 7).
 Files: src/chrome/Header.tsx, src/styles/app.css, src/views/stats.ts (keep for Week + tests), tests/chrome.spec.ts.
 Implementation: title `October 9, 2026 ›` (month+day ink, year + chevron accent; week-overview mode shows `October 2026 ›`); 32 px accent disc on the selected day; mini-chip row (12 px discs, −3 px overlap, max 4 + `+n`) from that day's items (use `useItems(days)` over the 7 strip days); `Today` button stays when off today, right-aligned; SyncBadge moves into the header's right edge at 12 px. Desktop `PaneHeader`: same title grammar, segmented control stays, stats line removed, `in inbox` count moves to the Inbox rail header.
