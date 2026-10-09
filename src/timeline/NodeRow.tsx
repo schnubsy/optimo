@@ -1,6 +1,7 @@
 import { memo, useRef, useState, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import type { Category } from '../data/types'
+import { useDrag } from '../state/drag'
 import { Icon } from '../icons/Icon'
 import { deviceZone, fmtClock, fmtDur, fmtDurWords, fmtRange, zoneCity } from '../lib/time'
 import type { Item } from './items'
@@ -81,6 +82,8 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
   // the live value lives in a ref: pointerup can arrive before React renders the last move (lessons 2026-09-27 [dnd])
   const resize = useRef<{ y: number; end: number; live: number } | null>(null)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `blk:${item.key}`, data: { type: 'block', item } })
+  // arc 7 slice 4: while this row is dragged its meta line shows where it will land (the drop ghost's live start)
+  const liveStart = useDrag((s) => (s.activeId === `blk:${item.key}` && s.ghost?.where === 'day' ? s.ghost.start : null))
 
   const dur = liveDur ?? t.duration_min
   const top = map.minToY(item.start)
@@ -157,6 +160,7 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
       data-selected={p.selected || undefined}
       data-running={p.running || undefined}
       data-dragging={isDragging || undefined}
+      data-live-start={liveStart ?? undefined}
       onKeyDown={onKey}
     >
       <button
@@ -179,7 +183,7 @@ export const NodeRow = memo(function NodeRow(p: NodeRowProps) {
       {p.labelY !== undefined && <Lead chipTop={(rowH - chipH) / 2} chipH={chipH} labelY={p.labelY} />}
       <button type="button" className="node-text" tabIndex={-1} aria-hidden="true" onClick={(e) => (e.stopPropagation(), p.onOpen(item))} data-testid="node-title">
         <span className="node-meta tnum">
-          <MetaTime start={item.start} dur={dur} clock24={p.clock24} />
+          <MetaTime start={liveStart ?? item.start} dur={dur} clock24={p.clock24} />
           {repeats && <Icon name="ui-repeat" size={14} />}
           {/* a task kept in another zone (db/007): shown converted to this device, marked with the globe */}
           {zoned && <Icon name="ui-globe" size={14} title={`Set in ${zoneCity(t.tz!)} time`} className="node-tz" />}

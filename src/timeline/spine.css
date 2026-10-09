@@ -30,6 +30,8 @@
 .node.sel .node-chip { box-shadow: 0 0 0 2px var(--ink-3); }
 .node.run .node-chip { box-shadow: 0 0 0 2px var(--accent); }
 .node.grab { z-index: 20; }
+/* arc 7 slice 4: the dragged row's text is an opaque card (its live time on top), never mixed with the row under it */
+.node.grab .node-text { background: var(--panel); outline: 6px solid var(--panel); border-radius: 6px; }
 .node.grab .node-chip { cursor: grabbing; box-shadow: var(--shadow-drag); scale: var(--scale-lift); will-change: transform; }
 /* arc 7 slice 2: text + ring sit on the row's label line (--label-y from labels.ts: beside the row's own chip), the
    text column starts past the chips that meet that line (--text-cols) and takes the rest of the row */
@@ -87,7 +89,11 @@
 /* drop / paint ghosts and the keyboard slot share the chip-to-edge band; their time sits in the gutter */
 .tl.spine-tl .ghost, .tl.spine-tl .paint, .tl.spine-tl .tl-slot { left: calc(var(--sx) - var(--node-size) / 2); right: 16px; }
 .tl.spine-tl .ghost { border-radius: calc(var(--node-size) / 2); }
-.tl.spine-tl .ghost i, .tl.spine-tl .tl-slot-time { left: auto; right: calc(100% + (var(--sx) - var(--node-size) / 2 - var(--gx))); width: auto; background: var(--panel); }
+/* arc 7 slice 4: the drop ghost's live start–end is a pill inside the ghost, right of the chip column — never on an
+   hour label in the gutter */
+.tl.spine-tl .ghost i { left: calc(var(--node-size) + 10px); right: auto; top: 6px; width: auto; height: 22px; padding: 0 var(--sp-2); display: inline-flex; align-items: center;
+  border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-on-tint); white-space: nowrap; }
+.tl.spine-tl .tl-slot-time { left: auto; right: calc(100% + (var(--sx) - var(--node-size) / 2 - var(--gx))); width: auto; background: var(--panel); }
 .tl.spine-tl .paint-fill { height: 100px; border-radius: 12px; }
 .tl.spine-tl .allday { padding-left: var(--tx); background: var(--panel); }
 .tl.spine-tl .allday-k { width: calc(var(--gx)); }
