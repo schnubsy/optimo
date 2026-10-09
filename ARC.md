@@ -69,6 +69,7 @@ Implementation: header capsule on a spine stub + palette button (category/colour
 Done: migration applied (list_migrations shows `optimo_007_task_tz`; `tz` column present; max(version) unchanged); Dexie upgrade keeps 5k seeded tasks; sync round-trips `tz` between two contexts; editing an existing task opens ③ pre-filled; a task set to `Europe/London 9:00` shows `3:00 AM` in `America/Chicago` with the globe; axe clean; evidence `arc6-slice-7-details.png` + `arc6-db007-apply.md`.
 
 === SLICE 8 — AI subtasks ===
+Status: done 745668b (plan-day v7 deployed, ezbr aab12198…)
 Scope: the sparkle button generates subtasks through `plan-day`.
 Files: supabase/functions/plan-day/index.ts + _shared (new `mode: 'subtasks'`), src/plan/api.ts, src/editor/StepDetails.tsx, tests/planfn.spec.ts, wizard.spec.ts, docs/spec.md §3.
 Implementation: `subtasks` mode: title + notes + duration → 3–7 subtasks via one strict tool (`submit_subtasks`, `tool_choice: auto`, Haiku), no web search, counts against the 30/day limit, intent never logged; client: sparkle → spinner in the button → proposed rows appear ticked-off-able with `Keep all` / `Discard`; offline / not connected → the existing not-connected copy. Deploy `plan-day` inside the order via the connector with ezbr ship proof (before/after hash recorded).
