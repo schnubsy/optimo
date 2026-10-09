@@ -34,7 +34,7 @@
   #67–#79, #57, #59–#65, #39–#54 carried.
 
 ## Exact next steps
-1. `Cowork: run verify` on the merged build.
+1. ~~`Cowork: run verify` on the merged build~~ — DONE 2026-10-09, verified green (`docs/evidence/verify-2026-10-09.md`, uncommitted — Code commits it next session). Garrick's call on the [sheet≠image] snags: the image wins.
 2. Mark: the on-device checks below. Anything failing → a `snag` Issue.
 3. Mark decides the [sheet≠image] snags (#81, #82, #83, #85, #87, #91, #95, #108): type scale, 72 px row minimum,
    panel margin, mini-chip fill. Then a snag train.

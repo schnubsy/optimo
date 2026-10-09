@@ -3,6 +3,14 @@ import { defineConfig, devices } from '@playwright/test';
 // Gauntlet starts `vite preview` on 4173 itself; when run standalone, webServer below does.
 const PORT = Number(process.env.PORT ?? 4173);
 
+// Cloud mode (arc 7): a cloud session has no WebKit and an older Chromium than this Playwright pins, and cannot download
+// browsers. When PW_CHROMIUM is set (scripts/gauntlet.sh sets it automatically when it finds /opt/pw-browsers), both
+// projects run on that Chromium; the iPhone project keeps the iPhone 15 viewport, touch and DPR but on Chromium, not
+// WebKit. Real-Safari checks then stay on Mark's phone (HANDOFF names them).
+const CLOUD_CHROMIUM = process.env.PW_CHROMIUM;
+const cloud = (use: Record<string, unknown>) =>
+  CLOUD_CHROMIUM ? { ...use, browserName: 'chromium' as const, launchOptions: { executablePath: CLOUD_CHROMIUM } } : use;
+
 export default defineConfig({
   testDir: './tests',
   testMatch: '*.spec.ts',
@@ -21,8 +29,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-    { name: 'iphone-15', use: { ...devices['iPhone 15'] } },
+    { name: 'desktop', use: cloud({ ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } }) },
+    { name: 'iphone-15', use: cloud({ ...devices['iPhone 15'] }) },
   ],
   webServer: process.env.GAUNTLET
     ? undefined

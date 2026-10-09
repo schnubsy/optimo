@@ -24,6 +24,11 @@ npx playwright test         # smoke: desktop + iPhone 15 + axe
 scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → docs/evidence/
 ```
 
+- **Cloud is the primary home (arc 7).** A session clones `schnubsy/optimo`, branches `arc/*`, runs the gauntlet in
+  cloud mode (auto: Chromium only, iPhone = Chromium emulation, deno via npm), opens a PR, merges → Pages deploys. GitHub
+  holds everything; the Mac only `git pull`s. No `MAIN CHECKOUT` / inbox-sync step when the session is cloud-only.
+  Real-Safari checks (safe areas, standalone PWA, backdrop-filter) stay on Mark's iPhone list in HANDOFF.
+
 ## Current stage
 
 Merge state: Merged: PR #111 9b8a3f1 on 2026-10-09; main checkout on main @ 9b8a3f1
