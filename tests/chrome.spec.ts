@@ -219,7 +219,7 @@ test.describe('arc 6 header', () => {
     expect(await year.evaluate((e) => getComputedStyle(e).color)).toBe(await accent(page))
     expect(await title.locator('.hdr-md').evaluate((e) => getComputedStyle(e).color)).toBe(await resolved(page, 'color', '--ink'))
     await expect(page.locator('.hdr-stats')).toHaveCount(0)
-    for (const id of ['stat-planned', 'stat-free', 'stat-done', 'stat-unplaced']) await expect(page.getByTestId(id)).toHaveCount(0)
+    for (const id of ['stat-planned', 'stat-free', 'stat-done', 'stat-unplaced']) await expect(page.getByTestId('header').getByTestId(id)).toHaveCount(0) // the inbox rail owns "in inbox" now (slice 5)
   })
 
   test.describe('iPhone strip', () => {
