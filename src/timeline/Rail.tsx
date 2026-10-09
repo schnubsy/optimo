@@ -19,11 +19,15 @@ export const Rail = memo(function Rail({ map, labels, clock24 }: { map: SegmentM
         if (b <= a) return null
         return <i key={`${s.kind}:${s.from}`} className={`spine ${s.compressed ? 'dashed' : ''}`} style={{ top: a, height: b - a }} data-testid={s.compressed ? 'spine-dashed' : 'spine'} />
       })}
-      {labels.map((l) => (
-        <b key={`${l.min}:${Math.round(l.y)}`} className="gutter tnum" style={{ top: l.y }} data-testid="hour-label" data-min={l.min}>
-          {fmtGutter(l.min, clock24)}
-        </b>
-      ))}
+      {labels.map((l) => {
+        const text = fmtGutter(l.min, clock24)
+        // five characters ("10:00", "22:30") are wider than the gutter: a tighter cut, never clipped at the panel edge
+        return (
+          <b key={`${l.min}:${Math.round(l.y)}`} className={`gutter tnum ${text.length > 4 ? 'wide' : ''}`} style={{ top: l.y }} data-testid="hour-label" data-min={l.min}>
+            {text}
+          </b>
+        )
+      })}
     </div>
   )
 })

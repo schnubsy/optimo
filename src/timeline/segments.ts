@@ -178,28 +178,35 @@ export interface RailLabel {
   y: number
 }
 
+/** Rail labels closer than this are crowded: the less important one is dropped (arc 7 slice 2). */
+export const RAIL_MIN_GAP = 28
+
 /**
- * Gutter labels (mockups 01 / 08): every row start (at the disc centre for short rows, at the top for capsules), every
- * capsule end, the compressed-gap ticks, then whole hours inside capsules and half hours inside proportional gaps —
- * each kept only when ≥ `minGap` px from every label already placed.
+ * Gutter labels (mockups 01 / 08), most important first: the bookends, every row start (at the disc centre for short
+ * rows, at the top for capsules), every capsule end, the compressed-gap ticks, then whole hours inside capsules and
+ * half hours inside proportional gaps. A label is kept only when no label for the same minute is placed (no "4:00"
+ * twice) and it is ≥ RAIL_MIN_GAP px from every placed label (the hour / half-hour fill keeps `minGap`). Within one
+ * importance class the higher label wins.
  */
-export function railLabels(map: SegmentMap, rows: { start: number; end: number; capsule: boolean; centreY?: number }[], minGap = 40): RailLabel[] {
-  const out: RailLabel[] = []
-  const free = (y: number) => out.every((l) => Math.abs(l.y - y) >= minGap)
-  const add = (min: number, y: number, force = false) => {
-    if (force || free(y)) out.push({ min, y })
-  }
-  for (const r of rows) add(r.start, r.capsule ? map.minToY(r.start) : (r.centreY ?? map.minToY((r.start + r.end) / 2)), true)
-  for (const r of rows) if (r.capsule) add(r.end, map.minToY(r.end))
-  for (const s of map.segments) for (const t of s.ticks) add(t, map.minToY(t), true) // the dashed run always shows its two ticks
+export function railLabels(map: SegmentMap, rows: { start: number; end: number; capsule: boolean; centreY?: number; anchor?: boolean }[], minGap = 40): RailLabel[] {
+  const cands: { min: number; y: number; pri: number; gap: number }[] = []
+  for (const r of rows) cands.push({ min: r.start, y: r.capsule ? map.minToY(r.start) : (r.centreY ?? map.minToY((r.start + r.end) / 2)), pri: r.anchor ? 0 : 1, gap: RAIL_MIN_GAP })
+  for (const r of rows) if (r.capsule) cands.push({ min: r.end, y: map.minToY(r.end), pri: 2, gap: RAIL_MIN_GAP })
+  for (const s of map.segments) for (const t of s.ticks) cands.push({ min: t, y: map.minToY(t), pri: 3, gap: RAIL_MIN_GAP })
   for (const s of map.segments) {
     if (s.compressed || s.kind === 'edge' || s.kind === 'anchor') continue
     const step = s.kind === 'gap' ? 30 : 60
     const caps = s.kind === 'node' ? rows.filter((r) => r.capsule && r.start >= s.from && r.end <= s.to) : []
     for (let t = Math.ceil((s.from + 1) / step) * step; t < s.to; t += step) {
       if (s.kind === 'node' && !caps.some((r) => t > r.start && t < r.end)) continue
-      add(t, map.minToY(t))
+      cands.push({ min: t, y: map.minToY(t), pri: 4, gap: minGap })
     }
+  }
+  cands.sort((a, b) => a.pri - b.pri || a.y - b.y || a.min - b.min)
+  const out: RailLabel[] = []
+  for (const c of cands) {
+    if (out.some((l) => l.min === c.min || Math.abs(l.y - c.y) < c.gap)) continue
+    out.push({ min: c.min, y: c.y })
   }
   return out.sort((a, b) => a.y - b.y)
 }
