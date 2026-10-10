@@ -31,7 +31,7 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-Merge state: PR pending (branch arc/inbox-first)
+Merge state: Merged: PR #112 ce67e23 on 2026-10-09; main checkout on main @ ce67e23 (cloud session; the Mac pulls)
 **Arc 7 — Inbox-first (2026-10-09), all 10 slices done, built from the cloud.** Capture is one line (FAB / N / command
 line) → Inbox untimed, no estimate; the inbox processes items to Today · a day · Someday + estimates; each day has a
 "To place" tray (drag onto the timeline, Place, Fit with AI); desktop Week is readable again (titles, lanes, planned ·

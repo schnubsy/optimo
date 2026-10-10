@@ -1,10 +1,11 @@
 # HANDOFF — optimo
 
 ## Current state
-- Merge state: PR pending (branch arc/inbox-first)
+- Merge state: Merged: PR #112 ce67e23 on 2026-10-09; main checkout on main @ ce67e23 (cloud session; the Mac pulls)
 - Arc 7 — **Inbox-first**: 10 slices done, built entirely in a cloud session (cloud is now the primary home; the Mac
   only pulls). Gauntlet in cloud mode: unit 528 🟢, Lighthouse 100/100 · 97/100 🟢, Playwright reds are cloud-only
   (`docs/evidence/arc7-gauntlet-summary.md`). Independent QA re-walk: no P0, no blocking P1.
+- Live: Pages `<meta name="build">` = `ce67e23` (= merge SHA, checked 2026-10-09).
 - Supabase: `db/008_inbox_first.sql` applied (`optimo_008_inbox_first`, 20261009225222 —
   `docs/evidence/arc7-db008-apply.md`). No Edge redeploy this arc (plan-day still v7, ezbr `aab12198…`).
 
@@ -25,7 +26,7 @@
 ## Open / blockers (close-out manifest)
 - **migrations: DONE** — db/008 applied by this session via the connector (proof above). No destructive SQL.
 - **Edge deploys: N/A** — none changed.
-- **push · PR · merge · Pages ship proof:** run straight after this commit; outcomes in the close report.
+- **push · PR · merge · Pages ship proof: DONE** — PR #112 merged as ce67e23; live build meta = ce67e23.
 - **press publish-check:** not run in the cloud (no sibling `press` checkout); `dist/optimo.html` is unchanged this arc.
 - **Mac checkout:** still holds the pre-arc uncommitted HANDOFF line + verify note (both now in git) and 4 old agent
   worktrees (arc 6, fully cherry-picked, SAFE) — tidy step under Mark's manual steps.
