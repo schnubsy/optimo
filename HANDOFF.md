@@ -36,8 +36,9 @@
 
 ## Exact next steps
 1. Mark: real-iPhone checks below; anything failing → a `snag` Issue or tell the next session.
-2. Mark: UI/UX tweaks on the inbox-first flow (the reason for this arc) — start a cloud session from the Optimo project
-   with "kick off" and list the tweaks.
+2. **Next arc — timeline & week polish:** "kick off" builds it from `docs/backlog/2026-10-10-mark-feedback.md` (F1 Day
+   proportional time scale · F2 Week hours fill the height · F3 now-line + elapsed shading back · F4 ←/→ keys step by
+   week/month) plus the polish list in Open / blockers. Mark adds any further UI tweaks at that kickoff.
 3. Then **arc 5b — people** ("kick off — arc 5b"). Cloud sessions need no `MAIN CHECKOUT:` line.
 
 ## Mark's manual steps
