@@ -31,13 +31,14 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-Merge state: Merged: PR #112 ce67e23 on 2026-10-09; main checkout on main @ ce67e23 (cloud session; the Mac pulls)
-**Arc 7 — Inbox-first (2026-10-09), all 10 slices done, built from the cloud.** Capture is one line (FAB / N / command
-line) → Inbox untimed, no estimate; the inbox processes items to Today · a day · Someday + estimates; each day has a
-"To place" tray (drag onto the timeline, Place, Fit with AI); desktop Week is readable again (titles, lanes, planned ·
-free, now-line, trays). `db/008_inbox_first.sql` applied (plan_date / someday / estimated; place is derived). QA bug
-sweep: every baseline P0/P1 fixed except #51, #70, week at 1024, nested-lane squeeze. **Next:** Mark's real-iPhone
-checks + UI tweaks (HANDOFF), then arc 5b (people). Snags #81–#110, #67–#79, #39–#65 open.
+Merge state: Merged: PR #112 ce67e23 on 2026-10-09; main checkout on main @ 304025f (wave-0 close-out: docs-only on main, PR N/A)
+**Arc 7 — Inbox-first (2026-10-09) shipped from the cloud; wave-0 close-out (2026-10-10) done on the Mac.** Capture is
+one line → Inbox; the inbox processes to Today · a day · Someday + estimates; each day has a "To place" tray; desktop
+Week is readable again. `db/008_inbox_first.sql` applied. Wave 0: the Mac checkout fast-forwarded to origin (+23), the
+verify evidence + Garrick's [sheet≠image] call landed, all arc-6 agent worktrees and `slice-*` branches swept; Mac
+gauntlet GREEN on arc 7 code (Lighthouse 100/100 · 96/100). No `Home:` line yet — the migrate instrument adds
+`Home: github:schnubsy/optimo` in B1. **Next:** Mark's real-iPhone checks, then the timeline & week polish arc, then
+arc 5b (people). Snags #81–#110, #67–#79, #39–#65 open.
 
 ## Project rules
 

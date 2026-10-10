@@ -1,54 +1,51 @@
 # HANDOFF — optimo
 
 ## Current state
-- Merge state: Merged: PR #112 ce67e23 on 2026-10-09; main checkout on main @ ce67e23 (cloud session; the Mac pulls)
-- Arc 7 — **Inbox-first**: 10 slices done, built entirely in a cloud session (cloud is now the primary home; the Mac
-  only pulls). Gauntlet in cloud mode: unit 528 🟢, Lighthouse 100/100 · 97/100 🟢, Playwright reds are cloud-only
-  (`docs/evidence/arc7-gauntlet-summary.md`). Independent QA re-walk: no P0, no blocking P1.
-- Live: Pages `<meta name="build">` = `ce67e23` (= merge SHA, checked 2026-10-09).
-- Supabase: `db/008_inbox_first.sql` applied (`optimo_008_inbox_first`, 20261009225222 —
-  `docs/evidence/arc7-db008-apply.md`). No Edge redeploy this arc (plan-day still v7, ezbr `aab12198…`).
+- Merge state: Merged: PR #112 ce67e23 on 2026-10-09; main checkout on main @ 304025f (wave-0 close-out: docs-only on main, PR N/A)
+- Arc 7 — **Inbox-first** shipped from the cloud (cloud is the primary home). Live: Pages `<meta name="build">` =
+  `ce67e23` (= merge SHA, checked 2026-10-09). Supabase: `db/008_inbox_first.sql` applied; plan-day still v7
+  (ezbr `aab12198…`).
+- **Wave-0 close-out (2026-10-10, Mac):** the Mac checkout is current with origin and clean; no agent worktrees or
+  `slice-*` / `worktree-agent-*` branches left. Mac gauntlet GREEN on the arc 7 code — unit, build, press launcher +
+  publish-checks, edge (deno), secret gates, Playwright + axe (desktop + iPhone 15), Lighthouse 100/100 · 96/100
+  (log `docs/evidence/gauntlet-gauntlet-20261010-152529.log`, git-ignored). Sentry: 0 hits.
 
-## Shipped this arc
-1. Cloud mode: Playwright on the cloud's Chromium (`PW_CHROMIUM`), Lighthouse via `CHROME_PATH`, deno via npm — dc9016a.
-2. Day timeline: text + ring beside their own node in overlaps, rail labels clean, events tappable, iPhone grabber /
-   all-day / peek — 3a854f6, 70e9ddc.
-3. Chrome: 1024 header, wizard action always visible + desktop dialog, settings fit, no header on AI/Settings,
-   week/month stepping, TZ search, Escape scoped — fed75fb.
-4. Drops at the pointer, edge-dwell auto-scroll, live drag time — 7dcd392.
-5. Readable week: titles, lanes, planned · free, now-line, all-day + events, week "To place" trays — d9bd7d5.
-6. iPhone Inbox badge; ③ place control (Inbox · Today · Tomorrow · Pick day · Someday · Timeline) — 8364a21.
-7. Data: plan_date / someday / estimated, Dexie v5, derived place, pre-008 degrade — f4a6427, 9feb9a5.
-8. One-line capture (FAB / N / command line) + inbox processing + Someday section — b381a34.
-9. Day "To place" tray: drag, Place, Pick a time, tomorrow / inbox / someday, Fit with AI — a4e08e9.
-10. QA fixes (tray contrast, placed-toast date/clock, no past default time) + evidence — 01fc94d.
+## Shipped this arc (wave-0 close-out)
+1. S1 — stranded files landed: the verify evidence was already on origin byte-identical (dc9016a) → local copy dropped,
+   main fast-forwarded f153010 → f959467; arc 6 verify line + Garrick's [sheet≠image] call re-applied to HANDOFF;
+   `.claude/settings.local.json` + `.claude/worktrees/` gitignored — 304025f.
+2. S2 — worktree sweep: 4 arc-6 agent worktrees removed (no --force), 4 `worktree-agent-*` branches deleted by
+   project-drift, `slice-2-header` / `-4-panel` / `-5-tabbar` / `-6-wizard` deleted (SAFE: cherry / subject / range-diff
+   — 4/5/6 differed only in sibling-slice merge context).
 
 ## Open / blockers (close-out manifest)
-- **migrations: DONE** — db/008 applied by this session via the connector (proof above). No destructive SQL.
-- **Edge deploys: N/A** — none changed.
-- **push · PR · merge · Pages ship proof: DONE** — PR #112 merged as ce67e23; live build meta = ce67e23.
-- **press publish-check:** not run in the cloud (no sibling `press` checkout); `dist/optimo.html` is unchanged this arc.
-- **Mac checkout:** an old local copy, unused now (cloud is primary); a future Mac session refreshes it itself.
-- **Known, not fixed:** #51 AI tab nests the timeline scroller · #70 tab bar see-through (needs a real-Safari look) ·
+- **push: DONE** · **PR / merge / reconcile / stage stamp: N/A** — docs-only commits straight on main (arc.md rule 4).
+- **migrations / Edge deploys / Pages deploy: N/A** — no app code, SQL or function changed (Pages `paths-ignore` docs).
+- **press publish-check: DONE** — the Mac gauntlet's launcher build + publish-checks are green (closes arc 7's cloud gap).
+- **Inbox cleanup: N/A** — not a worktree; ARC.md was committed in 304025f and is truncated by this close.
+- **Worktree sweep: DONE** — `git worktree list` = main only.
+- **Local branch kept:** `arc/snag-train-2026-10` — fully merged (no `+` vs main), outside this order's pattern; any
+  later sweep may `git branch -d` it.
+- **No `Home:` line** on CLAUDE.md Current stage — the migrate instrument adds `Home: github:schnubsy/optimo` (B1).
+- **Arc 6 verify:** DONE 2026-10-09, green (`docs/evidence/verify-2026-10-09.md`). Garrick's call on the
+  [sheet≠image] snags (#81, #82, #83, #85, #87, #91, #95, #108): the image wins.
+- **Known, not fixed (arc 7):** #51 AI tab nests the timeline scroller · #70 tab bar see-through (real-Safari look) ·
   Week at 1024 wide is icon-only (columns < 110 px) · nested-lane titles squeezed to ~91 px · #47 "1:30" durations ·
   tray chips one per row on iPhone · watch: a stray empty wizard seen once after drag → Escape → Week.
 - **Snags:** #81–#110 (arc 6 P1), #67–#79, #57, #59–#65, #39–#54 carried.
-- **Arc 6 verify:** DONE 2026-10-09, green (`docs/evidence/verify-2026-10-09.md`). Garrick's call on the
-  [sheet≠image] snags (#81, #82, #83, #85, #87, #91, #95, #108): the image wins.
 
 ## Exact next steps
-1. Mark: real-iPhone checks below; anything failing → a `snag` Issue or tell the next session.
-2. **Next arc — timeline & week polish:** "kick off" builds it from `docs/backlog/2026-10-10-mark-feedback.md` (F1 Day
+1. **B1 — migrate:** add the `Home: github:schnubsy/optimo` line (the migrate instrument).
+2. Mark: real-iPhone checks below; anything failing → a `snag` Issue or tell the next session.
+3. **Next arc — timeline & week polish:** "kick off" builds it from `docs/backlog/2026-10-10-mark-feedback.md` (F1 Day
    proportional time scale · F2 Week hours fill the height · F3 now-line + elapsed shading back · F4 ←/→ keys step by
-   week/month) plus the polish list in Open / blockers. Mark adds any further UI tweaks at that kickoff.
-3. Then **arc 5b — people** ("kick off — arc 5b"). Cloud sessions need no `MAIN CHECKOUT:` line.
+   week/month) plus the known-not-fixed list above. Mark adds any further UI tweaks at that kickoff.
+4. Then **arc 5b — people** ("kick off — arc 5b"), dispatched to the cloud home (`HOME:` + `BRANCH:` header).
 
 ## Mark's manual steps
-1. **Real-iPhone checks (installed PWA, after the Pages deploy):**
+1. **Real-iPhone checks (installed PWA):**
    - FAB → type `Call plumber` → Enter → it's in Inbox (badge +1), the field stays open.
    - FAB → `Movie night at 8pm for 1.5h` → chip shows the time → Enter → 8:00–9:30 PM on the timeline.
    - Inbox → tap a row → Today → it appears in Timeline's "To place" tray; drag it onto a time.
    - Overlapping tasks: tap each ring — the task beside it completes, nothing else.
    - Tab bar: is text behind it readable? (#70) · notch/home-indicator spacing on Timeline, wizard, capture sheet.
-2. **Mac folder: nothing to do.** `~/Documents/code/optimo` is an old local copy; the cloud and the live site don't use
-   it. Only if a future session works on the Mac does it need refreshing — that session does it itself.
