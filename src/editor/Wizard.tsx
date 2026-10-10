@@ -399,7 +399,11 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               onChange={patch}
               onEditWhen={draft.inbox && !edit ? undefined : () => setStep(2)}
               onTimeline={() => {
-                patch({ inbox: false, all_day: false, someday: false, plan_date: null, date: draft.plan_date ?? draft.date })
+                // arc 7 QA: an unscheduled task coming onto today starts at the next quarter hour, never in the past
+                const day = draft.plan_date ?? draft.date
+                const soon = Math.min(23 * 60 + 45, Math.ceil((nowMinutes() + 1) / 15) * 15)
+                const start = day === todayKey() && draft.start < nowMinutes() ? soon : draft.start
+                patch({ inbox: false, all_day: false, someday: false, plan_date: null, date: day, start })
                 setStep(2)
               }}
               ai={{
