@@ -31,12 +31,13 @@ scripts/gauntlet.sh         # unit + Playwright + axe + Lighthouse budgets → d
 
 ## Current stage
 
-Merge state: Merged: PR #111 9b8a3f1 on 2026-10-09; main checkout on main @ 9b8a3f1
-**Arc 6 — UI/UX round (2026-10-09), all 9 slices green.** The 2026-10-09 mockups shipped: spine timeline (one segment
-map `src/timeline/segments.ts` for every minute↔pixel), bookends Up / Lights out, compressed gaps, header + strip,
-4-tab bar + 58 px FAB, two-detent panel over the week overview, create wizard ①②③ (= the edit screen; TaskSheet
-gone), per-task time zone (`db/007_task_tz.sql` applied), AI subtasks (plan-day v7, ezbr `aab12198…`). Eye LITE: 0 P0;
-P1 → snag #81–#110. **Next:** Mark's on-device checks (HANDOFF), then arc 5b (people). Snags #81–#110, #67–#79, #39–#65 open.
+Merge state: PR pending (branch arc/inbox-first)
+**Arc 7 — Inbox-first (2026-10-09), all 10 slices done, built from the cloud.** Capture is one line (FAB / N / command
+line) → Inbox untimed, no estimate; the inbox processes items to Today · a day · Someday + estimates; each day has a
+"To place" tray (drag onto the timeline, Place, Fit with AI); desktop Week is readable again (titles, lanes, planned ·
+free, now-line, trays). `db/008_inbox_first.sql` applied (plan_date / someday / estimated; place is derived). QA bug
+sweep: every baseline P0/P1 fixed except #51, #70, week at 1024, nested-lane squeeze. **Next:** Mark's real-iPhone
+checks + UI tweaks (HANDOFF), then arc 5b (people). Snags #81–#110, #67–#79, #39–#65 open.
 
 ## Project rules
 
