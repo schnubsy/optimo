@@ -27,12 +27,18 @@ const RADIUS = 28
 /** Presses here keep their own behaviour (chips drag tasks, rings complete, text opens the editor). */
 const OWN = 'button:not([data-grabber]), a, input, select, textarea, [role="slider"], .node-chip, .ring, .node-handle'
 
-/** The peek shows the day's first row: its top, less a little air, in the timeline's scroll coordinates. */
+/**
+ * The peek shows the day's first row: its top, less a little air, in the timeline's scroll coordinates. The all-day
+ * strip sits above `.tl-inner` (so `inner.offsetTop` already counts it); if it is still sticky it would cover the top
+ * of the peek, so the row is scrolled below it (panel.css makes it static in the peek, which leaves this at 0).
+ */
 function firstRowTop(tl: HTMLElement): number {
   const inner = tl.querySelector<HTMLElement>('.tl-inner')
   let top = Infinity
-  tl.querySelectorAll<HTMLElement>('.node').forEach((n) => (top = Math.min(top, n.offsetTop)))
-  return Number.isFinite(top) ? Math.max(0, top + (inner?.offsetTop ?? 0) - 18) : 0
+  tl.querySelectorAll<HTMLElement>('.tl-inner > .node').forEach((n) => (top = Math.min(top, n.offsetTop)))
+  const strip = tl.querySelector<HTMLElement>('.allday')
+  const sticky = strip && getComputedStyle(strip).position === 'sticky' ? strip.offsetHeight : 0
+  return Number.isFinite(top) ? Math.max(0, top + (inner?.offsetTop ?? 0) - 18 - sticky) : 0
 }
 
 /**

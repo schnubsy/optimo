@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { taskKind, withTaskDefaults } from './place'
 import type { AiPlan, AiProfile, CalendarEvent, Category, Exception, MetaRow, OutboxRow, Settings, Task } from './types'
 
 export class OptimoDB extends Dexie {
@@ -30,6 +31,20 @@ export class OptimoDB extends Dexie {
     // arc 6 (db/007): tasks gain an optional `tz` — not indexed, so the schema is unchanged; the bump records the shape
     // and leaves every existing row as it is (no upgrade function: absent tz = the viewer's zone)
     this.version(4).stores({})
+    // arc 7 (db/008): tasks gain plan_date / someday / estimated and two derived kinds ('planned', 'someday').
+    // [_kind+plan_date] serves the "to place" trays (a day, a week, overdue roll-forward). The upgrade fills the
+    // column defaults on every existing row — without field_ts, so any synced value outranks them — and re-derives _kind.
+    this.version(5)
+      .stores({ tasks: 'id, start_at, category_id, series_id, _kind, [_kind+sort_key], [_kind+start_at], [_kind+plan_date]' })
+      .upgrade((tx) =>
+        tx
+          .table('tasks')
+          .toCollection()
+          .modify((t: Record<string, unknown>) => {
+            Object.assign(t, withTaskDefaults(t))
+            t._kind = taskKind(t as never)
+          }),
+      )
   }
 }
 

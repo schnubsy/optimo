@@ -13,7 +13,10 @@
 .tl.spine-tl .rail { position: absolute; inset: 0; pointer-events: none; }
 .tl.spine-tl .spine { position: absolute; left: calc(var(--sx) - var(--spine-w) / 2); width: var(--spine-w); background: var(--spine); }
 .tl.spine-tl .spine.dashed { background: repeating-linear-gradient(to bottom, var(--spine) 0 10px, transparent 10px 18px); }
-.tl.spine-tl .gutter { position: absolute; right: calc(100% - var(--gx)); transform: translateY(-50%); font: var(--fw-semibold) var(--fs-14) / 1 var(--font-ui); letter-spacing: -0.02em; color: var(--ink-3); white-space: nowrap; }
+/* the gutter box starts inside the panel (arc 7: "l0:00" was clipped at the left edge); text sits right-aligned on the
+   gutter edge, and a wide label overflows toward the chip column, never past the panel's left */
+.tl.spine-tl .gutter { position: absolute; left: 1px; width: calc(var(--gx) - 1px); text-align: right; transform: translateY(-50%); font: var(--fw-semibold) var(--fs-14) / 1 var(--font-ui); letter-spacing: -0.02em; color: var(--ink-3); white-space: nowrap; }
+.tl.spine-tl .gutter.wide { width: calc(var(--gx) + 4px); font-size: 13px; letter-spacing: -0.04em; }
 
 /* rows: anchor / task / event — chip on the spine, text column, ring at the right */
 .node { position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none; } /* full-width rows must not shield a neighbour's chip */
@@ -27,15 +30,31 @@
 .node.sel .node-chip { box-shadow: 0 0 0 2px var(--ink-3); }
 .node.run .node-chip { box-shadow: 0 0 0 2px var(--accent); }
 .node.grab { z-index: 20; }
+/* arc 7 slice 4: the dragged row's text is an opaque card (its live time on top), never mixed with the row under it */
+.node.grab .node-text { background: var(--panel); outline: 6px solid var(--panel); border-radius: 6px; }
 .node.grab .node-chip { cursor: grabbing; box-shadow: var(--shadow-drag); scale: var(--scale-lift); will-change: transform; }
-.node-text { all: unset; box-sizing: border-box; position: absolute; left: calc(var(--tx) + var(--text-cols, var(--col, 0)) * 64px); right: calc(var(--rx) + 24px); top: 50%; translate: 0 -50%;
-  display: flex; flex-direction: column; gap: 2px; min-width: 0; cursor: pointer; }
-.node-text.stacked { top: var(--text-top); translate: 0 -50%; }
-.node-meta { display: flex; align-items: center; gap: 6px; font: var(--type-meta); color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+/* arc 7 slice 2: text + ring sit on the row's label line (--label-y from labels.ts: beside the row's own chip), the
+   text column starts past the chips that meet that line (--text-cols) and takes the rest of the row */
+.node-text { all: unset; box-sizing: border-box; position: absolute; left: calc(var(--tx) + var(--text-cols, var(--col, 0)) * 64px); right: calc(var(--rx) + 24px); top: var(--label-y, 50%); translate: 0 -50%;
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; cursor: pointer; container-type: inline-size;
+  pointer-events: auto; } /* `all: unset` made it inherit the row's `none`: titles were not tappable */
+/* the time line wraps whole pieces onto a hidden second line: the duration drops out instead of being cut mid-word */
+.node-meta { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; height: 1lh; font: var(--type-meta); color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+.node-meta .m-start { display: none; }
+@container (max-width: 150px) {
+  .node-meta .m-range:has(+ .m-dur), .node-meta .m-dur { display: none; }
+  .node-meta .m-start { display: inline; }
+}
+/* a label pushed off its chip: an elbow from the chip's edge to the label line, behind the chips */
+.node-lead { position: absolute; z-index: -1; pointer-events: none; left: calc(var(--sx) + var(--col, 0) * 64px - 1px);
+  width: calc(var(--tx) - var(--sx) + (var(--text-cols, var(--col, 0)) - var(--col, 0)) * 64px - 8px);
+  border: 0 solid var(--ink-3); border-left-width: 2px; }
+.node-lead.down { border-bottom-width: 2px; border-bottom-left-radius: 10px; }
+.node-lead.up { border-top-width: 2px; border-top-left-radius: 10px; }
 .node-late { color: var(--danger-ink); font-weight: var(--fw-bold); }
 .node-title { font: var(--type-row-title); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: var(--ls-display); }
 .node-title.untitled { font-style: italic; font-weight: var(--fw-semibold); }
-.ring { position: absolute; right: calc(var(--rx) - var(--ring) / 2); top: 50%; translate: 0 -50%; width: var(--ring); height: var(--ring); padding: 0;
+.ring { position: absolute; right: calc(var(--rx) - var(--ring) / 2); top: var(--label-y, 50%); translate: 0 -50%; width: var(--ring); height: var(--ring); padding: 0;
   border: 2px solid var(--cat-glyph); border-radius: 50%; background: none; color: var(--ink-on-accent); display: grid; place-items: center; }
 .ring::before { content: ''; position: absolute; inset: -11px; }
 .ring:focus-visible { box-shadow: var(--focus-ring); outline: none; }
@@ -47,9 +66,9 @@
 .node-handle::after { content: ''; width: 24px; height: 4px; border-radius: 2px; background: var(--ink-3); }
 .node-handle b { position: absolute; left: calc(100% + 8px); padding: 2px 10px; border-radius: var(--r-pill); background: var(--ink); color: var(--canvas); font-size: var(--fs-12); font-weight: var(--fw-bold); white-space: nowrap; }
 /* calendar events: an outlined disc in the calendar colour, no ring, never draggable */
-.evt.node .evt-chip { cursor: pointer; background: none; color: var(--evt-color, var(--ink-3)); box-shadow: inset 0 0 0 2px var(--evt-color, var(--ink-3)); }
+.evt.node .evt-disc { cursor: pointer; background: var(--panel); color: var(--evt-color, var(--ink-3)); box-shadow: inset 0 0 0 2px var(--evt-color, var(--ink-3)); }
 .evt.node.open { z-index: 25; }
-.evt.node .evt-pop { position: absolute; left: var(--tx); top: calc(50% + 32px); z-index: 30; }
+.evt.node .evt-pop { position: absolute; left: calc(var(--tx) + var(--text-cols, 0) * 64px); top: calc(var(--label-y, 50%) + 32px); z-index: 30; }
 
 /* free gaps: the box takes no pointer events (painting runs beneath); its sentence and pill do */
 .gap { position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none; }
@@ -70,12 +89,22 @@
 /* drop / paint ghosts and the keyboard slot share the chip-to-edge band; their time sits in the gutter */
 .tl.spine-tl .ghost, .tl.spine-tl .paint, .tl.spine-tl .tl-slot { left: calc(var(--sx) - var(--node-size) / 2); right: 16px; }
 .tl.spine-tl .ghost { border-radius: calc(var(--node-size) / 2); }
-.tl.spine-tl .ghost i, .tl.spine-tl .tl-slot-time { left: auto; right: calc(100% + (var(--sx) - var(--node-size) / 2 - var(--gx))); width: auto; background: var(--panel); }
+/* arc 7 slice 4: the drop ghost's live start–end is a pill inside the ghost, right of the chip column — never on an
+   hour label in the gutter */
+.tl.spine-tl .ghost i { left: calc(var(--node-size) + 10px); right: auto; top: 6px; width: auto; height: 22px; padding: 0 var(--sp-2); display: inline-flex; align-items: center;
+  border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent-on-tint); white-space: nowrap; }
+.tl.spine-tl .tl-slot-time { left: auto; right: calc(100% + (var(--sx) - var(--node-size) / 2 - var(--gx))); width: auto; background: var(--panel); }
 .tl.spine-tl .paint-fill { height: 100px; border-radius: 12px; }
 .tl.spine-tl .allday { padding-left: var(--tx); background: var(--panel); }
 .tl.spine-tl .allday-k { width: calc(var(--gx)); }
+/* all-day chips keep their 32 px look with a ≥ 44 px hit area */
+.tl.spine-tl .allday-t { position: relative; }
+.tl.spine-tl .allday-t::before { content: ''; position: absolute; inset: -6px -2px; }
 
 /* the panel: on iPhone the day lives in PanelSheet (src/chrome/panel.css, slice 4); desktop = a rounded card */
 .is-mobile .tl.spine-tl { padding: 0; scroll-padding-top: 0; }
-.is-mobile .tl.spine-tl .allday { top: 0; }
+/* iPhone: the strip starts under the panel grabber's 44 px band (src/chrome/panel.css) so the first chip is tappable;
+   chips there extend their hit area downward only (the band above belongs to the grabber) */
+.is-mobile .tl.spine-tl .allday { top: 0; padding-top: 44px; padding-bottom: 12px; }
+.is-mobile .tl.spine-tl .allday-t::before { inset: 0 -2px -12px; }
 .is-desktop .day { margin: 0 var(--sp-4) var(--sp-4) 0; border-radius: var(--panel-radius); background: var(--panel); overflow: hidden; }

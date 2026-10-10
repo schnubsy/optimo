@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../data/db'
@@ -20,13 +20,17 @@ import { TimezonePicker } from './TimezonePicker'
 import { StepTitle } from './StepTitle'
 import { StepWhen } from './StepWhen'
 import { buildSuggestions, SUGGESTION_WINDOW_DAYS, type Suggestion } from './suggestions'
-import { fmtMeta, type WizardDraft, type WizardStep } from './wizardModel'
+import { draftToInput, fmtMeta, type WizardDraft, type WizardStep } from './wizardModel'
 import './wizard.css'
+
+/** Titles longer than this many characters set a step smaller in the header field (arc 7 slice 3). */
+const LONG_TITLE = 14
 
 /** The prefill (gap / paint / N / parsed command line) → the wizard's working draft. */
 export function initialDraft(w: WizardState, uiDate: string, settings: SettingsData): WizardDraft {
   const p: Partial<Draft> = w.draft
-  const { title, category_id, start_at, duration_min, all_day, rrule, priority, dtstart: _dtstart, notes, subtasks, reminders, tz, ...extra } = p
+  const { title, category_id, start_at, duration_min, all_day, rrule, priority, dtstart: _dtstart, notes, subtasks, reminders, tz, plan_date, someday, estimated: _est, ...extra } = p
+  void _est
   void _dtstart
   let date = uiDate
   let start = date === todayKey() ? Math.min(23 * 60 + 45, Math.ceil(nowMinutes() / 15) * 15) : 9 * 60
@@ -42,6 +46,8 @@ export function initialDraft(w: WizardState, uiDate: string, settings: SettingsD
     duration: duration_min ?? settings.default_duration,
     all_day: !!all_day,
     inbox: w.mode === 'inbox',
+    plan_date: plan_date ?? null,
+    someday: !!someday,
     rrule: rrule ?? null,
     priority: priority ?? 0,
     notes: notes ?? '',
@@ -60,11 +66,13 @@ export function draftFromTask(task: Task, occ: string | null, uiDate: string, se
   return {
     title: shown.title,
     category_id: shown.category_id,
-    date: at?.date ?? uiDate,
+    date: at?.date ?? shown.plan_date ?? uiDate,
     start: at ? (shown.all_day ? 9 * 60 : at.minutes) : 9 * 60,
     duration: shown.duration_min || settings.default_duration,
     all_day: !!shown.all_day,
     inbox: !shown.start_at,
+    plan_date: shown.start_at ? null : (shown.plan_date ?? null),
+    someday: !shown.start_at && !!shown.someday,
     rrule: task.rrule,
     priority: shown.priority,
     notes: shown.notes ?? '',
@@ -117,8 +125,20 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   const set = useUI((s) => s.set)
   const notify = useUI((s) => s.notify)
   const uiDate = useUI((s) => s.date)
-  const [draft, setDraft] = useState<WizardDraft>(() => (edit ? draftFromTask(edit.task, edit.occ, uiDate, settings) : initialDraft(wizard, uiDate, settings)))
-  const [step, setStep] = useState<WizardStep>(edit ? 3 : 1)
+  // arc 7 slice 9: "Pick a time" on a tray chip opens the edit screen on ② (consumed once): the task is drafted onto
+  // its day's timeline so ② shows the wheel
+  const [startStep] = useState<WizardStep>(() => (edit ? (useUI.getState().editStep ?? 3) : 1))
+  useEffect(() => {
+    if (useUI.getState().editStep !== null) useUI.getState().set({ editStep: null })
+  }, [])
+  const [draft, setDraft] = useState<WizardDraft>(() => {
+    if (!edit) return initialDraft(wizard, uiDate, settings)
+    const d = draftFromTask(edit.task, edit.occ, uiDate, settings)
+    if (startStep !== 2 || !d.inbox) return d
+    const start = d.date === todayKey() ? Math.min(23 * 60 + 45, Math.ceil(nowMinutes() / 15) * 15) : d.start
+    return { ...d, inbox: false, all_day: false, plan_date: null, someday: false, start }
+  })
+  const [step, setStep] = useState<WizardStep>(startStep)
   const [panel, setPanel] = useState<'tz' | 'palette' | null>(null)
   const [scope, setScope] = useState<Scope>('this')
   // slice 8: AI subtasks (the sparkle on ③)
@@ -134,7 +154,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }
   const [text, setText] = useState(draft.title)
   const [confirm, setConfirm] = useState(false)
-  const titleRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   useKeyboardInset(sheetRef)
@@ -178,7 +198,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }, [step])
 
   const dirty = !edit && (step === 1 ? text : draft.title).trim().length > 0
-  const close = () => (edit ? set({ editingId: null }) : set({ wizard: null }))
+  const close = () => (edit ? set({ editingId: null, editStep: null }) : set({ wizard: null }))
   const requestClose = () => (dirty ? setConfirm(true) : close())
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -217,7 +237,9 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }
   function pick(s: Suggestion) {
     setText(s.title)
-    patch({ title: s.title, category_id: catOf(s)?.id ?? draft.category_id, start: s.start, duration: s.duration, all_day: false })
+    // arc 7 slice 3: an inbox-mode pick carries no time — only title, category and length (it stays unscheduled)
+    if (draft.inbox) patch({ title: s.title, category_id: catOf(s)?.id ?? draft.category_id, duration: s.duration })
+    else patch({ title: s.title, category_id: catOf(s)?.id ?? draft.category_id, start: s.start, duration: s.duration, all_day: false })
     setStep(draft.inbox ? 3 : 2)
   }
   async function create(input: Parameters<typeof repo.createTask>[0] & { start_at: string | null }) {
@@ -247,7 +269,15 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
   }
   const occurrence = edit?.occ ? { seriesId: edit.task.id, date: edit.occ } : undefined
 
-  const onTitleKey = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+  const titleShown = step === 1 ? text : draft.title
+  // the title field grows with its text (rows of its own line height), capped by CSS max-height
+  useLayoutEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [titleShown, step])
+  const onTitleKey = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (step === 1) continueFromTitle()
@@ -277,7 +307,7 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
         <h1 id="wiz-h" className="sr-only">
           {edit ? `Edit ${draft.title || 'task'}` : `New task, step ${step} of 3: ${stepName}`}
         </h1>
-        <header className={`wiz-hd ${step === 3 ? 'wiz-hd-3' : ''} ${cat ? `cat-${cat.color}` : 'cat-accent'}`}>
+        <div className={`wiz-hd ${step === 3 ? 'wiz-hd-3' : ''} ${cat ? `cat-${cat.color}` : 'cat-accent'}`}>
           <button type="button" className="wiz-x" aria-label="Close" onClick={requestClose} data-testid="wizard-close">
             <Icon name="ui-close" size={22} />
           </button>
@@ -306,12 +336,19 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               <label htmlFor="wiz-title" className="sr-only">
                 Title
               </label>
-              <input
+              {/* arc 7 slice 3: a one-line field that wraps (2 lines on ①②, 3 on ③) and steps down a size for long
+                  titles — "Write the migration plan" reads whole instead of "Write the migratior" */}
+              <textarea
                 id="wiz-title"
                 ref={titleRef}
-                className="wiz-title"
-                value={step === 1 ? text : draft.title}
-                onChange={(e) => (step === 1 ? setText(e.target.value) : patch({ title: e.target.value }))}
+                className={`wiz-title ${titleShown.length > LONG_TITLE ? 'long' : ''}`}
+                rows={1}
+                value={titleShown}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[\r\n]+/g, ' ')
+                  if (step === 1) setText(v)
+                  else patch({ title: v })
+                }}
                 onKeyDown={onTitleKey}
                 placeholder="What’s next?"
                 autoComplete="off"
@@ -337,19 +374,18 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
                 <span className="wiz-ring" aria-hidden="true" />
               ))}
           </div>
-        </header>
+        </div>
 
         <div ref={bodyRef} className="wiz-scroll" tabIndex={-1}>
-          {step === 1 && <StepTitle parsed={parsed} parsedCat={parsedCat} suggestions={suggestions} settings={settings} catOf={catOf} onPick={pick} />}
+          {step === 1 && <StepTitle parsed={parsed} parsedCat={parsedCat} suggestions={suggestions} settings={settings} catOf={catOf} onPick={pick} untimed={draft.inbox} />}
           {step === 2 && (
             <StepWhen
               draft={draft}
               settings={settings}
               presets={durationPresets(settings)}
               onChange={patch}
-              onContinue={() => setStep(3)}
               onInbox={() => {
-                patch({ inbox: true })
+                patch({ inbox: true, plan_date: null, someday: false })
                 setStep(3)
               }}
               onTimezone={timezone}
@@ -361,8 +397,15 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
               settings={settings}
               cats={cats}
               onChange={patch}
-              onCreate={create}
               onEditWhen={draft.inbox && !edit ? undefined : () => setStep(2)}
+              onTimeline={() => {
+                // arc 7 QA: an unscheduled task coming onto today starts at the next quarter hour, never in the past
+                const day = draft.plan_date ?? draft.date
+                const soon = Math.min(23 * 60 + 45, Math.ceil((nowMinutes() + 1) / 15) * 15)
+                const start = day === todayKey() && draft.start < nowMinutes() ? soon : draft.start
+                patch({ inbox: false, all_day: false, someday: false, plan_date: null, date: day, start })
+                setStep(2)
+              }}
               ai={{
                 ...ai,
                 onSuggest: () => void suggest(),
@@ -387,13 +430,25 @@ export function WizardSheet({ wizard, settings, cats, edit }: WizardSheetProps) 
           )}
         </div>
 
-        {step === 1 && (
-          <div className="wiz-foot wiz-float">
+        {/* arc 7 slice 3: the primary action is docked under the scroller on every step — always on screen, above the
+            home indicator (safe area) and the on-screen keyboard; Delete and the rest of ③ scroll above it */}
+        <div className="wiz-foot wiz-dock">
+          {step === 1 && (
             <button type="button" className="wiz-cta" onClick={continueFromTitle} disabled={!(parsed?.title ?? '').trim()} data-testid="wizard-continue">
               Continue
             </button>
-          </div>
-        )}
+          )}
+          {step === 2 && (
+            <button type="button" className="wiz-cta" onClick={() => setStep(3)} data-testid="wizard-continue">
+              Continue
+            </button>
+          )}
+          {step === 3 && (
+            <button type="button" className="wiz-cta" onClick={() => void create(draftToInput(draft, settings))} disabled={!draft.title.trim()} data-testid={edit ? 'wizard-save' : 'wizard-create'}>
+              {edit ? 'Save' : 'Create Task'}
+            </button>
+          )}
+        </div>
 
         {panel === 'tz' && <TimezonePicker value={draft.tz} onPick={(tz) => patch({ tz: tz && tz !== deviceZone() ? tz : null, all_day: false })} onClose={() => setPanel(null)} />}
         {panel === 'palette' && (

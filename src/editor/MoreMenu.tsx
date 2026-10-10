@@ -1,5 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
 import { Icon } from '../icons/Icon'
+import { useEscapeClose } from './Sheet'
 
 export interface MoreItem {
   id: string
@@ -15,17 +16,14 @@ export interface MoreItem {
  */
 export function MoreMenu({ label, groups, onClose, testid }: { label: string; groups: MoreItem[][]; onClose: () => void; testid?: string }) {
   const ref = useRef<HTMLDivElement>(null)
+  useEscapeClose(onClose)
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
   }, [])
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     const items = [...(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
     const i = items.indexOf(document.activeElement as HTMLElement)
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      e.stopPropagation()
-      onClose()
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus()
     } else if (e.key === 'Tab') onClose()

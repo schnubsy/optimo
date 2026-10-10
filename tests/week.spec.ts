@@ -59,8 +59,10 @@ test.describe('week, month, focus, settings', () => {
     const lunch = (await page.locator(`[data-testid="week-block"][data-id="${s!.ids.lunch}"]`).boundingBox())!
     const plan = (await page.locator(`[data-testid="week-block"][data-id="${s!.ids.plan}"]`).boundingBox())!
     expect(Math.abs(plan.y - lunch.y - 36)).toBeLessThanOrEqual(1)
-    // 40 px discs (mockup 10, Eye P0-4); the 90 min plan is a 40-wide capsule 54 px tall (0.6 px/min)
-    expect(Math.abs(lunch.width - 40)).toBeLessThanOrEqual(1)
+    // arc 7 slice 5: a ≥ 110 px column shows readable cards (title + start time) instead of the 40 px discs; the 90 min
+    // plan is still 54 px tall (0.6 px/min)
+    expect(lunch.width).toBeGreaterThan(80)
+    await expect(page.locator(`[data-testid="week-block"][data-id="${s!.ids.lunch}"]`)).toContainText('Lunch with Sam')
     expect(Math.abs(plan.height - 54)).toBeLessThanOrEqual(1)
     // the map is registered for the drop maths and agrees with the layout
     const col = page.locator(`[data-testid="week-col"][data-day="${todayKey()}"]`)

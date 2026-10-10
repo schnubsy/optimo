@@ -64,6 +64,8 @@
 .plan-ghost.off { border-style: dotted; background: transparent; color: var(--ink-2); border-color: var(--ink-2); }
 
 .is-mobile .plan { display: block; height: auto; overflow-y: auto; padding: calc(var(--header-h-mobile) + env(safe-area-inset-top)) var(--sp-4) var(--scroll-pad-bottom); }
+/* arc 7 slice 3: the AI tab has no date header on iPhone — the page starts under the safe area */
+.is-mobile .pane.no-hdr > .plan { padding-top: calc(16px + env(safe-area-inset-top)); }
 .is-mobile .plan-side { overflow: visible; min-height: auto; padding-bottom: var(--sp-4); }
 .is-mobile .plan-day { height: 70vh; min-height: 420px; }
 /* the board's timeline pads for the fixed header and the bar; inside the Plan page the page itself does */

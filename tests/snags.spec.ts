@@ -133,6 +133,13 @@ test.describe('snags #1–#12', () => {
   test('#11 month arrows sit together after the title', async ({ page, context }) => {
     await openApp(page, context)
     await setView(page, 'month')
+    // arc 7 slice 3: desktop keeps one set of arrows — the pane header's ‹ ›, which step by month in Month; the month
+    // body's own pair is iPhone-only (no pane header there)
+    if (await page.locator('.pane-hdr').isVisible()) {
+      await expect(page.getByRole('button', { name: 'Previous month' })).toHaveCount(1)
+      await expect(page.locator('.pane-hdr').getByRole('button', { name: 'Next month' })).toBeVisible()
+      return
+    }
     const h = (await page.locator('#month-h').boundingBox())!
     const prev = (await page.getByRole('button', { name: 'Previous month' }).boundingBox())!
     const next = (await page.getByRole('button', { name: 'Next month' }).boundingBox())!

@@ -91,16 +91,30 @@ export async function openApp(page: Page, context: BrowserContext, opts: { seed?
 export const row = (page: Page, id: string) => page.evaluate((i) => (window as any).__optimo.db.tasks.get(i), id)
 
 /**
- * The plain-words field: the desktop header command line, or on iPhone the create wizard's title field (the FAB opens
- * the wizard since arc 6 slice 6; its title keeps the parser).
+ * The plain-words field: the desktop header command line, or on iPhone the create wizard's title field. arc 7 slice 8:
+ * the FAB opens the one-line capture sheet; its "Details…" link opens the full wizard (whose title keeps the parser).
  */
 export async function quickAdd(page: Page) {
   const field = page.getByTestId('quickadd')
   if (await field.isVisible()) return field
   const title = page.getByTestId('wizard-title')
-  if (!(await title.isVisible())) await page.getByTestId('fab').click()
+  if (!(await title.isVisible())) await openCreateWizard(page)
   await expect(title).toBeVisible()
   return title
+}
+
+/** The full create wizard at ① (timeline mode): iPhone FAB → capture → Details…; desktop N → command line → Details…. */
+export async function openCreateWizard(page: Page) {
+  const fab = page.getByTestId('fab')
+  if (await fab.isVisible()) {
+    await fab.click()
+    await page.getByTestId('capture-details').click()
+  } else {
+    await page.keyboard.press('n')
+    await expect(page.getByTestId('quickadd')).toBeFocused()
+    await page.getByTestId('quickadd-details').click()
+  }
+  await expect(page.getByTestId('wizard')).toHaveAttribute('data-step', '1')
 }
 
 /** Walk an open wizard from its current step to Create (① Continue → ② Continue → ③ Create Task). */

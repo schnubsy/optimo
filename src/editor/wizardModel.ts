@@ -1,7 +1,7 @@
 // The create wizard's working draft + its display formats (shared by Wizard, the steps and the wheels).
 import type { TaskInput } from '../data/repo'
 import type { Priority, SettingsData, Subtask } from '../data/types'
-import { fmtClock, isoAtZone, MIN_PER_DAY } from '../lib/time'
+import { dateKey, fmtClock, formatDayTitle, fromKey, isoAtZone, MIN_PER_DAY } from '../lib/time'
 
 export type WizardStep = 1 | 2 | 3
 
@@ -15,6 +15,9 @@ export interface WizardDraft {
   all_day: boolean
   /** true = unscheduled (Add to Inbox / the inbox pill): no time rows, start_at null */
   inbox: boolean
+  /** arc 7 slice 6 — where an unscheduled task waits: a day ("to place", YYYY-MM-DD) or Someday; both unset = Inbox */
+  plan_date: string | null
+  someday: boolean
   rrule: string | null
   priority: Priority
   /** ③ details (slice 7) */
@@ -50,9 +53,20 @@ export function fmtRange(start: number, duration: number, clock24: boolean): str
   return am === bm && sameDay ? `${at}–${b}` : `${a}–${b}`
 }
 
-/** The header meta line: `8:00–9:30 PM (1 hr, 30 min)` · `All day` · `Inbox · 30 min` */
-export function fmtMeta(d: Pick<WizardDraft, 'start' | 'duration' | 'all_day' | 'inbox'>, clock24: boolean): string {
-  if (d.inbox) return `Inbox · ${durLong(d.duration)}`
+/** Where an unscheduled draft waits: `Inbox` · `Someday` · `Today` · `Tomorrow` · `Thu 15 Oct`. */
+export function placeName(d: Pick<WizardDraft, 'plan_date' | 'someday'>, today: string): string {
+  if (d.someday) return 'Someday'
+  if (!d.plan_date) return 'Inbox'
+  if (d.plan_date === today) return 'Today'
+  const t = fromKey(today)
+  t.setDate(t.getDate() + 1)
+  if (dateKey(t) === d.plan_date) return 'Tomorrow'
+  return formatDayTitle(fromKey(d.plan_date)).slice(0, -5)
+}
+
+/** The header meta line: `8:00–9:30 PM (1 hr, 30 min)` · `All day` · `Inbox · 30 min` · `Today · 30 min` */
+export function fmtMeta(d: Pick<WizardDraft, 'start' | 'duration' | 'all_day' | 'inbox'> & Partial<Pick<WizardDraft, 'plan_date' | 'someday'>>, clock24: boolean, today = dateKey(new Date())): string {
+  if (d.inbox) return `${placeName({ plan_date: d.plan_date ?? null, someday: !!d.someday }, today)} · ${durLong(d.duration)}`
   if (d.all_day) return 'All day'
   return `${fmtRange(d.start, d.duration, clock24)} (${durLong(d.duration)})`
 }
@@ -89,6 +103,9 @@ export function draftToInput(d: WizardDraft, settings: Pick<SettingsData, 'remin
     start_at,
     duration_min: Math.max(0, Math.round(d.duration)),
     all_day: !!start_at && d.all_day,
+    // arc 7: an unscheduled draft keeps its place (a day or Someday); a timed one clears both (repo settlePlace)
+    plan_date: start_at ? null : d.plan_date,
+    someday: start_at ? false : d.someday,
     sort_key: Date.now(),
     ...(d.rrule && start_at ? { rrule: d.rrule, dtstart: start_at } : {}),
   }

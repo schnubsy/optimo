@@ -41,6 +41,12 @@ interface UI {
   /** legacy: the FAB quick-add sheet is gone (slice 6) — Planner opens the wizard when this is set and clears it */
   quickAdd: boolean
   wizard: Wizard | null // arc 6 create flow (src/editor/Wizard.tsx)
+  /** arc 7 slice 8: the iPhone one-line capture sheet (FAB) is open */
+  capture: boolean
+  /** arc 7 slice 9: the edit screen opens on this step once (2 = "Pick time" from a tray chip); consumed on open */
+  editStep: 2 | 3 | null
+  /** arc 7 slice 9: "Fit with AI" — the AI tab's intent field takes this once (src/plan/Plan.tsx) */
+  planIntent: string | null
   openWizard: (mode: WizardMode, draft?: Partial<Draft>) => void
   toast: Toast | null
   set: (p: Partial<Omit<UI, 'set' | 'notify' | 'openWizard'>>) => void
@@ -60,7 +66,10 @@ export const useUI = create<UI>((set) => ({
   mobileTab: 'board',
   quickAdd: false,
   wizard: null,
-  openWizard: (mode, draft = {}) => set({ wizard: { mode, draft }, draft: null, quickAdd: false, selectedId: null, editingId: null }),
+  capture: false,
+  editStep: null,
+  planIntent: null,
+  openWizard: (mode, draft = {}) => set({ wizard: { mode, draft }, draft: null, quickAdd: false, capture: false, selectedId: null, editingId: null }),
   toast: null,
   set: (p) => set(p),
   notify: (t) => set({ toast: { ...t, id: ++toastId } }),

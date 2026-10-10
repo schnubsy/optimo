@@ -14,7 +14,10 @@ export function StepTitle({
   settings,
   catOf,
   onPick,
+  untimed,
 }: {
+  /** inbox mode (arc 7 slice 3): suggestions offer a title + length only — no time, nothing that would schedule */
+  untimed?: boolean
   parsed: Parsed | null
   parsedCat: Category | null
   suggestions: Suggestion[]
@@ -49,11 +52,11 @@ export function StepTitle({
               const cat = catOf(s)
               return (
                 <li key={s.title}>
-                  <button type="button" className={`sugg ${cat ? `cat-${cat.color}` : 'cat-accent'}`} onClick={() => onPick(s)} data-testid="suggestion" data-title={s.title}>
+                  <button type="button" className={`sugg ${cat ? `cat-${cat.color}` : 'cat-accent'}`} onClick={() => onPick(s)} data-testid="suggestion" data-title={s.title} data-timed={untimed ? 'false' : 'true'}>
                     <Icon name={taskIcon(s.title, cat?.icon, settings.iconOverrides)} size={24} className="sugg-glyph" />
                     <span className="sugg-text">
                       <span className="sugg-meta tnum">
-                        {fmtRange(s.start, s.duration, settings.clock24)} ({durLong(s.duration)})
+                        {untimed ? `Inbox · ${durLong(s.duration)}` : `${fmtRange(s.start, s.duration, settings.clock24)} (${durLong(s.duration)})`}
                       </span>
                       <span className="sugg-title">{s.title}</span>
                     </span>

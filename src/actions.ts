@@ -7,7 +7,7 @@ import type { TaskInput } from './data/repo'
 import type { Task } from './data/types'
 import { getSettings } from './data/repo'
 import { useUI } from './state/ui'
-import { fmtDur, fromKey, isoAt, minutesInDay } from './lib/time'
+import { fmtClock, fmtDur, fromKey, isoAt, minutesInDay } from './lib/time'
 import { pushDown, type Span } from './timeline/layout'
 import type { Item } from './timeline/items'
 import { editOccurrence } from './recurrence/exceptions'
@@ -72,13 +72,15 @@ export async function toggleComplete(item: Pick<Item, 'task' | 'occurrence'>) {
   // "adjust to actual": offered, never automatic (spec §2.3)
   const actual = t.start_at ? Math.round((now.getTime() - new Date(t.start_at).getTime()) / 60000) : null
   const undo = () => patchItem(item, { completed_at: null })
+  // arc 7 slice 3: the toast names the task, like the delete toast ("Done · Review pull request")
+  const done = `Done · ${t.title || 'Untitled'}`
   if (actual !== null && actual > 0 && Math.abs(actual - t.duration_min) >= 5 && actual < 16 * 60) {
     notify({
-      text: `Done — ran ${fmtDur(actual)} vs ${fmtDur(t.duration_min)} planned`,
+      text: `${done} — ran ${fmtDur(actual)} vs ${fmtDur(t.duration_min)} planned`,
       action: { label: 'Adjust to actual', run: () => patchItem({ ...item, task: { ...t, completed_at: now.toISOString() } }, { duration_min: actual }) },
       undo,
     })
-  } else notify({ text: 'Done', undo })
+  } else notify({ text: done, undo })
 }
 
 export async function deleteItem(item: Pick<Item, 'task' | 'occurrence'>) {
@@ -102,7 +104,11 @@ export async function unschedule(task: Task) {
 export async function schedule(task: Task, day: string, startMin: number) {
   const before = await snapshot(task.id)
   await repo.updateTask(task.id, { start_at: isoAt(day, startMin), all_day: false })
-  if (before) notify({ text: `Placed at ${fromKey(day).toDateString() === new Date().toDateString() ? '' : day + ' '}${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`, undo: () => repo.restoreTask(before).then(() => undefined) })
+  // arc 7 QA: the toast speaks the app's clock setting and a weekday, never a raw ISO date
+  const clock24 = (await getSettings()).clock24
+  const d = fromKey(day)
+  const when = d.toDateString() === new Date().toDateString() ? '' : `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} `
+  if (before) notify({ text: `Placed at ${when}${fmtClock(startMin, clock24)}`, undo: () => repo.restoreTask(before).then(() => undefined) })
 }
 
 /** Paint a block (arc 5a slice 4): an untitled task over exactly the painted span, selected so one tap edits it. */

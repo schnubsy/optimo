@@ -1,26 +1,25 @@
-import { useState } from 'react'
-import type { TaskInput } from '../data/repo'
+import { useRef, useState } from 'react'
 import { newId } from '../data/ids'
 import type { Category, SettingsData } from '../data/types'
 import { Icon } from '../icons/Icon'
 import { deviceZone, zoneCity } from '../lib/time'
 import type { Scope } from '../recurrence/exceptions'
 import { repeatLabel, repeatToRule, ruleToRepeat } from '../recurrence/rules'
-import { fromKey } from '../lib/time'
+import { addDays, fromKey, shortDay, todayKey } from '../lib/time'
 import { AlertSheet, alertSummary } from './AlertSheet'
 import { RepeatSheet } from './RepeatSheet'
 import { fmtLongDate, relDay } from './StepWhen'
-import { draftToInput, durLong, fmtRange, type WizardDraft } from './wizardModel'
+import { durLong, fmtRange, type WizardDraft } from './wizardModel'
 
 export interface StepDetailsProps {
   draft: WizardDraft
   settings: SettingsData
   cats: Category[]
   onChange: (patch: Partial<WizardDraft>) => void
-  /** Create (new) or Save (edit) with the finished input */
-  onCreate: (input: TaskInput & { start_at: string | null }) => void | Promise<void>
   /** back to ② (date / time rows) — absent in inbox mode */
   onEditWhen?: () => void
+  /** arc 7 slice 6: the place control's Timeline — schedule it (the wizard drafts it onto the timeline and opens ②) */
+  onTimeline?: () => void
   /** edit mode (the screen that replaced TaskSheet) */
   edit?: {
     /** one occurrence of a series: the rule is fixed; scope picks which occurrences a save changes */
@@ -36,9 +35,70 @@ export interface StepDetailsProps {
 
 /**
  * ③ Details — also the edit screen (mockups 06): the rows card (date · time → ② · alerts), Repeat, the subtasks card with
- * the AI sparkle, notes, Create Task / Save; in edit mode Delete under the notes (Complete sits on the header ring).
+ * the AI sparkle, notes; in edit mode Delete under the notes (Complete sits on the header ring). Create Task / Save is
+ * the wizard's docked footer (arc 7 slice 3), so it never scrolls out of view.
  */
-export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, edit, ai }: StepDetailsProps) {
+export type PlaceId = 'inbox' | 'today' | 'tomorrow' | 'day' | 'someday' | 'timeline'
+
+/** The draft's place, as the ③ control shows it. */
+export function draftPlace(d: Pick<WizardDraft, 'inbox' | 'plan_date' | 'someday'>, today: string): PlaceId {
+  if (!d.inbox) return 'timeline'
+  if (d.someday) return 'someday'
+  if (!d.plan_date) return 'inbox'
+  return d.plan_date === today ? 'today' : d.plan_date === addDays(today, 1) ? 'tomorrow' : 'day'
+}
+
+/**
+ * arc 7 slice 6 — ③'s one-tap place control (replaces the inert "Inbox" row): Inbox · Today · Tomorrow · Pick day ·
+ * Someday · Timeline. The first five keep the task untimed (start_at null) and set its day / Someday; Timeline drafts it
+ * onto the timeline and opens ② to pick the time. The current place reads pressed.
+ */
+function PlaceControl({ draft, onChange, onTimeline }: { draft: WizardDraft; onChange: (p: Partial<WizardDraft>) => void; onTimeline?: () => void }) {
+  const today = todayKey()
+  const place = draftPlace(draft, today)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const untimed = (plan_date: string | null, someday = false) => onChange({ inbox: true, all_day: false, plan_date, someday })
+  function openPicker() {
+    const el = dateRef.current
+    if (!el) return
+    try {
+      el.showPicker()
+    } catch {
+      el.focus()
+    }
+  }
+  const chip = (id: PlaceId, label: string, run: () => void) => (
+    <button type="button" className="det-place-chip" aria-pressed={place === id} onClick={run} data-testid={`place-${id}`}>
+      {label}
+    </button>
+  )
+  return (
+    <div className="det-place" role="group" aria-label="Where it goes" data-testid="details-place" data-place={place}>
+      {chip('inbox', 'Inbox', () => untimed(null))}
+      {chip('today', 'Today', () => untimed(today))}
+      {chip('tomorrow', 'Tomorrow', () => untimed(addDays(today, 1)))}
+      <span className="det-place-pick">
+        <button type="button" className="det-place-chip" aria-pressed={place === 'day'} onClick={openPicker} data-testid="place-day">
+          {place === 'day' && draft.plan_date ? shortDay(fromKey(draft.plan_date)) : 'Pick day'}
+        </button>
+        <input
+          ref={dateRef}
+          type="date"
+          className="det-place-date"
+          tabIndex={-1}
+          aria-hidden="true"
+          value={draft.plan_date ?? ''}
+          onChange={(e) => e.target.value && untimed(e.target.value)}
+          data-testid="place-date"
+        />
+      </span>
+      {chip('someday', 'Someday', () => untimed(null, true))}
+      {chip('timeline', 'Timeline', () => onTimeline?.())}
+    </div>
+  )
+}
+
+export function StepDetails({ draft, settings, onChange, onEditWhen, onTimeline, edit, ai }: StepDetailsProps) {
   const [sheet, setSheet] = useState<'alerts' | 'repeat' | null>(null)
   const [dropped, setDropped] = useState<Set<number>>(new Set())
   const [newSub, setNewSub] = useState('')
@@ -55,6 +115,8 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
   }
   return (
     <div className="wiz-body wiz-step3">
+      {/* a series occurrence stays on the timeline — no place to move it to */}
+      {!edit?.occurrence && <PlaceControl draft={draft} onChange={onChange} onTimeline={onTimeline} />}
       {!draft.inbox ? (
         <div className="wiz-card wiz-rows det-rows">
           <button type="button" className="wiz-row" onClick={onEditWhen} disabled={!onEditWhen} data-testid="details-date" aria-label={`Date, ${fmtLongDate(draft.date)}${rel ? `, ${rel}` : ''}. Change`}>
@@ -65,7 +127,7 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
               <Icon name="ui-chevron-right" size={16} />
             </span>
           </button>
-          <button type="button" className="wiz-row" onClick={onEditWhen} disabled={!onEditWhen} data-testid="details-time">
+          <button type="button" className={`wiz-row ${zoned ? 'has-tz' : ''}`} onClick={onEditWhen} disabled={!onEditWhen} data-testid="details-time">
             <Icon name="ui-clock" size={24} className="wiz-row-glyph" />
             <span className="wiz-row-text tnum">
               {draft.all_day ? 'All day' : fmtRange(draft.start, draft.duration, settings.clock24)}
@@ -92,8 +154,8 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
       ) : (
         <div className="wiz-card wiz-row-card">
           <div className="wiz-row" data-testid="details-inbox">
-            <Icon name="ui-inbox" size={24} className="wiz-row-glyph" />
-            <span className="wiz-row-text">Inbox</span>
+            <Icon name={draft.someday ? 'ui-inbox' : draft.plan_date ? 'ui-calendar' : 'ui-inbox'} size={24} className="wiz-row-glyph" />
+            <span className="wiz-row-text">{draft.someday ? 'Someday' : draft.plan_date ? `${fmtLongDate(draft.plan_date)} · no time yet` : 'Inbox'}</span>
             <span className="wiz-row-end">{durLong(draft.duration)}</span>
           </div>
         </div>
@@ -204,12 +266,6 @@ export function StepDetails({ draft, settings, onChange, onCreate, onEditWhen, e
           )}
         </div>
       )}
-
-      <div className="wiz-foot">
-        <button type="button" className="wiz-cta" onClick={() => void onCreate(draftToInput(draft, settings))} disabled={!draft.title.trim()} data-testid={edit ? 'wizard-save' : 'wizard-create'}>
-          {edit ? 'Save' : 'Create Task'}
-        </button>
-      </div>
 
       {sheet === 'alerts' && <AlertSheet value={leads} onChange={(r) => onChange({ reminders: r })} onClose={() => setSheet(null)} />}
       {sheet === 'repeat' && (

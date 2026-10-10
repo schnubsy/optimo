@@ -13,6 +13,15 @@ BASE="/optimo/"
 URL="http://localhost:${PORT}${BASE}"
 status=0; summary=()
 
+# Cloud mode (arc 7): a cloud session (no Mac) has Chromium only under /opt/pw-browsers, no WebKit, and no deno on PATH.
+# Point Playwright + Lighthouse at that Chromium and fetch deno from npm. On the Mac none of this triggers.
+if [ -z "${PW_CHROMIUM:-}" ]; then
+  c=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome 2>/dev/null | sort -V | tail -1)
+  [ -n "$c" ] && export PW_CHROMIUM="$c"
+fi
+[ -n "${PW_CHROMIUM:-}" ] && export CHROME_PATH="${CHROME_PATH:-$PW_CHROMIUM}" && summary+=("ℹ️ cloud mode: Chromium only (iPhone = Chromium emulation; real Safari checks stay on the phone)")
+DENO=deno; command -v deno >/dev/null 2>&1 || DENO="npx -y deno@2"
+
 run() { # name, cmd...
   local name="$1"; shift
   echo "=== $name ===" >>"$LOG"
@@ -23,7 +32,7 @@ run "unit (vitest)"      npx vitest run --reporter=dot
 run "build (vite)"       npm run build --silent
 # the press launcher (dist/optimo.html) is built here, not in `npm run build` — Pages deploys dist/ and must not ship it
 run "build press launcher + publish-checks" bash -c "node build-press.mjs && node tools/publish-checks.mjs --check"
-run "edge functions (deno check + test)" bash -c 'cd supabase/functions && deno check calendar-connect/index.ts calendar-sync/index.ts push-send/index.ts plan-day/index.ts && deno test _shared/'
+run "edge functions (deno check + test)" env DENO="$DENO" bash -c 'cd supabase/functions && $DENO check calendar-connect/index.ts calendar-sync/index.ts push-send/index.ts plan-day/index.ts && $DENO test _shared/'
 # secret gate: the fixture app-specific password never lands in evidence or the build
 run "secret gate (no test password in docs/evidence, dist)" bash -c '! grep -rIlE "qvtz-?hmwk-?rpxa-?ndjc" docs/evidence dist --exclude-dir=playwright-report'
 # arc 3: no Anthropic key ever reaches the client, the evidence or the repo's tracked files (only the Edge secret holds it)

@@ -1,8 +1,9 @@
-// JSON export / import (docs/spec.md §2.7). Import merges with the same field-level LWW as sync and queues the
+// JSON export / import (docs/spec.md §2.7). Tasks carry every synced column (arc 7: plan_date, someday, estimated). Import merges with the same field-level LWW as sync and queues the
 // merged rows in the outbox, so an import on one device reaches the others.
 
 import { db } from './db'
 import { toPayload, taskKind } from './repo'
+import { withTaskDefaults } from './place'
 import { mergeRow } from '../sync/merge'
 import type { Category, Exception, OutboxRow, Settings, TableName, Task } from './types'
 
@@ -46,8 +47,11 @@ export async function importAll(file: ExportFile): Promise<number> {
       for (const incoming of rows ?? []) {
         const key = table === 'exceptions' ? [incoming.series_id, incoming.occurrence_date] : incoming.id
         const local = await tbl.get(key as never)
-        const merged = (local ? mergeRow(local, incoming) : incoming) as Record<string, unknown>
-        if (table === 'tasks') merged._kind = taskKind(merged as unknown as Task)
+        let merged = (local ? mergeRow(local, incoming) : incoming) as Record<string, unknown>
+        if (table === 'tasks') {
+          merged = withTaskDefaults(merged) // an export from before arc 7 has no plan_date / someday / estimated
+          merged._kind = taskKind(merged as unknown as Task)
+        }
         await tbl.put(merged)
         const payload = toPayload(merged)
         const id = table === 'exceptions' ? `${merged.series_id}|${merged.occurrence_date}` : String(merged.id)

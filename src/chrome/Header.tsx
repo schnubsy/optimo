@@ -4,7 +4,7 @@ import { useCategories, useSettings } from '../data/hooks'
 import { Icon } from '../icons/Icon'
 import { QuickAdd } from '../quickadd/QuickAdd'
 import { taskIcon } from '../quickadd/suggest'
-import { addDays, fmtClock, fromKey, todayKey, weekStart } from '../lib/time'
+import { addDays, dateKey, fmtClock, fromKey, todayKey, weekStart } from '../lib/time'
 import { useItems, type Item } from '../timeline/items'
 import { useUI, type View } from '../state/ui'
 import { SegmentedControl } from './SegmentedControl'
@@ -65,7 +65,7 @@ function MiniChips({ chips }: { chips: Chip[] }) {
 }
 
 /** Mobile header (arc 6, mockup 01): title row + 7-day strip with mini-chips, solid canvas, no border, 131px. */
-export function Header({ date, weekStartsOn, weekMode }: Props & { weekMode?: boolean }) {
+export function Header({ date, view, weekStartsOn, weekMode }: Props & { weekMode?: boolean }) {
   const set = useUI((s) => s.set)
   const settings = useSettings()
   const catList = useCategories()
@@ -102,7 +102,7 @@ export function Header({ date, weekStartsOn, weekMode }: Props & { weekMode?: bo
         {days.map((k) => {
           const x = fromKey(k)
           return (
-            <button key={k} type="button" className={`hdr-day ${k === date ? 'sel' : ''} ${k === today ? 'today' : ''}`} aria-pressed={k === date} aria-label={x.toDateString()} onClick={() => set({ date: k })} data-testid="strip-day" data-day={k}>
+            <button key={k} type="button" className={`hdr-day ${k === date ? 'sel' : ''} ${k === today ? 'today' : ''}`} aria-pressed={k === date} aria-label={x.toDateString()} onClick={() => set(view === 'month' ? { date: k, view: 'day' } : { date: k })} data-testid="strip-day" data-day={k}>
               <span className="wd">{WD[x.getDay()]}</span>
               <b className="tnum">{x.getDate()}</b>
               {!weekMode && <MiniChips chips={dayChips(items?.[k] ?? [], cats, settings.iconOverrides)} />}
@@ -118,7 +118,18 @@ export function Header({ date, weekStartsOn, weekMode }: Props & { weekMode?: bo
 export function PaneHeader({ date, view, now, clock24 }: Props) {
   const set = useUI((s) => s.set)
   const today = todayKey()
-  const seg = view === 'week' || view === 'month' ? view : 'day'
+  // #52: Plan / Settings / Categories / Icons sit outside Day · Week · Month — the pill shows no selection there
+  const seg = view === 'week' || view === 'month' || view === 'day' ? view : null
+  // arc 7 slice 3: ‹ › step by the unit the view shows — a day, a week (7 days) or a month (to its 1st)
+  const unit = view === 'week' ? 'week' : view === 'month' ? 'month' : 'day'
+  const step = (n: 1 | -1) => {
+    if (unit === 'week') return set({ date: addDays(date, 7 * n) })
+    if (unit === 'month') {
+      const d = fromKey(date)
+      return set({ date: dateKey(new Date(d.getFullYear(), d.getMonth() + n, 1)) })
+    }
+    set({ date: addDays(date, n) })
+  }
   return (
     <header className="pane-hdr" data-testid="header">
       <SegmentedControl
@@ -132,13 +143,13 @@ export function PaneHeader({ date, view, now, clock24 }: Props) {
         onChange={(v) => set({ view: v })}
       />
       <div className="pane-title">
-        <button type="button" className="nav" aria-label="Previous day" onClick={() => set({ date: addDays(date, -1) })}>
+        <button type="button" className="nav" aria-label={`Previous ${unit}`} onClick={() => step(-1)} data-testid="hdr-prev">
           <Icon name="ui-chevron-left" size={18} />
         </button>
         <h1 className="pane-h1" data-testid="hdr-title">
           <Title date={date} />
         </h1>
-        <button type="button" className="nav" aria-label="Next day" onClick={() => set({ date: addDays(date, 1) })}>
+        <button type="button" className="nav" aria-label={`Next ${unit}`} onClick={() => step(1)} data-testid="hdr-next">
           <Icon name="ui-chevron-right" size={18} />
         </button>
         {date !== today ? (
@@ -149,13 +160,13 @@ export function PaneHeader({ date, view, now, clock24 }: Props) {
           <span className="hdr-now tnum" aria-label={`Now ${fmtClock(now, clock24)}`}>{fmtClock(now, clock24)}</span>
         )}
       </div>
-      <div className="pane-qa">
-        <QuickAdd />
+      <div className="pane-qa" data-testid="pane-qa">
+        <QuickAdd fit />
       </div>
       <button type="button" className={`gear ${view === 'plan' ? 'on' : ''}`} aria-label="Plan" aria-pressed={view === 'plan'} onClick={() => set({ view: view === 'plan' ? 'day' : 'plan' })} data-testid="hdr-plan">
         <Icon name="ui-plan" size={20} filled={view === 'plan'} />
       </button>
-      <button type="button" className={`gear ${view === 'settings' ? 'on' : ''}`} aria-label="Settings" aria-pressed={view === 'settings'} onClick={() => set({ view: view === 'settings' ? 'day' : 'settings' })}>
+      <button type="button" className={`gear ${view === 'settings' ? 'on' : ''}`} aria-label="Settings" aria-pressed={view === 'settings'} onClick={() => set({ view: view === 'settings' ? 'day' : 'settings' })} data-testid="hdr-settings">
         <Icon name="ui-settings" size={20} filled={view === 'settings'} />
       </button>
       <SyncBadge />

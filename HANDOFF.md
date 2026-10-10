@@ -1,55 +1,54 @@
 # HANDOFF — optimo
 
 ## Current state
-- Merge state: Merged: PR #111 9b8a3f1 on 2026-10-09; main checkout on main @ 9b8a3f1
-- Arc 6 — **UI/UX round (spine timeline, panel sheet, 4-tab bar, task wizard)**: all 9 slices done, each with a GREEN
-  gauntlet (last: Lighthouse desktop 100/100, mobile 97/100); sentry (secrets scan of the whole arc diff) 0 hits.
-- Live before the merge: Pages `<meta name="build">` = `4f04493`.
-- Supabase: `db/007_task_tz.sql` applied (`optimo_007_task_tz`, 20261009181817, max(version) unchanged —
-  `docs/evidence/arc6-db007-apply.md`); plan-day **v7** live, ezbr `087d34a0…` → `aab12198…`
-  (`docs/evidence/arc6-slice-8-plan-day-deploy.md`).
+- Merge state: PR pending (branch arc/inbox-first)
+- Arc 7 — **Inbox-first**: 10 slices done, built entirely in a cloud session (cloud is now the primary home; the Mac
+  only pulls). Gauntlet in cloud mode: unit 528 🟢, Lighthouse 100/100 · 97/100 🟢, Playwright reds are cloud-only
+  (`docs/evidence/arc7-gauntlet-summary.md`). Independent QA re-walk: no P0, no blocking P1.
+- Supabase: `db/008_inbox_first.sql` applied (`optimo_008_inbox_first`, 20261009225222 —
+  `docs/evidence/arc7-db008-apply.md`). No Edge redeploy this arc (plan-day still v7, ezbr `aab12198…`).
 
 ## Shipped this arc
-1. Tokens from the measured mockups (#000 / #1C1C1E / #EC9792, light mirror, culori a11y layer), 10 new + 3 restyled
-   glyphs, originality rule rewritten (CLAUDE.md, lessons, spec §6) — 3ffe2d3.
-2. Header `October 9, 2026 ›`, 32 px accent disc, mini-chips, stats line removed — 2ae5a87.
-3. Spine timeline on one segment map (`src/timeline/segments.ts`): bookends (names in Settings → Day, per-day ring),
-   discs / capsules, compressed gaps with our copy + Add Task, ring completes, chip opens — ddaa8b4.
-4. Two-detent PanelSheet over the spine week overview; desktop Week = spine columns — bd87537.
-5. 4 tabs (Inbox · Timeline · AI · Settings), 58 px FAB, inbox empty state + node rows — a072b4c.
-6. Wizard ① title (parser) + suggestions, ② wheel / ••• menu / duration presets — 7870679.
-7. ③ details = the edit screen (TaskSheet removed), per-task time zone + picker, db/007, Dexie v4 — 66221a0.
-8. AI subtasks: plan-day `subtasks` (Haiku, strict tool, 30/day), sparkle → Keep all / Discard — 745668b.
-9. Eye LITE vs the ten mockups (`docs/evidence/arc6-eye-lite.md`): 8 P0 fixed (9b), 30 P1 → snags — 8f7d145.
+1. Cloud mode: Playwright on the cloud's Chromium (`PW_CHROMIUM`), Lighthouse via `CHROME_PATH`, deno via npm — dc9016a.
+2. Day timeline: text + ring beside their own node in overlaps, rail labels clean, events tappable, iPhone grabber /
+   all-day / peek — 3a854f6, 70e9ddc.
+3. Chrome: 1024 header, wizard action always visible + desktop dialog, settings fit, no header on AI/Settings,
+   week/month stepping, TZ search, Escape scoped — fed75fb.
+4. Drops at the pointer, edge-dwell auto-scroll, live drag time — 7dcd392.
+5. Readable week: titles, lanes, planned · free, now-line, all-day + events, week "To place" trays — d9bd7d5.
+6. iPhone Inbox badge; ③ place control (Inbox · Today · Tomorrow · Pick day · Someday · Timeline) — 8364a21.
+7. Data: plan_date / someday / estimated, Dexie v5, derived place, pre-008 degrade — f4a6427, 9feb9a5.
+8. One-line capture (FAB / N / command line) + inbox processing + Someday section — b381a34.
+9. Day "To place" tray: drag, Place, Pick a time, tomorrow / inbox / someday, Fit with AI — a4e08e9.
+10. QA fixes (tray contrast, placed-toast date/clock, no past default time) + evidence — 01fc94d.
 
-## Open / blockers (close-out manifest at branch time)
-- **migrations: DONE** — db/007 applied by Code via the connector (proof above). No destructive SQL this arc.
-- **deploy (Edge plan-day): DONE** — v7, ezbr `aab12198…`; the v7 module answers its own 401 to a non-user key.
-- **push · PR · merge · reconcile main · Pages ship proof · press publish check · inbox cleanup:** run by the arc-close
-  order straight after this commit; their outcomes are in the close report and checked by `Cowork: run verify`.
-- **Inbox cleanup: N/A** — the main checkout is not a worktree; ARC.md + the mockups were committed in 751b1b9.
-- **Worktrees:** four agent worktrees under `.claude/worktrees/` (slices 2, 4, 5, 6) are kept — the order
-  forbids removing worktrees inside it; their branches are fully cherry-picked (SAFE). The next worktree sweep owns them.
-- **Snags:** Eye arc 6 P1 #81–#110 (several tagged [sheet≠image] need Mark's call: sheet value or image value), plus
-  #67–#79, #57, #59–#65, #39–#54 carried.
+## Open / blockers (close-out manifest)
+- **migrations: DONE** — db/008 applied by this session via the connector (proof above). No destructive SQL.
+- **Edge deploys: N/A** — none changed.
+- **push · PR · merge · Pages ship proof:** run straight after this commit; outcomes in the close report.
+- **press publish-check:** not run in the cloud (no sibling `press` checkout); `dist/optimo.html` is unchanged this arc.
+- **Mac checkout:** still holds the pre-arc uncommitted HANDOFF line + verify note (both now in git) and 4 old agent
+  worktrees (arc 6, fully cherry-picked, SAFE) — tidy step under Mark's manual steps.
+- **Known, not fixed:** #51 AI tab nests the timeline scroller · #70 tab bar see-through (needs a real-Safari look) ·
+  Week at 1024 wide is icon-only (columns < 110 px) · nested-lane titles squeezed to ~91 px · #47 "1:30" durations ·
+  tray chips one per row on iPhone · watch: a stray empty wizard seen once after drag → Escape → Week.
+- **Snags:** #81–#110 (arc 6 P1), #67–#79, #57, #59–#65, #39–#54 carried.
 
 ## Exact next steps
-1. `Cowork: run verify` on the merged build.
-2. Mark: the on-device checks below. Anything failing → a `snag` Issue.
-3. Mark decides the [sheet≠image] snags (#81, #82, #83, #85, #87, #91, #95, #108): type scale, 72 px row minimum,
-   panel margin, mini-chip fill. Then a snag train.
-4. **Arc 5b — people** (kick off with "kick off — arc 5b"): people picker, per-person sync + the guarded
-   `planner_flags.family_access` flip, per-person iCloud, register plan-day in `press_agent_registry`. Any Claude Code
-   prompt carries `MAIN CHECKOUT: /Users/mark/Documents/code/optimo` + `INBOX FILES:` and pulls `main` before branching.
+1. Mark: real-iPhone checks below; anything failing → a `snag` Issue or tell the next session.
+2. Mark: UI/UX tweaks on the inbox-first flow (the reason for this arc) — start a cloud session from the Optimo project
+   with "kick off" and list the tweaks.
+3. Then **arc 5b — people** ("kick off — arc 5b"). Cloud sessions need no `MAIN CHECKOUT:` line.
 
 ## Mark's manual steps
-1. **On-device checks (iPhone, installed PWA)** — after `Cowork: run verify` is green:
-   - Tab bar + FAB sit ~22 px above the bottom edge (over the home indicator), not ~50 px (Eye P0-8).
-   - Timeline: drag the grabber down → week overview; tap a day column → that day, panel up; tap Timeline again → toggles.
-   - FAB → `Movie night at 8pm for 1.5h` → Continue → Continue → Create → a 90-min capsule at 8:00 PM.
-   - Tap a task's chip → ③ edit screen; ring on the header completes; Delete works.
-   - ② ••• → Set Timezone → London on a 9:00 task → the timeline shows it in local time with the globe.
-   - ③ sparkle on a real task → 3–7 steps → Keep all (this is plan-day v7's first live model call).
-2. **Guarded re-check of the live build** (only if verify cannot run):
-   `cd ~/Documents/code/optimo && git pull --ff-only && grep -c "segmentMaps" src/timeline/Timeline.tsx && curl -s https://schnubsy.github.io/optimo/ | grep -o '<meta name="build" content="[0-9a-f]*"'`
-   — the grep count must be ≥ 1 and the build meta must equal the PR's merge SHA (it was `4f04493` before this arc).
+1. **Real-iPhone checks (installed PWA, after the Pages deploy):**
+   - FAB → type `Call plumber` → Enter → it's in Inbox (badge +1), the field stays open.
+   - FAB → `Movie night at 8pm for 1.5h` → chip shows the time → Enter → 8:00–9:30 PM on the timeline.
+   - Inbox → tap a row → Today → it appears in Timeline's "To place" tray; drag it onto a time.
+   - Overlapping tasks: tap each ring — the task beside it completes, nothing else.
+   - Tab bar: is text behind it readable? (#70) · notch/home-indicator spacing on Timeline, wizard, capture sheet.
+2. **Tidy the Mac checkout (once, after the merge)** — the two files it holds are already in git:
+   ```
+   cd ~/Documents/code/optimo && git stash push -u -m pre-arc7-local -- HANDOFF.md docs/evidence/verify-2026-10-09.md && git checkout main && git pull --ff-only && grep -c "plan_date" db/008_inbox_first.sql
+   ```
+   The last number must be ≥ 1 (proves the pull brought arc 7). `git stash drop` later once you're happy.

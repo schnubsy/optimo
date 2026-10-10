@@ -2,7 +2,7 @@
 // glyphs + keyword auto-suggest in quick-add and the editor.
 import { test, expect, type Page } from '@playwright/test'
 import { AxeBuilder } from '@axe-core/playwright'
-import { CAT, at, commitWizard, openApp, quickAdd, row, seedDay, seedTask } from './support/app'
+import { CAT, at, commitWizard, openApp, openCreateWizard, quickAdd, row, seedDay, seedTask } from './support/app'
 
 const serious = async (page: Page) => (await new AxeBuilder({ page }).analyze()).violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
 
@@ -50,9 +50,10 @@ test.describe('iPhone chrome', () => {
     expect(tl.y + tl.height).toBeGreaterThanOrEqual(vp.height - 1)
   })
 
-  test('FAB opens the create wizard with focus in the title; creating closes it', async ({ page, context }) => {
+  // arc 7 slice 8: the FAB captures in one line; "Details…" is the way into the full wizard (behaviour changed on purpose)
+  test('FAB → Details… opens the create wizard with focus in the title; creating closes it', async ({ page, context }) => {
     await openApp(page, context)
-    await page.getByTestId('fab').click()
+    await openCreateWizard(page)
     await expect(page.getByTestId('wizard')).toBeVisible()
     await expect(page.getByTestId('wizard-title')).toBeFocused()
     await page.getByTestId('wizard-title').fill('Dentist at 4pm')
@@ -103,6 +104,10 @@ test.describe('iPhone chrome', () => {
       await openApp(page, context, { seed: seedDay, theme })
       expect(await serious(page)).toEqual([])
       await page.getByTestId('fab').click()
+      await expect(page.getByTestId('capture-sheet')).toBeVisible()
+      await page.getByTestId('capture-input').fill('Dentist thursday')
+      await expect(page.getByTestId('capture-chip')).toBeVisible()
+      await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0)
       expect(await serious(page)).toEqual([])
     })
 
@@ -369,13 +374,17 @@ test.describe('arc 6 tab bar', () => {
     expect(b.x + b.width).toBeLessThan(f.x) // side by side, never overlapping
   })
 
-  test('the FAB opens the new-task wizard (timeline mode), not the quick-add sheet', async ({ page, context }, info) => {
+  // arc 7 slice 8 (intended change): the FAB opens the one-line capture; its Details… opens the wizard in timeline mode
+  test('the FAB opens the one-line capture; Details… opens the new-task wizard (timeline mode)', async ({ page, context }, info) => {
     iphone(info)
     await openApp(page, context)
     await page.getByTestId('fab').click()
+    await expect(page.getByTestId('capture-sheet')).toBeVisible()
+    await expect(page.getByTestId('wizard')).toHaveCount(0)
+    await page.getByTestId('capture-details').click()
     await expect.poll(() => wizard(page)).toMatchObject({ mode: 'timeline' })
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByTestId('quickadd-sheet')).toHaveCount(0)
+    await expect(page.getByTestId('capture-sheet')).toHaveCount(0)
   })
 
   test('inbox empty state: title, tray and the New Inbox Task pill → wizard in inbox mode', async ({ page, context }, info) => {

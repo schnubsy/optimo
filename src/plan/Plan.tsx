@@ -46,7 +46,11 @@ export function Plan({ cats, settings }: { cats: Map<string, Category>; settings
   const today = todayKey()
   const pick: Pick = day === today ? 'today' : day === addDays(today, 1) ? 'tomorrow' : 'date'
   const setPick = (p: 'today' | 'tomorrow') => setUI({ date: p === 'today' ? today : addDays(today, 1) })
-  const [intent, setIntent] = useState('')
+  // arc 7 slice 9: "Fit with AI" on a day's tray hands its items over as the intent — prefilled, never sent by itself
+  const [intent, setIntent] = useState(() => useUI.getState().planIntent ?? '')
+  useEffect(() => {
+    if (useUI.getState().planIntent !== null) useUI.getState().set({ planIntent: null })
+  }, [])
   // Settings → Planning sets the defaults; a choice made here wins for this visit (settings may load after mount)
   const [modeChoice, setMode] = useState<AiPlanMode | null>(null)
   const [researchChoice, setResearch] = useState<boolean | null>(null)
