@@ -28,8 +28,7 @@
 - **Edge deploys: N/A** — none changed.
 - **push · PR · merge · Pages ship proof: DONE** — PR #112 merged as ce67e23; live build meta = ce67e23.
 - **press publish-check:** not run in the cloud (no sibling `press` checkout); `dist/optimo.html` is unchanged this arc.
-- **Mac checkout:** still holds the pre-arc uncommitted HANDOFF line + verify note (both now in git) and 4 old agent
-  worktrees (arc 6, fully cherry-picked, SAFE) — tidy step under Mark's manual steps.
+- **Mac checkout:** an old local copy, unused now (cloud is primary); a future Mac session refreshes it itself.
 - **Known, not fixed:** #51 AI tab nests the timeline scroller · #70 tab bar see-through (needs a real-Safari look) ·
   Week at 1024 wide is icon-only (columns < 110 px) · nested-lane titles squeezed to ~91 px · #47 "1:30" durations ·
   tray chips one per row on iPhone · watch: a stray empty wizard seen once after drag → Escape → Week.
@@ -48,8 +47,5 @@
    - Inbox → tap a row → Today → it appears in Timeline's "To place" tray; drag it onto a time.
    - Overlapping tasks: tap each ring — the task beside it completes, nothing else.
    - Tab bar: is text behind it readable? (#70) · notch/home-indicator spacing on Timeline, wizard, capture sheet.
-2. **Tidy the Mac checkout (once, after the merge)** — the two files it holds are already in git:
-   ```
-   cd ~/Documents/code/optimo && git stash push -u -m pre-arc7-local -- HANDOFF.md docs/evidence/verify-2026-10-09.md && git checkout main && git pull --ff-only && grep -c "plan_date" db/008_inbox_first.sql
-   ```
-   The last number must be ≥ 1 (proves the pull brought arc 7). `git stash drop` later once you're happy.
+2. **Mac folder: nothing to do.** `~/Documents/code/optimo` is an old local copy; the cloud and the live site don't use
+   it. Only if a future session works on the Mac does it need refreshing — that session does it itself.
