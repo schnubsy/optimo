@@ -29,3 +29,7 @@ docs/evidence/*-lighthouse-*.json
 
 # supabase cli scratch
 supabase/.temp/
+
+# Claude Code local state (not project skills)
+.claude/settings.local.json
+.claude/worktrees/

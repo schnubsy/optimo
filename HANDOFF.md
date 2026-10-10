@@ -33,6 +33,8 @@
   Week at 1024 wide is icon-only (columns < 110 px) · nested-lane titles squeezed to ~91 px · #47 "1:30" durations ·
   tray chips one per row on iPhone · watch: a stray empty wizard seen once after drag → Escape → Week.
 - **Snags:** #81–#110 (arc 6 P1), #67–#79, #57, #59–#65, #39–#54 carried.
+- **Arc 6 verify:** DONE 2026-10-09, green (`docs/evidence/verify-2026-10-09.md`). Garrick's call on the
+  [sheet≠image] snags (#81, #82, #83, #85, #87, #91, #95, #108): the image wins.
 
 ## Exact next steps
 1. Mark: real-iPhone checks below; anything failing → a `snag` Issue or tell the next session.
